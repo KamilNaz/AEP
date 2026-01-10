@@ -925,7 +925,220 @@ const createBaseTableManager = (config) => {
 /**
  * DOKUMENTACJA: Jak używać createBaseTableManager
  *
- * PRZYKŁAD UŻYCIA (proof-of-concept dla przyszłej refaktoryzacji):
+ * ===================================================================
+ * PRZEWODNIK MIGRACJI - Jak stopniowo przenosić istniejące moduły
+ * ===================================================================
+ *
+ * KROK 1: IDENTYFIKACJA MODUŁÓW DO MIGRACJI
+ * ------------------------------------------
+ * Najłatwiejsze (polecane jako pierwsze):
+ * - SPB: prosta tabela, brak subrows, brak grouping
+ * - Pilotaże: podobnie jak SPB
+ * - Konwoje: podobnie jak SPB
+ *
+ * Średnie (wymagają customizacji):
+ * - Patrole: ma getMonthFromDate(), sync scrollbars, visibility columns
+ * - WKRD: filtrowanie dat i kolumn, sync scrollbars
+ * - Zdarzenia: może mieć custom logic
+ *
+ * Trudne (wymagają rozszerzenia BaseTableManager):
+ * - Wykroczenia: grouping, subrows, synchronizacja legitymowany
+ * - Sankcje: grouping, subrows, synchronizacja legitymowany
+ *
+ *
+ * KROK 2: HYBRID APPROACH (zalecane!)
+ * ------------------------------------
+ * Nie trzeba migrować całego modułu na raz. Można użyć "hybrid approach":
+ * - Bazowe metody z createBaseTableManager
+ * - Specyficzny kod (render, filters, etc.) jako customMethods
+ *
+ * Przykład WKRD w hybrid approach:
+ *
+ * const WKRDManager = createBaseTableManager({
+ *     module: 'wkrd',
+ *     dataKey: 'wkrdData',
+ *     selectedRowsKey: 'wkrdSelectedRows',
+ *     storageKey: 'aep_data_wkrd',
+ *     tableBodyId: 'wkrdTableBody',
+ *     emptyMessage: 'Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.',
+ *
+ *     defaultRow: (id, date) => ({
+ *         id: id,
+ *         data: date,
+ *         nr_jw: '',
+ *         nazwa_jw: '',
+ *         miejsce: '',
+ *         podleglosc: '',
+ *         razem: 0,
+ *         wpm: 0,
+ *         ppm: 0,
+ *         pozostale: 0,
+ *         oddzial: ''
+ *     }),
+ *
+ *     renderRowHTML: (row, index, isSelected, manager) => {
+ *         const razem = (parseInt(row.wpm) || 0) + (parseInt(row.ppm) || 0) + (parseInt(row.pozostale) || 0);
+ *         const month = row.data ? new Date(row.data.split('.').reverse().join('-')).toLocaleDateString('pl-PL', {month: 'long'}) : '';
+ *
+ *         return `
+ *             <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
+ *                 <td>${index + 1}</td>
+ *                 <td><input type="checkbox" ${isSelected ? 'checked' : ''}
+ *                            onchange="WKRDManager.toggleRowSelect(${row.id}, this.checked)"></td>
+ *                 <td>${month}</td>
+ *                 <td><input type="date" value="${row.data}"
+ *                            onchange="WKRDManager.updateField(${row.id}, 'data', this.value)"></td>
+ *                 <td><input type="text" value="${row.nr_jw}"
+ *                            onchange="WKRDManager.updateField(${row.id}, 'nr_jw', this.value)"></td>
+ *                 <td>${razem}</td>
+ *                 <td><input type="number" value="${row.wpm}"
+ *                            onchange="WKRDManager.updateField(${row.id}, 'wpm', this.value)"></td>
+ *                 ... etc ...
+ *             </tr>
+ *         `;
+ *     },
+ *
+ *     // CUSTOM METHODS - zachowaj specyficzny kod modułu
+ *     customMethods: {
+ *         render: function() {
+ *             // this.loadData();
+ *             // ... cały custom HTML jak w oryginalnym WKRDManager ...
+ *             // ... setup event listeners ...
+ *             // this.renderRows();
+ *             // this.syncScrollbars();
+ *         },
+ *
+ *         initColumnsDropdown: function() {
+ *             // custom logic dla filtrowania kolumn
+ *         },
+ *
+ *         initDateFilter: function() {
+ *             // custom logic dla filtrowania dat
+ *         },
+ *
+ *         syncScrollbars: function() {
+ *             // custom logic dla scrollbars
+ *         }
+ *     }
+ * });
+ *
+ * KORZYŚCI HYBRID APPROACH:
+ * - Eliminujesz ~50-80 linii duplikowanego kodu (addRow, updateField, etc.)
+ * - Zachowujesz specyficzny kod modułu bez zmian
+ * - Mniejsze ryzyko wprowadzenia bugów
+ * - Łatwiejsza migracja krok po kroku
+ *
+ *
+ * KROK 3: PEŁNA MIGRACJA (opcjonalna)
+ * ------------------------------------
+ * Po sukcesie hybrid approach, możesz zrefaktoryzować customMethods:
+ * - Wydziel wspólne patterns do BaseTableManager
+ * - Stwórz pomocnicze funkcje dla powtarzalnych zadań
+ * - Stopniowo redukuj custom kod
+ *
+ *
+ * ===================================================================
+ * QUICK WIN: Prosta migracja SPB (eliminacja ~60 linii duplikacji)
+ * ===================================================================
+ *
+ * PRZED migracją - duplikowany kod w SPBManager:
+ * ------------------------------------------------
+ *   addRow() {
+ *       const newId = AppState.spbData.length > 0 ?
+ *           Math.max(...AppState.spbData.map(r => r.id)) + 1 : 1;
+ *       const today = new Date();
+ *       const todayPolish = today.toLocaleDateString('pl-PL');
+ *       const newRow = { id: newId, data: todayPolish, ... };
+ *       AppState.spbData.unshift(newRow);  // ❌ NIESPÓJNOŚĆ: używa unshift zamiast push
+ *       this.renderRows();
+ *       this.autoSave();
+ *   }
+ *
+ *   updateField(id, field, value) {
+ *       const row = AppState.spbData.find(r => r.id === id);
+ *       if (row) {
+ *           if (field === 'data' && value) {
+ *               row.data = new Date(value).toLocaleDateString('pl-PL');
+ *           } else {
+ *               row[field] = value;
+ *           }
+ *           this.renderRows();
+ *           this.autoSave();
+ *       }
+ *   }
+ *
+ *   toggleSelectAll(checked) { ... }    // ~8 linii
+ *   toggleRowSelect(id, checked) { ... } // ~8 linii
+ *   clearSelected() { ... }              // ~12 linii
+ *   saveDraft() { ... }                  // ~6 linii
+ *   autoSave() { ... }                   // ~4 linii
+ *
+ * PO migracji - wykorzystanie BaseTableManager:
+ * -----------------------------------------------
+ * Wszystkie powyższe metody (~60 linii) zastąpione przez:
+ *
+ *   const SPBManager = createBaseTableManager({
+ *       module: 'spb',
+ *       dataKey: 'spbData',
+ *       selectedRowsKey: 'spbSelectedRows',
+ *       storageKey: 'aep_data_spb',
+ *       tableBodyId: 'spbTableBody',
+ *       emptyMessage: 'Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.',
+ *
+ *       defaultRow: (id, date) => ({
+ *           id: id, data: date, nr_jw: '', nazwa_jw: '',
+ *           miejsce: '', podleglosc: '', grupa: '',
+ *           sila_fizyczna: 0, kajdanki: 0, kaftan: 0, kask: 0,
+ *           siatka: 0, palka: 0, pies: 0, chem_sr: 0,
+ *           paralizator: 0, kolczatka: 0, bron: 0,
+ *           podczas_konw: 'NIE', zatrzymania: 0, doprowadzenia: 0,
+ *           inne_patrol: 0, ranny: 'NIE', smierc: 'NIE',
+ *           jzw_prowadzaca: 'OŻW Elbląg', oddzial: 'Elbląg'
+ *       }),
+ *
+ *       renderRowHTML: (row, index, isSelected) => {
+ *           // ... render wiersza z wszystkimi kolumnami ...
+ *           // return HTML string
+ *       },
+ *
+ *       customMethods: {
+ *           render: function() {
+ *               // zachowaj cały custom HTML, toolbar, date filter
+ *           },
+ *           initDateFilter: function() {
+ *               // custom logic dla filtrowania dat
+ *           },
+ *           syncScrollbars: function() {
+ *               // custom logic dla synchronizacji scrollbars
+ *           },
+ *           openSrodkiModal: function(id) {
+ *               // custom logic dla modala środków ŚPB
+ *           },
+ *           renderSrodkiChips: function(row) {
+ *               // custom logic dla renderowania chips
+ *           },
+ *           dateToInputFormat: function(date) {
+ *               // helper do konwersji dat
+ *           }
+ *       }
+ *   });
+ *
+ * KORZYŚCI Quick Win dla SPB:
+ * - ✅ Eliminacja ~60 linii duplikowanego kodu
+ * - ✅ Naprawa niespójności (unshift → push)
+ * - ✅ Automatyczna integracja z CalculationEngine (jeśli będzie potrzebna)
+ * - ✅ Zachowanie całego custom UI (date filters, środki ŚPB modal, scrollbars)
+ * - ✅ Mniejsze ryzyko - tylko bazowe metody się zmieniają
+ * - ✅ Czas migracji: ~30 minut
+ *
+ * PODOBNIE można zmigrować:
+ * - Pilotaże (~55 linii oszczędności)
+ * - Konwoje (~55 linii oszczędności)
+ *
+ *
+ * ===================================================================
+ * PRZYKŁAD UŻYCIA (proof-of-concept dla nowych modułów)
+ * ===================================================================
  *
  * const ExampleManager = createBaseTableManager({
  *     module: 'example',
@@ -962,19 +1175,10 @@ const createBaseTableManager = (config) => {
  *
  *     // Niestandardowe metody specyficzne dla tego modułu
  *     customMethods: {
- *         render() {
- *             this.loadData();
- *             const mainContent = document.getElementById('mainContent');
- *             mainContent.innerHTML = `
- *                 <div class="section-view">
- *                     <h1>Example Module</h1>
- *                     <button onclick="ExampleManager.addRow()">Dodaj wiersz</button>
- *                     <table>
- *                         <tbody id="exampleTableBody"></tbody>
- *                     </table>
- *                 </div>
- *             `;
- *             this.renderRows();
+ *         render: function() {
+ *             // this.loadData();
+ *             // wygeneruj HTML z tabelą i przyciskami
+ *             // this.renderRows();
  *         }
  *     }
  * });
