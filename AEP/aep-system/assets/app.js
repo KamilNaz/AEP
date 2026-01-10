@@ -6793,9 +6793,9 @@ const KonwojeManager = {
             jw_prowadzaca: 'OŻW Elbląg',
             oddzial: 'Elbląg'
         };
-        
-        AppState.konwojeData.unshift(newRow);
-        
+
+        AppState.konwojeData.push(newRow);
+
         this.renderRows();
         this.autoSave();
     },
@@ -10082,9 +10082,9 @@ const ZdarzeniaManager = {
             jzw: 'OŻW Elbląg',
             oddzial: 'Elbląg'
         };
-        
-        AppState.zdarzeniaData.unshift(newRow);
-        
+
+        AppState.zdarzeniaData.push(newRow);
+
         this.renderRows();
         this.autoSave();
     },
@@ -10812,9 +10812,9 @@ const PilotazeManager = {
             jzw: 'OŻW Elbląg',
             oddzial: 'Elbląg'
         };
-        
-        AppState.pilotazeData.unshift(newRow);
-        
+
+        AppState.pilotazeData.push(newRow);
+
         this.renderRows();
         this.autoSave();
     },
@@ -11599,9 +11599,9 @@ const SPBManager = {
             jzw_prowadzaca: 'OŻW Elbląg',
             oddzial: 'Elbląg'
         };
-        
-        AppState.spbData.unshift(newRow);
-        
+
+        AppState.spbData.push(newRow);
+
         this.renderRows();
         this.autoSave();
     },
