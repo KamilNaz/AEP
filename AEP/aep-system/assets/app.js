@@ -757,6 +757,243 @@ const DEFAULT_VALUES = {
 };
 
 // ============================================
+// BASE TABLE MANAGER - Wspólna architektura dla managerów tabel
+// ============================================
+/**
+ * Factory function tworzący bazowy manager tabeli z wspólną funkcjonalnością
+ * @param {object} config - Konfiguracja managera
+ * @returns {object} Manager z wspólnymi metodami
+ */
+const createBaseTableManager = (config) => {
+    const {
+        module,           // Nazwa modułu (np. 'patrole', 'wkrd')
+        dataKey,          // Klucz w AppState (np. 'patroleData')
+        selectedRowsKey,  // Klucz dla zaznaczonych wierszy (np. 'patroleSelectedRows')
+        storageKey,       // Klucz localStorage (np. 'aep_data_patrole')
+        tableBodyId,      // ID elementu tbody
+        emptyMessage,     // Komunikat gdy brak danych
+        defaultRow,       // Funkcja zwracająca domyślny wiersz
+        renderRowHTML,    // Funkcja renderująca HTML wiersza
+        customMethods     // Dodatkowe metody specyficzne dla modułu
+    } = config;
+
+    const base = {
+        config,
+
+        // === GETTERY/SETTERY ===
+        getData() {
+            return AppState[dataKey] || [];
+        },
+
+        setData(data) {
+            AppState[dataKey] = data;
+        },
+
+        getSelectedRows() {
+            return AppState[selectedRowsKey];
+        },
+
+        // === ZARZĄDZANIE WIERSZAMI ===
+        addRow() {
+            const data = this.getData();
+            const newId = data.length > 0 ? Math.max(...data.map(r => r.id)) + 1 : 1;
+
+            const today = new Date();
+            const todayPolish = today.toLocaleDateString('pl-PL');
+
+            const newRow = defaultRow(newId, todayPolish);
+
+            data.push(newRow);
+            this.renderRows();
+            this.autoSave();
+        },
+
+        updateField(id, field, value) {
+            const data = this.getData();
+            const row = data.find(r => r.id === id);
+
+            if (row) {
+                // Obsługa daty
+                if (field === 'data' && value) {
+                    const date = new Date(value);
+                    row.data = date.toLocaleDateString('pl-PL');
+                } else {
+                    row[field] = value;
+                }
+
+                // Auto-oblicz pola RAZEM
+                CalculationEngine.calculate(module, row);
+
+                this.renderRows();
+                this.autoSave();
+            }
+        },
+
+        toggleRowSelect(id, checked) {
+            const selectedRows = this.getSelectedRows();
+            if (checked) {
+                selectedRows.add(id);
+            } else {
+                selectedRows.delete(id);
+            }
+            this.renderRows();
+        },
+
+        toggleSelectAll(checked) {
+            const data = this.getData();
+            const selectedRows = this.getSelectedRows();
+
+            if (checked) {
+                data.forEach(row => selectedRows.add(row.id));
+            } else {
+                selectedRows.clear();
+            }
+            this.renderRows();
+        },
+
+        clearSelected() {
+            const data = this.getData();
+            const selectedRows = this.getSelectedRows();
+
+            if (selectedRows.size === 0) {
+                alert('Nie zaznaczono żadnych wierszy do usunięcia');
+                return;
+            }
+
+            if (!confirm(`Czy na pewno usunąć ${selectedRows.size} zaznaczonych wierszy?`)) {
+                return;
+            }
+
+            this.setData(data.filter(row => !selectedRows.has(row.id)));
+            selectedRows.clear();
+            this.renderRows();
+            this.autoSave();
+        },
+
+        // === ZAPIS DANYCH ===
+        saveDraft() {
+            const data = this.getData();
+            const success = Utils.saveToLocalStorage(storageKey, data);
+
+            if (success) {
+                alert('Arkusz zapisany pomyślnie');
+            } else {
+                alert('Błąd podczas zapisywania');
+            }
+        },
+
+        autoSave() {
+            const data = this.getData();
+            Utils.saveToLocalStorage(storageKey, data);
+        },
+
+        // === RENDEROWANIE ===
+        renderRows() {
+            const tbody = document.getElementById(tableBodyId);
+            if (!tbody) return;
+
+            const data = this.getData();
+            const selectedRows = this.getSelectedRows();
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="20" class="empty-message">${emptyMessage}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map((row, index) => {
+                const isSelected = selectedRows.has(row.id);
+                return renderRowHTML(row, index, isSelected, this);
+            }).join('');
+        },
+
+        // === ŁADOWANIE DANYCH ===
+        loadData() {
+            const savedData = Utils.loadFromLocalStorage(storageKey);
+            this.setData(savedData || []);
+            this.getSelectedRows().clear();
+        }
+    };
+
+    // Dodaj niestandardowe metody jeśli są
+    if (customMethods) {
+        Object.assign(base, customMethods);
+    }
+
+    return base;
+};
+
+/**
+ * DOKUMENTACJA: Jak używać createBaseTableManager
+ *
+ * PRZYKŁAD UŻYCIA (proof-of-concept dla przyszłej refaktoryzacji):
+ *
+ * const ExampleManager = createBaseTableManager({
+ *     module: 'example',
+ *     dataKey: 'exampleData',
+ *     selectedRowsKey: 'exampleSelectedRows',
+ *     storageKey: 'aep_data_example',
+ *     tableBodyId: 'exampleTableBody',
+ *     emptyMessage: 'Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.',
+ *
+ *     // Funkcja zwracająca domyślny wiersz
+ *     defaultRow: (id, date) => ({
+ *         id: id,
+ *         data: date,
+ *         pole1: 0,
+ *         pole2: '',
+ *         razem: 0
+ *     }),
+ *
+ *     // Funkcja renderująca HTML wiersza
+ *     renderRowHTML: (row, index, isSelected, manager) => {
+ *         return `
+ *             <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
+ *                 <td>${index + 1}</td>
+ *                 <td><input type="checkbox" ${isSelected ? 'checked' : ''}
+ *                            onchange="ExampleManager.toggleRowSelect(${row.id}, this.checked)"></td>
+ *                 <td><input type="date" value="${row.data}"
+ *                            onchange="ExampleManager.updateField(${row.id}, 'data', this.value)"></td>
+ *                 <td><input type="number" value="${row.pole1}"
+ *                            onchange="ExampleManager.updateField(${row.id}, 'pole1', this.value)"></td>
+ *                 <td>${row.razem}</td>
+ *             </tr>
+ *         `;
+ *     },
+ *
+ *     // Niestandardowe metody specyficzne dla tego modułu
+ *     customMethods: {
+ *         render() {
+ *             this.loadData();
+ *             const mainContent = document.getElementById('mainContent');
+ *             mainContent.innerHTML = `
+ *                 <div class="section-view">
+ *                     <h1>Example Module</h1>
+ *                     <button onclick="ExampleManager.addRow()">Dodaj wiersz</button>
+ *                     <table>
+ *                         <tbody id="exampleTableBody"></tbody>
+ *                     </table>
+ *                 </div>
+ *             `;
+ *             this.renderRows();
+ *         }
+ *     }
+ * });
+ *
+ * KORZYŚCI Z UŻYCIA BaseTableManager:
+ * - Redukcja ~100 linii kodu na manager (8 managerów = ~800 linii oszczędności)
+ * - Spójna implementacja podstawowych operacji
+ * - Łatwiejsze utrzymanie - bugfixy w jednym miejscu
+ * - Automatyczna integracja z ValidationEngine i CalculationEngine
+ * - Mniej duplikacji kodu
+ *
+ * NASTĘPNE KROKI (przyszła refaktoryzacja):
+ * 1. Zmigrować proste moduły (Patrole, WKRD, Konwoje, SPB, Pilotaze, Zdarzenia)
+ * 2. Rozszerzyć BaseTableManager o obsługę grouping (dla Wykroczenia, Sankcje)
+ * 3. Dodać obsługę podwierszy (subrows) dla modułów z tej funkcjonalności
+ * 4. Stopniowo zastępować istniejące managery nowymi opartymi na BaseTableManager
+ */
+
+// ============================================
 // GLOBALNA FUNKCJA TOGGLE SIDEBAR
 // ============================================
 window.toggleSidebar = function() {
