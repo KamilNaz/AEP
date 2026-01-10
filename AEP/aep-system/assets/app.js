@@ -428,6 +428,204 @@ const DataMigration = {
 DataMigration.migrate();
 
 // ============================================
+// VALIDATION ENGINE - Centralny system walidacji
+// ============================================
+const VALIDATION_RULES = {
+    wykroczenia: {
+        required: ['data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'grupa', 'jzw_prowadzaca', 'oddzial'],
+        dependencies: [
+            {
+                name: 'podstawa_rodzaj',
+                // Pola podstawy interwencji
+                ifFields: ['nar_ubiorcz', 'inne_nar', 'nar_kk', 'wykr_porzadek', 'wykr_bezp',
+                          'nar_dyscyplina', 'nar_bron', 'nar_ochr_zdr', 'nar_zakwat', 'pozostale'],
+                // Pola rodzaju interwencji
+                thenFields: ['zatrzymanie', 'doprowadzenie', 'wylegitymowanie', 'pouczenie', 'mandat_bool'],
+                message: 'Zaznaczono podstawę interwencji, ale nie wybrano rodzaju interwencji'
+            }
+        ]
+    },
+    sankcje: {
+        required: ['data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'grupa', 'jzw_prowadzaca', 'oddzial'],
+        dependencies: [
+            {
+                name: 'przyczyna_sankcja',
+                // Pola przyczyny
+                ifFields: ['pod_wplywem_alk', 'nie_zapiecie_pasow', 'telefon_podczas_jazdy',
+                          'nie_stosowanie_znakow', 'nie_zabezpieczony_ladunek', 'brak_dokumentow',
+                          'wyposazenie_pojazdu', 'nie_korzystanie_swiatel', 'parkowanie_niedozwolone',
+                          'niesprawnosci_techniczne', 'inne_przyczyna'],
+                // Pola sankcji
+                thenFields: ['zatrzymanie_dr', 'zatrzymanie_pj', 'mandat_bool', 'pouczenie', 'inne_sankcja'],
+                message: 'Zaznaczono przyczynę, ale nie wybrano sankcji'
+            }
+        ]
+    },
+    patrole: {
+        required: ['date', 'jwProwadzaca', 'oddzialZW']
+    },
+    wkrd: {
+        required: ['data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'oddzial']
+    },
+    konwoje: {
+        required: ['data']
+    },
+    spb: {
+        required: ['data']
+    },
+    pilotaze: {
+        required: ['data']
+    },
+    zdarzenia: {
+        required: ['data']
+    }
+};
+
+const ValidationEngine = {
+    /**
+     * Waliduje pojedynczy wiersz według reguł modułu
+     * @param {string} module - Nazwa modułu (np. 'wykroczenia', 'sankcje')
+     * @param {object} row - Wiersz danych do walidacji
+     * @returns {object} { valid: boolean, errors: Array }
+     */
+    validateRow(module, row) {
+        const rules = VALIDATION_RULES[module];
+        if (!rules) {
+            return { valid: true, errors: [] };
+        }
+
+        const errors = [];
+
+        // 1. Sprawdź wymagane pola
+        if (rules.required) {
+            rules.required.forEach(field => {
+                const value = row[field];
+                if (value === undefined || value === null || value === '') {
+                    errors.push({
+                        type: 'required',
+                        field: field,
+                        message: `Pole "${field}" jest wymagane`
+                    });
+                }
+            });
+        }
+
+        // 2. Sprawdź zależności logiczne (dependency rules)
+        if (rules.dependencies) {
+            rules.dependencies.forEach(dep => {
+                // Sprawdź czy którekolwiek pole IF jest wypełnione
+                const ifFilled = dep.ifFields.some(field => {
+                    const val = row[field];
+                    if (typeof val === 'boolean') return val === true;
+                    return (val && val > 0);
+                });
+
+                // Sprawdź czy którekolwiek pole THEN jest wypełnione
+                const thenFilled = dep.thenFields.some(field => {
+                    const val = row[field];
+                    if (typeof val === 'boolean') return val === true;
+                    return (val && val > 0);
+                });
+
+                // Błąd: IF wypełnione, ale THEN puste
+                if (ifFilled && !thenFilled) {
+                    errors.push({
+                        type: 'dependency',
+                        name: dep.name,
+                        message: dep.message
+                    });
+                }
+            });
+        }
+
+        return {
+            valid: errors.length === 0,
+            errors: errors
+        };
+    },
+
+    /**
+     * Waliduje wszystkie wiersze w tablicy danych
+     * @param {string} module - Nazwa modułu
+     * @param {Array} data - Tablica danych do walidacji
+     * @returns {object} { valid: boolean, errorCount: number, rowErrors: Map }
+     */
+    validateAll(module, data) {
+        const rowErrors = new Map();
+        let errorCount = 0;
+
+        data.forEach((row, index) => {
+            const validation = this.validateRow(module, row);
+            if (!validation.valid) {
+                rowErrors.set(row.id || index, validation.errors);
+                errorCount += validation.errors.length;
+            }
+        });
+
+        return {
+            valid: errorCount === 0,
+            errorCount: errorCount,
+            rowErrors: rowErrors
+        };
+    },
+
+    /**
+     * Zlicza błędy walidacji dla danego modułu
+     * @param {string} module - Nazwa modułu
+     * @param {Array} data - Tablica danych
+     * @returns {number} Liczba wierszy z błędami
+     */
+    countErrors(module, data) {
+        let errorCount = 0;
+        data.forEach(row => {
+            const validation = this.validateRow(module, row);
+            if (!validation.valid) {
+                errorCount++;
+            }
+        });
+        return errorCount;
+    },
+
+    /**
+     * Sprawdza kompletność danych (wymagane pola)
+     * @param {string} module - Nazwa modułu
+     * @param {Array} data - Tablica danych
+     * @returns {object} Szczegółowy raport z brakami
+     */
+    checkCompleteness(module, data) {
+        const rules = VALIDATION_RULES[module];
+        if (!rules || !rules.required) {
+            return { complete: true, issues: [] };
+        }
+
+        const issues = [];
+
+        data.forEach((row, index) => {
+            const missing = [];
+            rules.required.forEach(field => {
+                const value = row[field];
+                if (value === undefined || value === null || value === '') {
+                    missing.push(field);
+                }
+            });
+
+            if (missing.length > 0) {
+                issues.push({
+                    rowIndex: index + 1,
+                    rowId: row.id,
+                    missing: missing
+                });
+            }
+        });
+
+        return {
+            complete: issues.length === 0,
+            issues: issues
+        };
+    }
+};
+
+// ============================================
 // GLOBALNA FUNKCJA TOGGLE SIDEBAR
 // ============================================
 window.toggleSidebar = function() {
@@ -1873,10 +2071,10 @@ const PatroleManager = {
             jwProwadzaca: 'OŻW Elbląg',
             oddzialZW: 'OŻW Elbląg'
         };
-        
-        // Dodaj NA GÓRZE (unshift zamiast push)
-        AppState.patroleData.unshift(newRow);
-        
+
+        // Dodaj nowy wiersz na końcu listy (spójnie z innymi modułami)
+        AppState.patroleData.push(newRow);
+
         this.renderRows();
         this.autoSave();
     },
@@ -2724,12 +2922,15 @@ const WykroczeniaManager = {
                                    'pouczenie', 'mandat_bool'].includes(field);
             
             if (isPodstawaField || isRodzajField) {
-                const validation = this.validatePodstawaRodzaj(row);
+                const validation = ValidationEngine.validateRow('wykroczenia', row);
                 if (!validation.valid) {
                     const rowIndex = AppState.wykroczeniaData.findIndex(r => r.id === id);
-                    setTimeout(() => {
-                        alert(`BŁĄD W WIERSZU ${rowIndex + 1}\n\n${validation.message}!\n\nWybierz przynajmniej jedno działanie:\n• Zatrzymanie\n• Doprowadzenie\n• Wylegitymowanie\n• Pouczenie\n• Mandat`);
-                    }, 100);
+                    const dependencyError = validation.errors.find(e => e.type === 'dependency');
+                    if (dependencyError) {
+                        setTimeout(() => {
+                            alert(`BŁĄD W WIERSZU ${rowIndex + 1}\n\n${dependencyError.message}!\n\nWybierz przynajmniej jedno działanie:\n• Zatrzymanie\n• Doprowadzenie\n• Wylegitymowanie\n• Pouczenie\n• Mandat`);
+                        }, 100);
+                    }
                 }
             }
             
@@ -2783,46 +2984,9 @@ const WykroczeniaManager = {
         }
     },
 
-    validatePodstawaRodzaj(row) {
-        // Sprawdź czy jest jakaś podstawa interwencji
-        const maPodstawe = (row.nar_ubiorcz || 0) + 
-                           (row.inne_nar || 0) + 
-                           (row.nar_kk || 0) + 
-                           (row.wykr_porzadek || 0) + 
-                           (row.wykr_bezp || 0) + 
-                           (row.nar_dyscyplina || 0) + 
-                           (row.nar_bron || 0) + 
-                           (row.nar_ochr_zdr || 0) + 
-                           (row.nar_zakwat || 0) + 
-                           (row.pozostale || 0) > 0;
-        
-        // Sprawdź czy jest jakiś rodzaj interwencji
-        const maRodzaj = (row.zatrzymanie || 0) + 
-                         (row.doprowadzenie || 0) + 
-                         (row.wylegitymowanie || 0) + 
-                         (row.pouczenie || 0) + 
-                         (row.mandat_bool ? 1 : 0) > 0;
-        
-        // BŁĄD: Jest podstawa, ale brak rodzaju
-        if (maPodstawe && !maRodzaj) {
-            return {
-                valid: false,
-                message: "Zaznaczono podstawę interwencji, ale nie wybrano rodzaju interwencji"
-            };
-        }
-        
-        return { valid: true };
-    },
-
     countValidationErrors() {
-        let errorCount = 0;
-        AppState.wykroczeniaData.forEach(row => {
-            const validation = this.validatePodstawaRodzaj(row);
-            if (!validation.valid) {
-                errorCount++;
-            }
-        });
-        return errorCount;
+        // Używa ValidationEngine zamiast własnej metody
+        return ValidationEngine.countErrors('wykroczenia', AppState.wykroczeniaData);
     },
 
     updateToolbarState() {
@@ -2858,54 +3022,34 @@ const WykroczeniaManager = {
     },
 
     validateCompleteness() {
-        let incompleteCount = 0;
-        let validationErrorsCount = 0;
+        // Używa ValidationEngine
+        const validation = ValidationEngine.validateAll('wykroczenia', AppState.wykroczeniaData);
+
+        if (validation.valid) {
+            alert('Wszystkie wiersze są kompletne i poprawne!');
+            return;
+        }
+
         const issues = [];
+        validation.rowErrors.forEach((errors, rowId) => {
+            const row = AppState.wykroczeniaData.find(r => r.id === rowId);
+            const rowIndex = AppState.wykroczeniaData.indexOf(row) + 1;
 
-        AppState.wykroczeniaData.forEach((row, index) => {
-            const missing = [];
-            
-            // Sprawdź wymagane pola
-            if (!row.data) missing.push('Data');
-            if (!row.nr_jw) missing.push('Nr JW');
-            if (!row.nazwa_jw) missing.push('Nazwa JW');
-            if (!row.miejsce) missing.push('Miejsce');
-            if (!row.podleglosc) missing.push('Podległość');
-            if (!row.grupa) missing.push('Grupa');
-            if (!row.jzw_prowadzaca) missing.push('JŻW');
-            if (!row.oddzial) missing.push('Oddział');
-            
-            if (missing.length > 0) {
-                incompleteCount++;
-                issues.push(`Wiersz ${index + 1}: brak ${missing.join(', ')}`);
-            }
-
-            // NOWA WALIDACJA: Podstawa → Rodzaj
-            const validation = this.validatePodstawaRodzaj(row);
-            if (!validation.valid) {
-                validationErrorsCount++;
-                issues.push(`Wiersz ${index + 1}: ${validation.message}`);
-            }
+            errors.forEach(error => {
+                if (error.type === 'required') {
+                    issues.push(`Wiersz ${rowIndex}: brak ${error.field}`);
+                } else if (error.type === 'dependency') {
+                    issues.push(`Wiersz ${rowIndex}: ${error.message}`);
+                }
+            });
         });
 
-        const totalErrors = incompleteCount + validationErrorsCount;
-        
-        if (totalErrors === 0) {
-            alert('Wszystkie wiersze są kompletne i poprawne!');
-        } else {
-            let message = '';
-            if (incompleteCount > 0) {
-                message += `❌ Niekompletnych wierszy: ${incompleteCount}\n`;
-            }
-            if (validationErrorsCount > 0) {
-                message += `Błędów walidacji: ${validationErrorsCount}\n`;
-            }
-            message += `\n${issues.slice(0, 15).join('\n')}`;
-            if (issues.length > 15) {
-                message += `\n... i ${issues.length - 15} więcej`;
-            }
-            alert(message);
+        let message = `❌ Znaleziono ${validation.errorCount} błędów:\n\n`;
+        message += issues.slice(0, 15).join('\n');
+        if (issues.length > 15) {
+            message += `\n... i ${issues.length - 15} więcej`;
         }
+        alert(message);
     },
 
     saveDraft() {
@@ -5106,7 +5250,43 @@ const SankcjeManager = {
         this.autoSave();
     },
 
+    countValidationErrors() {
+        // Używa ValidationEngine
+        return ValidationEngine.countErrors('sankcje', AppState.sankcjeData);
+    },
+
+    updateToolbarState() {
+        const errorCount = this.countValidationErrors();
+        const hasErrors = errorCount > 0;
+
+        // Aktualizuj przyciski
+        const saveBtn = document.getElementById('saveSankcjeDraft');
+        const errorDisplay = document.getElementById('sankcjeErrorCount');
+
+        if (saveBtn) {
+            saveBtn.disabled = hasErrors;
+            saveBtn.style.opacity = hasErrors ? '0.5' : '1';
+            saveBtn.style.cursor = hasErrors ? 'not-allowed' : 'pointer';
+        }
+
+        // Pokaż licznik błędów
+        if (errorDisplay) {
+            if (hasErrors) {
+                errorDisplay.textContent = `❌ Błędów walidacji: ${errorCount}`;
+                errorDisplay.style.display = 'block';
+            } else {
+                errorDisplay.style.display = 'none';
+            }
+        }
+    },
+
     saveDraft() {
+        const errorCount = this.countValidationErrors();
+        if (errorCount > 0) {
+            alert(`❌ Nie można zapisać arkusza!\n\nZnaleziono ${errorCount} błędów walidacji.\n\nPopraw błędy przed zapisaniem:\n• Jeśli zaznaczono przyczynę,\n  należy wybrać sankcję`);
+            return;
+        }
+
         const success = Utils.saveToLocalStorage('aep_data_sankcje', AppState.sankcjeData);
         if (success) {
             alert('Arkusz zapisany pomyślnie');
@@ -5381,8 +5561,29 @@ const SankcjeManager = {
                     }
                 });
             }
-            
+
+            // REAL-TIME WALIDACJA przy zmianie pól Przyczyna lub Sankcja
+            const isPrzyczynaField = ['pod_wplywem_alk', 'nie_zapiecie_pasow', 'telefon_podczas_jazdy',
+                                      'nie_stosowanie_znakow', 'nie_zabezpieczony_ladunek', 'brak_dokumentow',
+                                      'wyposazenie_pojazdu', 'nie_korzystanie_swiatel', 'parkowanie_niedozwolone',
+                                      'niesprawnosci_techniczne', 'inne_przyczyna'].includes(field);
+            const isSankcjaField = ['zatrzymanie_dr', 'zatrzymanie_pj', 'mandat_bool', 'pouczenie', 'inne_sankcja'].includes(field);
+
+            if (isPrzyczynaField || isSankcjaField) {
+                const validation = ValidationEngine.validateRow('sankcje', row);
+                if (!validation.valid) {
+                    const rowIndex = AppState.sankcjeData.findIndex(r => r.id === id);
+                    const dependencyError = validation.errors.find(e => e.type === 'dependency');
+                    if (dependencyError) {
+                        setTimeout(() => {
+                            alert(`BŁĄD W WIERSZU ${rowIndex + 1}\n\n${dependencyError.message}!\n\nWybierz przynajmniej jedną sankcję:\n• Zatrzymanie DR\n• Zatrzymanie PJ\n• Mandat\n• Pouczenie\n• Inne`);
+                        }, 100);
+                    }
+                }
+            }
+
             this.renderRows();
+            this.updateToolbarState();
             this.autoSave();
         }
     },
