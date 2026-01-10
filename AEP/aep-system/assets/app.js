@@ -353,6 +353,81 @@ const Utils = {
 };
 
 // ============================================
+// MIGRACJA DANYCH LOCALSTORAGE
+// ============================================
+const DataMigration = {
+    // Mapa starych kluczy -> nowe klucze
+    migrations: [
+        { old: 'aep_patrole_data', new: 'aep_data_patrole' },
+        { old: 'aep_wykroczenia_data', new: 'aep_data_wykroczenia' },
+        { old: 'aep_wkrd_data', new: 'aep_data_wkrd' },
+        { old: 'aep_sankcje_data', new: 'aep_data_sankcje' },
+        { old: 'aep_konwoje_data', new: 'aep_data_konwoje' },
+        { old: 'aep_spb_data', new: 'aep_data_spb' },
+        { old: 'aep_pilotaze_data', new: 'aep_data_pilotaze' },
+        { old: 'aep_zdarzenia_data', new: 'aep_data_zdarzenia' }
+    ],
+
+    migrate() {
+        console.log('🔄 Rozpoczynam migrację danych localStorage...');
+        let migratedCount = 0;
+
+        this.migrations.forEach(({ old, new: newKey }) => {
+            const oldData = Utils.loadFromLocalStorage(old);
+            const newData = Utils.loadFromLocalStorage(newKey);
+
+            // Migruj tylko jeśli stary klucz istnieje i nowy jest pusty
+            if (oldData && !newData) {
+                Utils.saveToLocalStorage(newKey, oldData);
+                console.log(`✅ Zmigrowano: ${old} → ${newKey} (${oldData.length} rekordów)`);
+                migratedCount++;
+
+                // Usuń stary klucz po udanej migracji
+                try {
+                    localStorage.removeItem(old);
+                } catch (e) {
+                    console.error(`⚠️ Nie można usunąć starego klucza: ${old}`, e);
+                }
+            }
+        });
+
+        if (migratedCount > 0) {
+            console.log(`✅ Migracja zakończona. Zmigrowano ${migratedCount} modułów.`);
+        } else {
+            console.log('ℹ️ Brak danych do migracji.');
+        }
+
+        // Migracja typów boolean w istniejących danych
+        this.migrateBooleanTypes();
+    },
+
+    migrateBooleanTypes() {
+        console.log('🔄 Migracja typów boolean...');
+
+        // Sankcje: w_czasie_sluzby string → boolean
+        const sankcjeData = Utils.loadFromLocalStorage('aep_data_sankcje');
+        if (sankcjeData && Array.isArray(sankcjeData)) {
+            let changed = false;
+            sankcjeData.forEach(row => {
+                if (typeof row.w_czasie_sluzby === 'string') {
+                    row.w_czasie_sluzby = row.w_czasie_sluzby === 'TAK' || row.w_czasie_sluzby === 'true';
+                    changed = true;
+                }
+            });
+            if (changed) {
+                Utils.saveToLocalStorage('aep_data_sankcje', sankcjeData);
+                console.log('✅ Sankcje: w_czasie_sluzby zmieniono na boolean');
+            }
+        }
+
+        console.log('✅ Migracja typów boolean zakończona');
+    }
+};
+
+// Wykonaj migrację przy starcie aplikacji
+DataMigration.migrate();
+
+// ============================================
 // GLOBALNA FUNKCJA TOGGLE SIDEBAR
 // ============================================
 window.toggleSidebar = function() {
@@ -824,7 +899,7 @@ const Router = {
 
     getPatrolData() {
         // Próbuj załadować dane z localStorage (zapisane przez "Zapisz arkusz")
-        const savedData = Utils.loadFromLocalStorage('aep_patrole_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_patrole');
         
         if (savedData && savedData.length > 0) {
             // Weź ostatnie 7 wpisów
@@ -865,7 +940,7 @@ const Router = {
         };
         
         // Próbuj załadować dane z localStorage (zapisane przez "Zapisz arkusz")
-        const savedData = Utils.loadFromLocalStorage('aep_wykroczenia_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_wykroczenia');
         
         if (savedData && savedData.length > 0) {
             // Zlicz według podstawy interwencji
@@ -1025,7 +1100,7 @@ const Router = {
 // ============================================
 const PatroleManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_patrole_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_patrole');
         AppState.patroleData = savedData || [];
         
         // Migracja danych - dodaj razem_rodzaj i razem_wspolz do starych wierszy
@@ -1848,7 +1923,7 @@ const PatroleManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_patrole_data', AppState.patroleData);
+        const success = Utils.saveToLocalStorage('aep_data_patrole', AppState.patroleData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -1857,7 +1932,7 @@ const PatroleManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_patrole_data', AppState.patroleData);
+        Utils.saveToLocalStorage('aep_data_patrole', AppState.patroleData);
     }
 };
 
@@ -1866,7 +1941,7 @@ const PatroleManager = {
 // ============================================
 const WykroczeniaManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_wykroczenia_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_wykroczenia');
         AppState.wykroczeniaData = savedData || [];
         AppState.wykroczeniaSelectedRows.clear();
 
@@ -2840,7 +2915,7 @@ const WykroczeniaManager = {
             return;
         }
         
-        const success = Utils.saveToLocalStorage('aep_wykroczenia_data', AppState.wykroczeniaData);
+        const success = Utils.saveToLocalStorage('aep_data_wykroczenia', AppState.wykroczeniaData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -2849,7 +2924,7 @@ const WykroczeniaManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_wykroczenia_data', AppState.wykroczeniaData);
+        Utils.saveToLocalStorage('aep_data_wykroczenia', AppState.wykroczeniaData);
     },
 
     // ============================================
@@ -3494,7 +3569,7 @@ const WykroczeniaManager = {
 // ============================================
 const WKRDManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_wkrd_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_wkrd');
         AppState.wkrdData = savedData || [];
         AppState.wkrdSelectedRows.clear();
 
@@ -4154,7 +4229,7 @@ const WKRDManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_wkrd_data', AppState.wkrdData);
+        const success = Utils.saveToLocalStorage('aep_data_wkrd', AppState.wkrdData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -4163,7 +4238,7 @@ const WKRDManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_wkrd_data', AppState.wkrdData);
+        Utils.saveToLocalStorage('aep_data_wkrd', AppState.wkrdData);
     },
 
     syncScrollbars() {
@@ -4198,7 +4273,7 @@ const WKRDManager = {
 // ============================================
 const SankcjeManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_sankcje_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_sankcje');
         AppState.sankcjeData = savedData || [];
         AppState.sankcjeSelectedRows.clear();
 
@@ -4984,7 +5059,7 @@ const SankcjeManager = {
             pouczenie: 0,
             inne_sankcja: 0,
             wysokosc_mandatu: '',
-            w_czasie_sluzby: 'NIE',
+            w_czasie_sluzby: false,
             jzw_prowadzaca: 'OŻW Elbląg',
             oddzial: 'Elbląg'
         };
@@ -5032,7 +5107,7 @@ const SankcjeManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_sankcje_data', AppState.sankcjeData);
+        const success = Utils.saveToLocalStorage('aep_data_sankcje', AppState.sankcjeData);
         if (success) {
             alert('Arkusz zapisany pomyślnie');
         } else {
@@ -5041,7 +5116,7 @@ const SankcjeManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_sankcje_data', AppState.sankcjeData);
+        Utils.saveToLocalStorage('aep_data_sankcje', AppState.sankcjeData);
     },
 
     renderRows() {
@@ -5265,10 +5340,8 @@ const SankcjeManager = {
                                class="cell-input-small">
                     </td>
                     <td>
-                        <select onchange="SankcjeManager.updateField(${row.id}, 'w_czasie_sluzby', this.value)" class="cell-select">
-                            <option value="TAK" ${row.w_czasie_sluzby === 'TAK' ? 'selected' : ''}>TAK</option>
-                            <option value="NIE" ${row.w_czasie_sluzby === 'NIE' ? 'selected' : ''}>NIE</option>
-                        </select>
+                        <input type="checkbox" ${row.w_czasie_sluzby ? 'checked' : ''}
+                               onchange="SankcjeManager.updateField(${row.id}, 'w_czasie_sluzby', this.checked)">
                     </td>
                     <td>
                         <select onchange="SankcjeManager.updateField(${row.id}, 'jzw_prowadzaca', this.value)" class="cell-select">
@@ -5346,7 +5419,7 @@ const SankcjeManager = {
 // ============================================
 const KonwojeManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_konwoje_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_konwoje');
         AppState.konwojeData = savedData || [];
         AppState.konwojeSelectedRows.clear();
 
@@ -5990,7 +6063,7 @@ const KonwojeManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_konwoje_data', AppState.konwojeData);
+        const success = Utils.saveToLocalStorage('aep_data_konwoje', AppState.konwojeData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -5999,7 +6072,7 @@ const KonwojeManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_konwoje_data', AppState.konwojeData);
+        Utils.saveToLocalStorage('aep_data_konwoje', AppState.konwojeData);
     }
 };
 
@@ -6615,14 +6688,14 @@ const DashboardHub = {
 
     loadOgolneStats() {
         // Pobierz dane BEZPOŚREDNIO z localStorage (jak na stronie startowej!)
-        const patrole = Utils.loadFromLocalStorage('aep_patrole_data') || [];
-        const wykroczenia = Utils.loadFromLocalStorage('aep_wykroczenia_data') || [];
-        const wkrd = Utils.loadFromLocalStorage('aep_wkrd_data') || [];
-        const sankcje = Utils.loadFromLocalStorage('aep_sankcje_data') || [];
-        const konwoje = Utils.loadFromLocalStorage('aep_konwoje_data') || [];
-        const spb = Utils.loadFromLocalStorage('aep_spb_data') || [];
-        const pilotaze = Utils.loadFromLocalStorage('aep_pilotaze_data') || [];
-        const zdarzenia = Utils.loadFromLocalStorage('aep_zdarzenia_data') || [];
+        const patrole = Utils.loadFromLocalStorage('aep_data_patrole') || [];
+        const wykroczenia = Utils.loadFromLocalStorage('aep_data_wykroczenia') || [];
+        const wkrd = Utils.loadFromLocalStorage('aep_data_wkrd') || [];
+        const sankcje = Utils.loadFromLocalStorage('aep_data_sankcje') || [];
+        const konwoje = Utils.loadFromLocalStorage('aep_data_konwoje') || [];
+        const spb = Utils.loadFromLocalStorage('aep_data_spb') || [];
+        const pilotaze = Utils.loadFromLocalStorage('aep_data_pilotaze') || [];
+        const zdarzenia = Utils.loadFromLocalStorage('aep_data_zdarzenia') || [];
 
         console.log('📊 DASHBOARD - Dane załadowane z localStorage:');
         console.log('  → Patrole:', patrole.length, 'wierszy');
@@ -6705,7 +6778,7 @@ const DashboardHub = {
         }
 
         // Pobierz dane BEZPOŚREDNIO z localStorage (jak na stronie startowej!)
-        const savedData = Utils.loadFromLocalStorage('aep_patrole_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_patrole');
         
         let labels = [];
         let values = [];
@@ -6885,7 +6958,7 @@ const DashboardHub = {
             'pozostale': 'Pozostałe'
         };
         
-        const savedData = Utils.loadFromLocalStorage('aep_wykroczenia_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_wykroczenia');
         
         let labels = [];
         let values = [];
@@ -7638,8 +7711,8 @@ const DashboardHub = {
     },
 
     loadWykroczeniaStats() {
-        const wykroczenia = Utils.loadFromLocalStorage('aep_wykroczenia_data') || [];
-        const sankcje = Utils.loadFromLocalStorage('aep_sankcje_data') || [];
+        const wykroczenia = Utils.loadFromLocalStorage('aep_data_wykroczenia') || [];
+        const sankcje = Utils.loadFromLocalStorage('aep_data_sankcje') || [];
 
         console.log('📊 Wykroczenia:', wykroczenia.length);
         console.log('💰 Sankcje:', sankcje.length);
@@ -8397,7 +8470,7 @@ const DashboardHub = {
 // ============================================
 const ZdarzeniaManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_zdarzenia_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_zdarzenia');
         AppState.zdarzeniaData = savedData || [];
         AppState.zdarzeniaSelectedRows.clear();
 
@@ -9425,7 +9498,7 @@ const ZdarzeniaManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_zdarzenia_data', AppState.zdarzeniaData);
+        const success = Utils.saveToLocalStorage('aep_data_zdarzenia', AppState.zdarzeniaData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -9434,14 +9507,14 @@ const ZdarzeniaManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_zdarzenia_data', AppState.zdarzeniaData);
+        Utils.saveToLocalStorage('aep_data_zdarzenia', AppState.zdarzeniaData);
     }
 };
 // PILOTAŻE MANAGER
 // ============================================
 const PilotazeManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_pilotaze_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_pilotaze');
         AppState.pilotazeData = savedData || [];
         AppState.pilotazeSelectedRows.clear();
 
@@ -10009,7 +10082,7 @@ const PilotazeManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_pilotaze_data', AppState.pilotazeData);
+        const success = Utils.saveToLocalStorage('aep_data_pilotaze', AppState.pilotazeData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -10018,7 +10091,7 @@ const PilotazeManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_pilotaze_data', AppState.pilotazeData);
+        Utils.saveToLocalStorage('aep_data_pilotaze', AppState.pilotazeData);
     }
 };
 
@@ -10027,7 +10100,7 @@ const PilotazeManager = {
 // ============================================
 const SPBManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_spb_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_spb');
         AppState.spbData = savedData || [];
         AppState.spbSelectedRows.clear();
 
@@ -10870,7 +10943,7 @@ const SPBManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_spb_data', AppState.spbData);
+        const success = Utils.saveToLocalStorage('aep_data_spb', AppState.spbData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -10879,7 +10952,7 @@ const SPBManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_spb_data', AppState.spbData);
+        Utils.saveToLocalStorage('aep_data_spb', AppState.spbData);
     }
 };
 
