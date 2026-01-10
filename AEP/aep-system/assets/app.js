@@ -626,6 +626,137 @@ const ValidationEngine = {
 };
 
 // ============================================
+// AUTO-CALCULATE ENGINE - Automatyczne obliczenia
+// ============================================
+const AUTO_CALCULATE_CONFIG = {
+    patrole: [
+        {
+            target: 'razem_rodzaj',
+            sources: ['interwen', 'pieszych', 'wodnych', 'zmot', 'wkrd']
+        },
+        {
+            target: 'razem_wspolz',
+            sources: ['policja', 'sg', 'sop', 'sok', 'inne']
+        }
+    ],
+    wykroczenia: [
+        {
+            target: 'stan_razem',
+            sources: ['pod_wplywem_alk', 'nietrzezwy', 'pod_wplywem_srod']
+        },
+        {
+            target: 'rodzaj_razem',
+            sources: ['zatrzymanie', 'doprowadzenie', 'wylegitymowanie', 'pouczenie'],
+            includeBooleans: ['mandat_bool']  // Dodaje 1 jeśli true
+        }
+    ],
+    wkrd: [
+        {
+            target: 'razem',
+            sources: ['wpm', 'ppm', 'pozostale']
+        }
+    ],
+    sankcje: [
+        {
+            target: 'rodzaj_razem',
+            sources: ['wpm', 'ppm', 'pieszy']
+        },
+        {
+            target: 'przyczyna_razem',
+            sources: ['pod_wplywem_alk', 'nie_zapiecie_pasow', 'telefon_podczas_jazdy',
+                     'nie_stosowanie_znakow', 'nie_zabezpieczony_ladunek', 'brak_dokumentow',
+                     'wyposazenie_pojazdu', 'nie_korzystanie_swiatel', 'parkowanie_niedozwolone',
+                     'niesprawnosci_techniczne', 'inne_przyczyna']
+        },
+        {
+            target: 'sankcja_razem',
+            sources: ['zatrzymanie_dr', 'zatrzymanie_pj', 'pouczenie', 'inne_sankcja'],
+            includeBooleans: ['mandat_bool']
+        }
+    ]
+};
+
+const CalculationEngine = {
+    /**
+     * Automatycznie oblicza pola RAZEM według konfiguracji
+     * @param {string} module - Nazwa modułu (np. 'patrole', 'wykroczenia')
+     * @param {object} row - Wiersz danych do obliczenia
+     * @returns {object} Wiersz z uzupełnionymi polami RAZEM
+     */
+    calculate(module, row) {
+        const config = AUTO_CALCULATE_CONFIG[module];
+        if (!config) return row;
+
+        config.forEach(calc => {
+            let sum = 0;
+
+            // Sumuj pola numeryczne
+            if (calc.sources) {
+                calc.sources.forEach(field => {
+                    sum += parseInt(row[field]) || 0;
+                });
+            }
+
+            // Dodaj pola boolean (jeśli true to +1)
+            if (calc.includeBooleans) {
+                calc.includeBooleans.forEach(field => {
+                    if (row[field] === true) {
+                        sum += 1;
+                    }
+                });
+            }
+
+            // Ustaw wartość
+            row[calc.target] = sum;
+        });
+
+        return row;
+    },
+
+    /**
+     * Oblicza pola RAZEM dla wszystkich wierszy
+     * @param {string} module - Nazwa modułu
+     * @param {Array} data - Tablica danych
+     * @returns {Array} Tablica z obliczonymi polami
+     */
+    calculateAll(module, data) {
+        return data.map(row => this.calculate(module, row));
+    }
+};
+
+// ============================================
+// DEFAULT VALUES - Centralna konfiguracja wartości domyślnych
+// ============================================
+const DEFAULT_VALUES = {
+    common: {
+        jwProwadzaca: 'OŻW Elbląg',
+        jzw_prowadzaca: 'OŻW Elbląg',
+        oddzial: 'OŻW Elbląg',
+        oddzialZW: 'OŻW Elbląg'
+    },
+    wykroczenia: {
+        nr_jw: '',
+        nazwa_jw: '',
+        miejsce: '',
+        podleglosc: 'WL',
+        grupa: 'żołnierz'
+    },
+    sankcje: {
+        nr_jw: '',
+        nazwa_jw: '',
+        miejsce: '',
+        podleglosc: '',
+        grupa: ''
+    },
+    wkrd: {
+        nr_jw: '',
+        nazwa_jw: '',
+        miejsce: '',
+        podleglosc: ''
+    }
+};
+
+// ============================================
 // GLOBALNA FUNKCJA TOGGLE SIDEBAR
 // ============================================
 window.toggleSidebar = function() {
@@ -2022,21 +2153,10 @@ const PatroleManager = {
             } else {
                 row[field] = value;
             }
-            
-            // Auto-oblicz RAZEM dla Rodzaj Patrolu
-            row.razem_rodzaj = (parseInt(row.interwen) || 0) + 
-                               (parseInt(row.pieszych) || 0) + 
-                               (parseInt(row.wodnych) || 0) + 
-                               (parseInt(row.zmot) || 0) + 
-                               (parseInt(row.wkrd) || 0);
-            
-            // Auto-oblicz RAZEM dla Współdziałanie z
-            row.razem_wspolz = (parseInt(row.policja) || 0) + 
-                               (parseInt(row.sg) || 0) + 
-                               (parseInt(row.sop) || 0) + 
-                               (parseInt(row.sok) || 0) + 
-                               (parseInt(row.inne) || 0);
-            
+
+            // Auto-oblicz pola RAZEM używając CalculationEngine
+            CalculationEngine.calculate('patrole', row);
+
             this.renderRows();
             this.autoSave();
         }
@@ -2872,10 +2992,12 @@ const WykroczeniaManager = {
             nar_zakwat: 0,
             pozostale: 0,
             // Stan
+            stan_razem: 0,
             pod_wplywem_alk: 0,
             nietrzezwy: 0,
             pod_wplywem_srod: 0,
             // Rodzaj interwencji
+            rodzaj_razem: 0,
             zatrzymanie: 0,
             doprowadzenie: 0,
             wylegitymowanie: 0,
@@ -2933,7 +3055,10 @@ const WykroczeniaManager = {
                     }
                 }
             }
-            
+
+            // Auto-oblicz pola RAZEM używając CalculationEngine
+            CalculationEngine.calculate('wykroczenia', row);
+
             this.renderRows();
             this.updateToolbarState();
             this.autoSave();
@@ -4310,6 +4435,7 @@ const WKRDManager = {
             nazwa_jw: '',
             miejsce: '',
             podleglosc: '',
+            razem: 0,
             wpm: 0,
             ppm: 0,
             pozostale: 0,
@@ -4330,6 +4456,10 @@ const WKRDManager = {
             } else {
                 row[field] = value;
             }
+
+            // Auto-oblicz pola RAZEM używając CalculationEngine
+            CalculationEngine.calculate('wkrd', row);
+
             this.renderRows();
             this.autoSave();
         }
@@ -4784,6 +4914,7 @@ const SankcjeManager = {
             parkowanie_niedozwolone: 0,
             niesprawnosci_techniczne: 0,
             inne_przyczyna: 0,
+            sankcja_razem: 0,
             zatrzymanie_dr: 0,
             zatrzymanie_pj: 0,
             mandat_bool: false,
@@ -5183,9 +5314,11 @@ const SankcjeManager = {
             podleglosc: '',
             grupa: '',
             legitymowany: false,
+            rodzaj_razem: 0,
             wpm: 0,
             ppm: 0,
             pieszy: 0,
+            przyczyna_razem: 0,
             pod_wplywem_alk: 0,
             nie_zapiecie_pasow: 0,
             telefon_podczas_jazdy: 0,
@@ -5197,6 +5330,7 @@ const SankcjeManager = {
             parkowanie_niedozwolone: 0,
             niesprawnosci_techniczne: 0,
             inne_przyczyna: 0,
+            sankcja_razem: 0,
             zatrzymanie_dr: 0,
             zatrzymanie_pj: 0,
             mandat_bool: false,
@@ -5581,6 +5715,9 @@ const SankcjeManager = {
                     }
                 }
             }
+
+            // Auto-oblicz pola RAZEM używając CalculationEngine
+            CalculationEngine.calculate('sankcje', row);
 
             this.renderRows();
             this.updateToolbarState();
