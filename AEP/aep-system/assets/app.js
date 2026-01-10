@@ -353,6 +353,851 @@ const Utils = {
 };
 
 // ============================================
+// MIGRACJA DANYCH LOCALSTORAGE
+// ============================================
+const DataMigration = {
+    // Mapa starych kluczy -> nowe klucze
+    migrations: [
+        { old: 'aep_patrole_data', new: 'aep_data_patrole' },
+        { old: 'aep_wykroczenia_data', new: 'aep_data_wykroczenia' },
+        { old: 'aep_wkrd_data', new: 'aep_data_wkrd' },
+        { old: 'aep_sankcje_data', new: 'aep_data_sankcje' },
+        { old: 'aep_konwoje_data', new: 'aep_data_konwoje' },
+        { old: 'aep_spb_data', new: 'aep_data_spb' },
+        { old: 'aep_pilotaze_data', new: 'aep_data_pilotaze' },
+        { old: 'aep_zdarzenia_data', new: 'aep_data_zdarzenia' }
+    ],
+
+    migrate() {
+        console.log('🔄 Rozpoczynam migrację danych localStorage...');
+        let migratedCount = 0;
+
+        this.migrations.forEach(({ old, new: newKey }) => {
+            const oldData = Utils.loadFromLocalStorage(old);
+            const newData = Utils.loadFromLocalStorage(newKey);
+
+            // Migruj tylko jeśli stary klucz istnieje i nowy jest pusty
+            if (oldData && !newData) {
+                Utils.saveToLocalStorage(newKey, oldData);
+                console.log(`✅ Zmigrowano: ${old} → ${newKey} (${oldData.length} rekordów)`);
+                migratedCount++;
+
+                // Usuń stary klucz po udanej migracji
+                try {
+                    localStorage.removeItem(old);
+                } catch (e) {
+                    console.error(`⚠️ Nie można usunąć starego klucza: ${old}`, e);
+                }
+            }
+        });
+
+        if (migratedCount > 0) {
+            console.log(`✅ Migracja zakończona. Zmigrowano ${migratedCount} modułów.`);
+        } else {
+            console.log('ℹ️ Brak danych do migracji.');
+        }
+
+        // Migracja typów boolean w istniejących danych
+        this.migrateBooleanTypes();
+    },
+
+    migrateBooleanTypes() {
+        console.log('🔄 Migracja typów boolean...');
+
+        // Sankcje: w_czasie_sluzby string → boolean
+        const sankcjeData = Utils.loadFromLocalStorage('aep_data_sankcje');
+        if (sankcjeData && Array.isArray(sankcjeData)) {
+            let changed = false;
+            sankcjeData.forEach(row => {
+                if (typeof row.w_czasie_sluzby === 'string') {
+                    row.w_czasie_sluzby = row.w_czasie_sluzby === 'TAK' || row.w_czasie_sluzby === 'true';
+                    changed = true;
+                }
+            });
+            if (changed) {
+                Utils.saveToLocalStorage('aep_data_sankcje', sankcjeData);
+                console.log('✅ Sankcje: w_czasie_sluzby zmieniono na boolean');
+            }
+        }
+
+        console.log('✅ Migracja typów boolean zakończona');
+    }
+};
+
+// Wykonaj migrację przy starcie aplikacji
+DataMigration.migrate();
+
+// ============================================
+// VALIDATION ENGINE - Centralny system walidacji
+// ============================================
+const VALIDATION_RULES = {
+    wykroczenia: {
+        required: ['data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'grupa', 'jzw_prowadzaca', 'oddzial'],
+        dependencies: [
+            {
+                name: 'podstawa_rodzaj',
+                // Pola podstawy interwencji
+                ifFields: ['nar_ubiorcz', 'inne_nar', 'nar_kk', 'wykr_porzadek', 'wykr_bezp',
+                          'nar_dyscyplina', 'nar_bron', 'nar_ochr_zdr', 'nar_zakwat', 'pozostale'],
+                // Pola rodzaju interwencji
+                thenFields: ['zatrzymanie', 'doprowadzenie', 'wylegitymowanie', 'pouczenie', 'mandat_bool'],
+                message: 'Zaznaczono podstawę interwencji, ale nie wybrano rodzaju interwencji'
+            }
+        ]
+    },
+    sankcje: {
+        required: ['data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'grupa', 'jzw_prowadzaca', 'oddzial'],
+        dependencies: [
+            {
+                name: 'przyczyna_sankcja',
+                // Pola przyczyny
+                ifFields: ['pod_wplywem_alk', 'nie_zapiecie_pasow', 'telefon_podczas_jazdy',
+                          'nie_stosowanie_znakow', 'nie_zabezpieczony_ladunek', 'brak_dokumentow',
+                          'wyposazenie_pojazdu', 'nie_korzystanie_swiatel', 'parkowanie_niedozwolone',
+                          'niesprawnosci_techniczne', 'inne_przyczyna'],
+                // Pola sankcji
+                thenFields: ['zatrzymanie_dr', 'zatrzymanie_pj', 'mandat_bool', 'pouczenie', 'inne_sankcja'],
+                message: 'Zaznaczono przyczynę, ale nie wybrano sankcji'
+            }
+        ]
+    },
+    patrole: {
+        required: ['date', 'jwProwadzaca', 'oddzialZW']
+    },
+    wkrd: {
+        required: ['data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'oddzial']
+    },
+    konwoje: {
+        required: ['data']
+    },
+    spb: {
+        required: ['data']
+    },
+    pilotaze: {
+        required: ['data']
+    },
+    zdarzenia: {
+        required: ['data']
+    }
+};
+
+const ValidationEngine = {
+    /**
+     * Waliduje pojedynczy wiersz według reguł modułu
+     * @param {string} module - Nazwa modułu (np. 'wykroczenia', 'sankcje')
+     * @param {object} row - Wiersz danych do walidacji
+     * @returns {object} { valid: boolean, errors: Array }
+     */
+    validateRow(module, row) {
+        const rules = VALIDATION_RULES[module];
+        if (!rules) {
+            return { valid: true, errors: [] };
+        }
+
+        const errors = [];
+
+        // 1. Sprawdź wymagane pola
+        if (rules.required) {
+            rules.required.forEach(field => {
+                const value = row[field];
+                if (value === undefined || value === null || value === '') {
+                    errors.push({
+                        type: 'required',
+                        field: field,
+                        message: `Pole "${field}" jest wymagane`
+                    });
+                }
+            });
+        }
+
+        // 2. Sprawdź zależności logiczne (dependency rules)
+        if (rules.dependencies) {
+            rules.dependencies.forEach(dep => {
+                // Sprawdź czy którekolwiek pole IF jest wypełnione
+                const ifFilled = dep.ifFields.some(field => {
+                    const val = row[field];
+                    if (typeof val === 'boolean') return val === true;
+                    return (val && val > 0);
+                });
+
+                // Sprawdź czy którekolwiek pole THEN jest wypełnione
+                const thenFilled = dep.thenFields.some(field => {
+                    const val = row[field];
+                    if (typeof val === 'boolean') return val === true;
+                    return (val && val > 0);
+                });
+
+                // Błąd: IF wypełnione, ale THEN puste
+                if (ifFilled && !thenFilled) {
+                    errors.push({
+                        type: 'dependency',
+                        name: dep.name,
+                        message: dep.message
+                    });
+                }
+            });
+        }
+
+        return {
+            valid: errors.length === 0,
+            errors: errors
+        };
+    },
+
+    /**
+     * Waliduje wszystkie wiersze w tablicy danych
+     * @param {string} module - Nazwa modułu
+     * @param {Array} data - Tablica danych do walidacji
+     * @returns {object} { valid: boolean, errorCount: number, rowErrors: Map }
+     */
+    validateAll(module, data) {
+        const rowErrors = new Map();
+        let errorCount = 0;
+
+        data.forEach((row, index) => {
+            const validation = this.validateRow(module, row);
+            if (!validation.valid) {
+                rowErrors.set(row.id || index, validation.errors);
+                errorCount += validation.errors.length;
+            }
+        });
+
+        return {
+            valid: errorCount === 0,
+            errorCount: errorCount,
+            rowErrors: rowErrors
+        };
+    },
+
+    /**
+     * Zlicza błędy walidacji dla danego modułu
+     * @param {string} module - Nazwa modułu
+     * @param {Array} data - Tablica danych
+     * @returns {number} Liczba wierszy z błędami
+     */
+    countErrors(module, data) {
+        let errorCount = 0;
+        data.forEach(row => {
+            const validation = this.validateRow(module, row);
+            if (!validation.valid) {
+                errorCount++;
+            }
+        });
+        return errorCount;
+    },
+
+    /**
+     * Sprawdza kompletność danych (wymagane pola)
+     * @param {string} module - Nazwa modułu
+     * @param {Array} data - Tablica danych
+     * @returns {object} Szczegółowy raport z brakami
+     */
+    checkCompleteness(module, data) {
+        const rules = VALIDATION_RULES[module];
+        if (!rules || !rules.required) {
+            return { complete: true, issues: [] };
+        }
+
+        const issues = [];
+
+        data.forEach((row, index) => {
+            const missing = [];
+            rules.required.forEach(field => {
+                const value = row[field];
+                if (value === undefined || value === null || value === '') {
+                    missing.push(field);
+                }
+            });
+
+            if (missing.length > 0) {
+                issues.push({
+                    rowIndex: index + 1,
+                    rowId: row.id,
+                    missing: missing
+                });
+            }
+        });
+
+        return {
+            complete: issues.length === 0,
+            issues: issues
+        };
+    }
+};
+
+// ============================================
+// AUTO-CALCULATE ENGINE - Automatyczne obliczenia
+// ============================================
+const AUTO_CALCULATE_CONFIG = {
+    patrole: [
+        {
+            target: 'razem_rodzaj',
+            sources: ['interwen', 'pieszych', 'wodnych', 'zmot', 'wkrd']
+        },
+        {
+            target: 'razem_wspolz',
+            sources: ['policja', 'sg', 'sop', 'sok', 'inne']
+        }
+    ],
+    wykroczenia: [
+        {
+            target: 'stan_razem',
+            sources: ['pod_wplywem_alk', 'nietrzezwy', 'pod_wplywem_srod']
+        },
+        {
+            target: 'rodzaj_razem',
+            sources: ['zatrzymanie', 'doprowadzenie', 'wylegitymowanie', 'pouczenie'],
+            includeBooleans: ['mandat_bool']  // Dodaje 1 jeśli true
+        }
+    ],
+    wkrd: [
+        {
+            target: 'razem',
+            sources: ['wpm', 'ppm', 'pozostale']
+        }
+    ],
+    sankcje: [
+        {
+            target: 'rodzaj_razem',
+            sources: ['wpm', 'ppm', 'pieszy']
+        },
+        {
+            target: 'przyczyna_razem',
+            sources: ['pod_wplywem_alk', 'nie_zapiecie_pasow', 'telefon_podczas_jazdy',
+                     'nie_stosowanie_znakow', 'nie_zabezpieczony_ladunek', 'brak_dokumentow',
+                     'wyposazenie_pojazdu', 'nie_korzystanie_swiatel', 'parkowanie_niedozwolone',
+                     'niesprawnosci_techniczne', 'inne_przyczyna']
+        },
+        {
+            target: 'sankcja_razem',
+            sources: ['zatrzymanie_dr', 'zatrzymanie_pj', 'pouczenie', 'inne_sankcja'],
+            includeBooleans: ['mandat_bool']
+        }
+    ]
+};
+
+const CalculationEngine = {
+    /**
+     * Automatycznie oblicza pola RAZEM według konfiguracji
+     * @param {string} module - Nazwa modułu (np. 'patrole', 'wykroczenia')
+     * @param {object} row - Wiersz danych do obliczenia
+     * @returns {object} Wiersz z uzupełnionymi polami RAZEM
+     */
+    calculate(module, row) {
+        const config = AUTO_CALCULATE_CONFIG[module];
+        if (!config) return row;
+
+        config.forEach(calc => {
+            let sum = 0;
+
+            // Sumuj pola numeryczne
+            if (calc.sources) {
+                calc.sources.forEach(field => {
+                    sum += parseInt(row[field]) || 0;
+                });
+            }
+
+            // Dodaj pola boolean (jeśli true to +1)
+            if (calc.includeBooleans) {
+                calc.includeBooleans.forEach(field => {
+                    if (row[field] === true) {
+                        sum += 1;
+                    }
+                });
+            }
+
+            // Ustaw wartość
+            row[calc.target] = sum;
+        });
+
+        return row;
+    },
+
+    /**
+     * Oblicza pola RAZEM dla wszystkich wierszy
+     * @param {string} module - Nazwa modułu
+     * @param {Array} data - Tablica danych
+     * @returns {Array} Tablica z obliczonymi polami
+     */
+    calculateAll(module, data) {
+        return data.map(row => this.calculate(module, row));
+    }
+};
+
+// ============================================
+// DEFAULT VALUES - Centralna konfiguracja wartości domyślnych
+// ============================================
+const DEFAULT_VALUES = {
+    common: {
+        jwProwadzaca: 'OŻW Elbląg',
+        jzw_prowadzaca: 'OŻW Elbląg',
+        oddzial: 'OŻW Elbląg',
+        oddzialZW: 'OŻW Elbląg'
+    },
+    wykroczenia: {
+        nr_jw: '',
+        nazwa_jw: '',
+        miejsce: '',
+        podleglosc: 'WL',
+        grupa: 'żołnierz'
+    },
+    sankcje: {
+        nr_jw: '',
+        nazwa_jw: '',
+        miejsce: '',
+        podleglosc: '',
+        grupa: ''
+    },
+    wkrd: {
+        nr_jw: '',
+        nazwa_jw: '',
+        miejsce: '',
+        podleglosc: ''
+    }
+};
+
+// ============================================
+// BASE TABLE MANAGER - Wspólna architektura dla managerów tabel
+// ============================================
+/**
+ * Factory function tworzący bazowy manager tabeli z wspólną funkcjonalnością
+ * @param {object} config - Konfiguracja managera
+ * @returns {object} Manager z wspólnymi metodami
+ */
+const createBaseTableManager = (config) => {
+    const {
+        module,           // Nazwa modułu (np. 'patrole', 'wkrd')
+        dataKey,          // Klucz w AppState (np. 'patroleData')
+        selectedRowsKey,  // Klucz dla zaznaczonych wierszy (np. 'patroleSelectedRows')
+        storageKey,       // Klucz localStorage (np. 'aep_data_patrole')
+        tableBodyId,      // ID elementu tbody
+        emptyMessage,     // Komunikat gdy brak danych
+        defaultRow,       // Funkcja zwracająca domyślny wiersz
+        renderRowHTML,    // Funkcja renderująca HTML wiersza
+        customMethods     // Dodatkowe metody specyficzne dla modułu
+    } = config;
+
+    const base = {
+        config,
+
+        // === GETTERY/SETTERY ===
+        getData() {
+            return AppState[dataKey] || [];
+        },
+
+        setData(data) {
+            AppState[dataKey] = data;
+        },
+
+        getSelectedRows() {
+            return AppState[selectedRowsKey];
+        },
+
+        // === ZARZĄDZANIE WIERSZAMI ===
+        addRow() {
+            const data = this.getData();
+            const newId = data.length > 0 ? Math.max(...data.map(r => r.id)) + 1 : 1;
+
+            const today = new Date();
+            const todayPolish = today.toLocaleDateString('pl-PL');
+
+            const newRow = defaultRow(newId, todayPolish);
+
+            data.push(newRow);
+            this.renderRows();
+            this.autoSave();
+        },
+
+        updateField(id, field, value) {
+            const data = this.getData();
+            const row = data.find(r => r.id === id);
+
+            if (row) {
+                // Obsługa daty
+                if (field === 'data' && value) {
+                    const date = new Date(value);
+                    row.data = date.toLocaleDateString('pl-PL');
+                } else {
+                    row[field] = value;
+                }
+
+                // Auto-oblicz pola RAZEM
+                CalculationEngine.calculate(module, row);
+
+                this.renderRows();
+                this.autoSave();
+            }
+        },
+
+        toggleRowSelect(id, checked) {
+            const selectedRows = this.getSelectedRows();
+            if (checked) {
+                selectedRows.add(id);
+            } else {
+                selectedRows.delete(id);
+            }
+            this.renderRows();
+        },
+
+        toggleSelectAll(checked) {
+            const data = this.getData();
+            const selectedRows = this.getSelectedRows();
+
+            if (checked) {
+                data.forEach(row => selectedRows.add(row.id));
+            } else {
+                selectedRows.clear();
+            }
+            this.renderRows();
+        },
+
+        clearSelected() {
+            const data = this.getData();
+            const selectedRows = this.getSelectedRows();
+
+            if (selectedRows.size === 0) {
+                alert('Nie zaznaczono żadnych wierszy do usunięcia');
+                return;
+            }
+
+            if (!confirm(`Czy na pewno usunąć ${selectedRows.size} zaznaczonych wierszy?`)) {
+                return;
+            }
+
+            this.setData(data.filter(row => !selectedRows.has(row.id)));
+            selectedRows.clear();
+            this.renderRows();
+            this.autoSave();
+        },
+
+        // === ZAPIS DANYCH ===
+        saveDraft() {
+            const data = this.getData();
+            const success = Utils.saveToLocalStorage(storageKey, data);
+
+            if (success) {
+                alert('Arkusz zapisany pomyślnie');
+            } else {
+                alert('Błąd podczas zapisywania');
+            }
+        },
+
+        autoSave() {
+            const data = this.getData();
+            Utils.saveToLocalStorage(storageKey, data);
+        },
+
+        // === RENDEROWANIE ===
+        renderRows() {
+            const tbody = document.getElementById(tableBodyId);
+            if (!tbody) return;
+
+            const data = this.getData();
+            const selectedRows = this.getSelectedRows();
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="20" class="empty-message">${emptyMessage}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map((row, index) => {
+                const isSelected = selectedRows.has(row.id);
+                return renderRowHTML(row, index, isSelected, this);
+            }).join('');
+        },
+
+        // === ŁADOWANIE DANYCH ===
+        loadData() {
+            const savedData = Utils.loadFromLocalStorage(storageKey);
+            this.setData(savedData || []);
+            this.getSelectedRows().clear();
+        }
+    };
+
+    // Dodaj niestandardowe metody jeśli są
+    if (customMethods) {
+        Object.assign(base, customMethods);
+    }
+
+    return base;
+};
+
+/**
+ * DOKUMENTACJA: Jak używać createBaseTableManager
+ *
+ * ===================================================================
+ * PRZEWODNIK MIGRACJI - Jak stopniowo przenosić istniejące moduły
+ * ===================================================================
+ *
+ * KROK 1: IDENTYFIKACJA MODUŁÓW DO MIGRACJI
+ * ------------------------------------------
+ * Najłatwiejsze (polecane jako pierwsze):
+ * - SPB: prosta tabela, brak subrows, brak grouping
+ * - Pilotaże: podobnie jak SPB
+ * - Konwoje: podobnie jak SPB
+ *
+ * Średnie (wymagają customizacji):
+ * - Patrole: ma getMonthFromDate(), sync scrollbars, visibility columns
+ * - WKRD: filtrowanie dat i kolumn, sync scrollbars
+ * - Zdarzenia: może mieć custom logic
+ *
+ * Trudne (wymagają rozszerzenia BaseTableManager):
+ * - Wykroczenia: grouping, subrows, synchronizacja legitymowany
+ * - Sankcje: grouping, subrows, synchronizacja legitymowany
+ *
+ *
+ * KROK 2: HYBRID APPROACH (zalecane!)
+ * ------------------------------------
+ * Nie trzeba migrować całego modułu na raz. Można użyć "hybrid approach":
+ * - Bazowe metody z createBaseTableManager
+ * - Specyficzny kod (render, filters, etc.) jako customMethods
+ *
+ * Przykład WKRD w hybrid approach:
+ *
+ * const WKRDManager = createBaseTableManager({
+ *     module: 'wkrd',
+ *     dataKey: 'wkrdData',
+ *     selectedRowsKey: 'wkrdSelectedRows',
+ *     storageKey: 'aep_data_wkrd',
+ *     tableBodyId: 'wkrdTableBody',
+ *     emptyMessage: 'Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.',
+ *
+ *     defaultRow: (id, date) => ({
+ *         id: id,
+ *         data: date,
+ *         nr_jw: '',
+ *         nazwa_jw: '',
+ *         miejsce: '',
+ *         podleglosc: '',
+ *         razem: 0,
+ *         wpm: 0,
+ *         ppm: 0,
+ *         pozostale: 0,
+ *         oddzial: ''
+ *     }),
+ *
+ *     renderRowHTML: (row, index, isSelected, manager) => {
+ *         const razem = (parseInt(row.wpm) || 0) + (parseInt(row.ppm) || 0) + (parseInt(row.pozostale) || 0);
+ *         const month = row.data ? new Date(row.data.split('.').reverse().join('-')).toLocaleDateString('pl-PL', {month: 'long'}) : '';
+ *
+ *         return `
+ *             <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
+ *                 <td>${index + 1}</td>
+ *                 <td><input type="checkbox" ${isSelected ? 'checked' : ''}
+ *                            onchange="WKRDManager.toggleRowSelect(${row.id}, this.checked)"></td>
+ *                 <td>${month}</td>
+ *                 <td><input type="date" value="${row.data}"
+ *                            onchange="WKRDManager.updateField(${row.id}, 'data', this.value)"></td>
+ *                 <td><input type="text" value="${row.nr_jw}"
+ *                            onchange="WKRDManager.updateField(${row.id}, 'nr_jw', this.value)"></td>
+ *                 <td>${razem}</td>
+ *                 <td><input type="number" value="${row.wpm}"
+ *                            onchange="WKRDManager.updateField(${row.id}, 'wpm', this.value)"></td>
+ *                 ... etc ...
+ *             </tr>
+ *         `;
+ *     },
+ *
+ *     // CUSTOM METHODS - zachowaj specyficzny kod modułu
+ *     customMethods: {
+ *         render: function() {
+ *             // this.loadData();
+ *             // ... cały custom HTML jak w oryginalnym WKRDManager ...
+ *             // ... setup event listeners ...
+ *             // this.renderRows();
+ *             // this.syncScrollbars();
+ *         },
+ *
+ *         initColumnsDropdown: function() {
+ *             // custom logic dla filtrowania kolumn
+ *         },
+ *
+ *         initDateFilter: function() {
+ *             // custom logic dla filtrowania dat
+ *         },
+ *
+ *         syncScrollbars: function() {
+ *             // custom logic dla scrollbars
+ *         }
+ *     }
+ * });
+ *
+ * KORZYŚCI HYBRID APPROACH:
+ * - Eliminujesz ~50-80 linii duplikowanego kodu (addRow, updateField, etc.)
+ * - Zachowujesz specyficzny kod modułu bez zmian
+ * - Mniejsze ryzyko wprowadzenia bugów
+ * - Łatwiejsza migracja krok po kroku
+ *
+ *
+ * KROK 3: PEŁNA MIGRACJA (opcjonalna)
+ * ------------------------------------
+ * Po sukcesie hybrid approach, możesz zrefaktoryzować customMethods:
+ * - Wydziel wspólne patterns do BaseTableManager
+ * - Stwórz pomocnicze funkcje dla powtarzalnych zadań
+ * - Stopniowo redukuj custom kod
+ *
+ *
+ * ===================================================================
+ * QUICK WIN: Prosta migracja SPB (eliminacja ~60 linii duplikacji)
+ * ===================================================================
+ *
+ * PRZED migracją - duplikowany kod w SPBManager:
+ * ------------------------------------------------
+ *   addRow() {
+ *       const newId = AppState.spbData.length > 0 ?
+ *           Math.max(...AppState.spbData.map(r => r.id)) + 1 : 1;
+ *       const today = new Date();
+ *       const todayPolish = today.toLocaleDateString('pl-PL');
+ *       const newRow = { id: newId, data: todayPolish, ... };
+ *       AppState.spbData.unshift(newRow);  // ❌ NIESPÓJNOŚĆ: używa unshift zamiast push
+ *       this.renderRows();
+ *       this.autoSave();
+ *   }
+ *
+ *   updateField(id, field, value) {
+ *       const row = AppState.spbData.find(r => r.id === id);
+ *       if (row) {
+ *           if (field === 'data' && value) {
+ *               row.data = new Date(value).toLocaleDateString('pl-PL');
+ *           } else {
+ *               row[field] = value;
+ *           }
+ *           this.renderRows();
+ *           this.autoSave();
+ *       }
+ *   }
+ *
+ *   toggleSelectAll(checked) { ... }    // ~8 linii
+ *   toggleRowSelect(id, checked) { ... } // ~8 linii
+ *   clearSelected() { ... }              // ~12 linii
+ *   saveDraft() { ... }                  // ~6 linii
+ *   autoSave() { ... }                   // ~4 linii
+ *
+ * PO migracji - wykorzystanie BaseTableManager:
+ * -----------------------------------------------
+ * Wszystkie powyższe metody (~60 linii) zastąpione przez:
+ *
+ *   const SPBManager = createBaseTableManager({
+ *       module: 'spb',
+ *       dataKey: 'spbData',
+ *       selectedRowsKey: 'spbSelectedRows',
+ *       storageKey: 'aep_data_spb',
+ *       tableBodyId: 'spbTableBody',
+ *       emptyMessage: 'Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.',
+ *
+ *       defaultRow: (id, date) => ({
+ *           id: id, data: date, nr_jw: '', nazwa_jw: '',
+ *           miejsce: '', podleglosc: '', grupa: '',
+ *           sila_fizyczna: 0, kajdanki: 0, kaftan: 0, kask: 0,
+ *           siatka: 0, palka: 0, pies: 0, chem_sr: 0,
+ *           paralizator: 0, kolczatka: 0, bron: 0,
+ *           podczas_konw: 'NIE', zatrzymania: 0, doprowadzenia: 0,
+ *           inne_patrol: 0, ranny: 'NIE', smierc: 'NIE',
+ *           jzw_prowadzaca: 'OŻW Elbląg', oddzial: 'Elbląg'
+ *       }),
+ *
+ *       renderRowHTML: (row, index, isSelected) => {
+ *           // ... render wiersza z wszystkimi kolumnami ...
+ *           // return HTML string
+ *       },
+ *
+ *       customMethods: {
+ *           render: function() {
+ *               // zachowaj cały custom HTML, toolbar, date filter
+ *           },
+ *           initDateFilter: function() {
+ *               // custom logic dla filtrowania dat
+ *           },
+ *           syncScrollbars: function() {
+ *               // custom logic dla synchronizacji scrollbars
+ *           },
+ *           openSrodkiModal: function(id) {
+ *               // custom logic dla modala środków ŚPB
+ *           },
+ *           renderSrodkiChips: function(row) {
+ *               // custom logic dla renderowania chips
+ *           },
+ *           dateToInputFormat: function(date) {
+ *               // helper do konwersji dat
+ *           }
+ *       }
+ *   });
+ *
+ * KORZYŚCI Quick Win dla SPB:
+ * - ✅ Eliminacja ~60 linii duplikowanego kodu
+ * - ✅ Naprawa niespójności (unshift → push)
+ * - ✅ Automatyczna integracja z CalculationEngine (jeśli będzie potrzebna)
+ * - ✅ Zachowanie całego custom UI (date filters, środki ŚPB modal, scrollbars)
+ * - ✅ Mniejsze ryzyko - tylko bazowe metody się zmieniają
+ * - ✅ Czas migracji: ~30 minut
+ *
+ * PODOBNIE można zmigrować:
+ * - Pilotaże (~55 linii oszczędności)
+ * - Konwoje (~55 linii oszczędności)
+ *
+ *
+ * ===================================================================
+ * PRZYKŁAD UŻYCIA (proof-of-concept dla nowych modułów)
+ * ===================================================================
+ *
+ * const ExampleManager = createBaseTableManager({
+ *     module: 'example',
+ *     dataKey: 'exampleData',
+ *     selectedRowsKey: 'exampleSelectedRows',
+ *     storageKey: 'aep_data_example',
+ *     tableBodyId: 'exampleTableBody',
+ *     emptyMessage: 'Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.',
+ *
+ *     // Funkcja zwracająca domyślny wiersz
+ *     defaultRow: (id, date) => ({
+ *         id: id,
+ *         data: date,
+ *         pole1: 0,
+ *         pole2: '',
+ *         razem: 0
+ *     }),
+ *
+ *     // Funkcja renderująca HTML wiersza
+ *     renderRowHTML: (row, index, isSelected, manager) => {
+ *         return `
+ *             <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
+ *                 <td>${index + 1}</td>
+ *                 <td><input type="checkbox" ${isSelected ? 'checked' : ''}
+ *                            onchange="ExampleManager.toggleRowSelect(${row.id}, this.checked)"></td>
+ *                 <td><input type="date" value="${row.data}"
+ *                            onchange="ExampleManager.updateField(${row.id}, 'data', this.value)"></td>
+ *                 <td><input type="number" value="${row.pole1}"
+ *                            onchange="ExampleManager.updateField(${row.id}, 'pole1', this.value)"></td>
+ *                 <td>${row.razem}</td>
+ *             </tr>
+ *         `;
+ *     },
+ *
+ *     // Niestandardowe metody specyficzne dla tego modułu
+ *     customMethods: {
+ *         render: function() {
+ *             // this.loadData();
+ *             // wygeneruj HTML z tabelą i przyciskami
+ *             // this.renderRows();
+ *         }
+ *     }
+ * });
+ *
+ * KORZYŚCI Z UŻYCIA BaseTableManager:
+ * - Redukcja ~100 linii kodu na manager (8 managerów = ~800 linii oszczędności)
+ * - Spójna implementacja podstawowych operacji
+ * - Łatwiejsze utrzymanie - bugfixy w jednym miejscu
+ * - Automatyczna integracja z ValidationEngine i CalculationEngine
+ * - Mniej duplikacji kodu
+ *
+ * NASTĘPNE KROKI (przyszła refaktoryzacja):
+ * 1. Zmigrować proste moduły (Patrole, WKRD, Konwoje, SPB, Pilotaze, Zdarzenia)
+ * 2. Rozszerzyć BaseTableManager o obsługę grouping (dla Wykroczenia, Sankcje)
+ * 3. Dodać obsługę podwierszy (subrows) dla modułów z tej funkcjonalności
+ * 4. Stopniowo zastępować istniejące managery nowymi opartymi na BaseTableManager
+ */
+
+// ============================================
 // GLOBALNA FUNKCJA TOGGLE SIDEBAR
 // ============================================
 window.toggleSidebar = function() {
@@ -824,7 +1669,7 @@ const Router = {
 
     getPatrolData() {
         // Próbuj załadować dane z localStorage (zapisane przez "Zapisz arkusz")
-        const savedData = Utils.loadFromLocalStorage('aep_patrole_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_patrole');
         
         if (savedData && savedData.length > 0) {
             // Weź ostatnie 7 wpisów
@@ -865,7 +1710,7 @@ const Router = {
         };
         
         // Próbuj załadować dane z localStorage (zapisane przez "Zapisz arkusz")
-        const savedData = Utils.loadFromLocalStorage('aep_wykroczenia_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_wykroczenia');
         
         if (savedData && savedData.length > 0) {
             // Zlicz według podstawy interwencji
@@ -1025,7 +1870,7 @@ const Router = {
 // ============================================
 const PatroleManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_patrole_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_patrole');
         AppState.patroleData = savedData || [];
         
         // Migracja danych - dodaj razem_rodzaj i razem_wspolz do starych wierszy
@@ -1749,21 +2594,10 @@ const PatroleManager = {
             } else {
                 row[field] = value;
             }
-            
-            // Auto-oblicz RAZEM dla Rodzaj Patrolu
-            row.razem_rodzaj = (parseInt(row.interwen) || 0) + 
-                               (parseInt(row.pieszych) || 0) + 
-                               (parseInt(row.wodnych) || 0) + 
-                               (parseInt(row.zmot) || 0) + 
-                               (parseInt(row.wkrd) || 0);
-            
-            // Auto-oblicz RAZEM dla Współdziałanie z
-            row.razem_wspolz = (parseInt(row.policja) || 0) + 
-                               (parseInt(row.sg) || 0) + 
-                               (parseInt(row.sop) || 0) + 
-                               (parseInt(row.sok) || 0) + 
-                               (parseInt(row.inne) || 0);
-            
+
+            // Auto-oblicz pola RAZEM używając CalculationEngine
+            CalculationEngine.calculate('patrole', row);
+
             this.renderRows();
             this.autoSave();
         }
@@ -1798,10 +2632,10 @@ const PatroleManager = {
             jwProwadzaca: 'OŻW Elbląg',
             oddzialZW: 'OŻW Elbląg'
         };
-        
-        // Dodaj NA GÓRZE (unshift zamiast push)
-        AppState.patroleData.unshift(newRow);
-        
+
+        // Dodaj nowy wiersz na końcu listy (spójnie z innymi modułami)
+        AppState.patroleData.push(newRow);
+
         this.renderRows();
         this.autoSave();
     },
@@ -1848,7 +2682,7 @@ const PatroleManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_patrole_data', AppState.patroleData);
+        const success = Utils.saveToLocalStorage('aep_data_patrole', AppState.patroleData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -1857,7 +2691,7 @@ const PatroleManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_patrole_data', AppState.patroleData);
+        Utils.saveToLocalStorage('aep_data_patrole', AppState.patroleData);
     }
 };
 
@@ -1866,7 +2700,7 @@ const PatroleManager = {
 // ============================================
 const WykroczeniaManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_wykroczenia_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_wykroczenia');
         AppState.wykroczeniaData = savedData || [];
         AppState.wykroczeniaSelectedRows.clear();
 
@@ -2599,10 +3433,12 @@ const WykroczeniaManager = {
             nar_zakwat: 0,
             pozostale: 0,
             // Stan
+            stan_razem: 0,
             pod_wplywem_alk: 0,
             nietrzezwy: 0,
             pod_wplywem_srod: 0,
             // Rodzaj interwencji
+            rodzaj_razem: 0,
             zatrzymanie: 0,
             doprowadzenie: 0,
             wylegitymowanie: 0,
@@ -2649,15 +3485,21 @@ const WykroczeniaManager = {
                                    'pouczenie', 'mandat_bool'].includes(field);
             
             if (isPodstawaField || isRodzajField) {
-                const validation = this.validatePodstawaRodzaj(row);
+                const validation = ValidationEngine.validateRow('wykroczenia', row);
                 if (!validation.valid) {
                     const rowIndex = AppState.wykroczeniaData.findIndex(r => r.id === id);
-                    setTimeout(() => {
-                        alert(`BŁĄD W WIERSZU ${rowIndex + 1}\n\n${validation.message}!\n\nWybierz przynajmniej jedno działanie:\n• Zatrzymanie\n• Doprowadzenie\n• Wylegitymowanie\n• Pouczenie\n• Mandat`);
-                    }, 100);
+                    const dependencyError = validation.errors.find(e => e.type === 'dependency');
+                    if (dependencyError) {
+                        setTimeout(() => {
+                            alert(`BŁĄD W WIERSZU ${rowIndex + 1}\n\n${dependencyError.message}!\n\nWybierz przynajmniej jedno działanie:\n• Zatrzymanie\n• Doprowadzenie\n• Wylegitymowanie\n• Pouczenie\n• Mandat`);
+                        }, 100);
+                    }
                 }
             }
-            
+
+            // Auto-oblicz pola RAZEM używając CalculationEngine
+            CalculationEngine.calculate('wykroczenia', row);
+
             this.renderRows();
             this.updateToolbarState();
             this.autoSave();
@@ -2708,46 +3550,9 @@ const WykroczeniaManager = {
         }
     },
 
-    validatePodstawaRodzaj(row) {
-        // Sprawdź czy jest jakaś podstawa interwencji
-        const maPodstawe = (row.nar_ubiorcz || 0) + 
-                           (row.inne_nar || 0) + 
-                           (row.nar_kk || 0) + 
-                           (row.wykr_porzadek || 0) + 
-                           (row.wykr_bezp || 0) + 
-                           (row.nar_dyscyplina || 0) + 
-                           (row.nar_bron || 0) + 
-                           (row.nar_ochr_zdr || 0) + 
-                           (row.nar_zakwat || 0) + 
-                           (row.pozostale || 0) > 0;
-        
-        // Sprawdź czy jest jakiś rodzaj interwencji
-        const maRodzaj = (row.zatrzymanie || 0) + 
-                         (row.doprowadzenie || 0) + 
-                         (row.wylegitymowanie || 0) + 
-                         (row.pouczenie || 0) + 
-                         (row.mandat_bool ? 1 : 0) > 0;
-        
-        // BŁĄD: Jest podstawa, ale brak rodzaju
-        if (maPodstawe && !maRodzaj) {
-            return {
-                valid: false,
-                message: "Zaznaczono podstawę interwencji, ale nie wybrano rodzaju interwencji"
-            };
-        }
-        
-        return { valid: true };
-    },
-
     countValidationErrors() {
-        let errorCount = 0;
-        AppState.wykroczeniaData.forEach(row => {
-            const validation = this.validatePodstawaRodzaj(row);
-            if (!validation.valid) {
-                errorCount++;
-            }
-        });
-        return errorCount;
+        // Używa ValidationEngine zamiast własnej metody
+        return ValidationEngine.countErrors('wykroczenia', AppState.wykroczeniaData);
     },
 
     updateToolbarState() {
@@ -2783,54 +3588,34 @@ const WykroczeniaManager = {
     },
 
     validateCompleteness() {
-        let incompleteCount = 0;
-        let validationErrorsCount = 0;
+        // Używa ValidationEngine
+        const validation = ValidationEngine.validateAll('wykroczenia', AppState.wykroczeniaData);
+
+        if (validation.valid) {
+            alert('Wszystkie wiersze są kompletne i poprawne!');
+            return;
+        }
+
         const issues = [];
+        validation.rowErrors.forEach((errors, rowId) => {
+            const row = AppState.wykroczeniaData.find(r => r.id === rowId);
+            const rowIndex = AppState.wykroczeniaData.indexOf(row) + 1;
 
-        AppState.wykroczeniaData.forEach((row, index) => {
-            const missing = [];
-            
-            // Sprawdź wymagane pola
-            if (!row.data) missing.push('Data');
-            if (!row.nr_jw) missing.push('Nr JW');
-            if (!row.nazwa_jw) missing.push('Nazwa JW');
-            if (!row.miejsce) missing.push('Miejsce');
-            if (!row.podleglosc) missing.push('Podległość');
-            if (!row.grupa) missing.push('Grupa');
-            if (!row.jzw_prowadzaca) missing.push('JŻW');
-            if (!row.oddzial) missing.push('Oddział');
-            
-            if (missing.length > 0) {
-                incompleteCount++;
-                issues.push(`Wiersz ${index + 1}: brak ${missing.join(', ')}`);
-            }
-
-            // NOWA WALIDACJA: Podstawa → Rodzaj
-            const validation = this.validatePodstawaRodzaj(row);
-            if (!validation.valid) {
-                validationErrorsCount++;
-                issues.push(`Wiersz ${index + 1}: ${validation.message}`);
-            }
+            errors.forEach(error => {
+                if (error.type === 'required') {
+                    issues.push(`Wiersz ${rowIndex}: brak ${error.field}`);
+                } else if (error.type === 'dependency') {
+                    issues.push(`Wiersz ${rowIndex}: ${error.message}`);
+                }
+            });
         });
 
-        const totalErrors = incompleteCount + validationErrorsCount;
-        
-        if (totalErrors === 0) {
-            alert('Wszystkie wiersze są kompletne i poprawne!');
-        } else {
-            let message = '';
-            if (incompleteCount > 0) {
-                message += `❌ Niekompletnych wierszy: ${incompleteCount}\n`;
-            }
-            if (validationErrorsCount > 0) {
-                message += `Błędów walidacji: ${validationErrorsCount}\n`;
-            }
-            message += `\n${issues.slice(0, 15).join('\n')}`;
-            if (issues.length > 15) {
-                message += `\n... i ${issues.length - 15} więcej`;
-            }
-            alert(message);
+        let message = `❌ Znaleziono ${validation.errorCount} błędów:\n\n`;
+        message += issues.slice(0, 15).join('\n');
+        if (issues.length > 15) {
+            message += `\n... i ${issues.length - 15} więcej`;
         }
+        alert(message);
     },
 
     saveDraft() {
@@ -2840,7 +3625,7 @@ const WykroczeniaManager = {
             return;
         }
         
-        const success = Utils.saveToLocalStorage('aep_wykroczenia_data', AppState.wykroczeniaData);
+        const success = Utils.saveToLocalStorage('aep_data_wykroczenia', AppState.wykroczeniaData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -2849,7 +3634,7 @@ const WykroczeniaManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_wykroczenia_data', AppState.wykroczeniaData);
+        Utils.saveToLocalStorage('aep_data_wykroczenia', AppState.wykroczeniaData);
     },
 
     // ============================================
@@ -3494,7 +4279,7 @@ const WykroczeniaManager = {
 // ============================================
 const WKRDManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_wkrd_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_wkrd');
         AppState.wkrdData = savedData || [];
         AppState.wkrdSelectedRows.clear();
 
@@ -4091,6 +4876,7 @@ const WKRDManager = {
             nazwa_jw: '',
             miejsce: '',
             podleglosc: '',
+            razem: 0,
             wpm: 0,
             ppm: 0,
             pozostale: 0,
@@ -4111,6 +4897,10 @@ const WKRDManager = {
             } else {
                 row[field] = value;
             }
+
+            // Auto-oblicz pola RAZEM używając CalculationEngine
+            CalculationEngine.calculate('wkrd', row);
+
             this.renderRows();
             this.autoSave();
         }
@@ -4154,7 +4944,7 @@ const WKRDManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_wkrd_data', AppState.wkrdData);
+        const success = Utils.saveToLocalStorage('aep_data_wkrd', AppState.wkrdData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -4163,7 +4953,7 @@ const WKRDManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_wkrd_data', AppState.wkrdData);
+        Utils.saveToLocalStorage('aep_data_wkrd', AppState.wkrdData);
     },
 
     syncScrollbars() {
@@ -4198,7 +4988,7 @@ const WKRDManager = {
 // ============================================
 const SankcjeManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_sankcje_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_sankcje');
         AppState.sankcjeData = savedData || [];
         AppState.sankcjeSelectedRows.clear();
 
@@ -4565,6 +5355,7 @@ const SankcjeManager = {
             parkowanie_niedozwolone: 0,
             niesprawnosci_techniczne: 0,
             inne_przyczyna: 0,
+            sankcja_razem: 0,
             zatrzymanie_dr: 0,
             zatrzymanie_pj: 0,
             mandat_bool: false,
@@ -4964,9 +5755,11 @@ const SankcjeManager = {
             podleglosc: '',
             grupa: '',
             legitymowany: false,
+            rodzaj_razem: 0,
             wpm: 0,
             ppm: 0,
             pieszy: 0,
+            przyczyna_razem: 0,
             pod_wplywem_alk: 0,
             nie_zapiecie_pasow: 0,
             telefon_podczas_jazdy: 0,
@@ -4978,13 +5771,14 @@ const SankcjeManager = {
             parkowanie_niedozwolone: 0,
             niesprawnosci_techniczne: 0,
             inne_przyczyna: 0,
+            sankcja_razem: 0,
             zatrzymanie_dr: 0,
             zatrzymanie_pj: 0,
             mandat_bool: false,
             pouczenie: 0,
             inne_sankcja: 0,
             wysokosc_mandatu: '',
-            w_czasie_sluzby: 'NIE',
+            w_czasie_sluzby: false,
             jzw_prowadzaca: 'OŻW Elbląg',
             oddzial: 'Elbląg'
         };
@@ -5031,8 +5825,44 @@ const SankcjeManager = {
         this.autoSave();
     },
 
+    countValidationErrors() {
+        // Używa ValidationEngine
+        return ValidationEngine.countErrors('sankcje', AppState.sankcjeData);
+    },
+
+    updateToolbarState() {
+        const errorCount = this.countValidationErrors();
+        const hasErrors = errorCount > 0;
+
+        // Aktualizuj przyciski
+        const saveBtn = document.getElementById('saveSankcjeDraft');
+        const errorDisplay = document.getElementById('sankcjeErrorCount');
+
+        if (saveBtn) {
+            saveBtn.disabled = hasErrors;
+            saveBtn.style.opacity = hasErrors ? '0.5' : '1';
+            saveBtn.style.cursor = hasErrors ? 'not-allowed' : 'pointer';
+        }
+
+        // Pokaż licznik błędów
+        if (errorDisplay) {
+            if (hasErrors) {
+                errorDisplay.textContent = `❌ Błędów walidacji: ${errorCount}`;
+                errorDisplay.style.display = 'block';
+            } else {
+                errorDisplay.style.display = 'none';
+            }
+        }
+    },
+
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_sankcje_data', AppState.sankcjeData);
+        const errorCount = this.countValidationErrors();
+        if (errorCount > 0) {
+            alert(`❌ Nie można zapisać arkusza!\n\nZnaleziono ${errorCount} błędów walidacji.\n\nPopraw błędy przed zapisaniem:\n• Jeśli zaznaczono przyczynę,\n  należy wybrać sankcję`);
+            return;
+        }
+
+        const success = Utils.saveToLocalStorage('aep_data_sankcje', AppState.sankcjeData);
         if (success) {
             alert('Arkusz zapisany pomyślnie');
         } else {
@@ -5041,7 +5871,7 @@ const SankcjeManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_sankcje_data', AppState.sankcjeData);
+        Utils.saveToLocalStorage('aep_data_sankcje', AppState.sankcjeData);
     },
 
     renderRows() {
@@ -5265,10 +6095,8 @@ const SankcjeManager = {
                                class="cell-input-small">
                     </td>
                     <td>
-                        <select onchange="SankcjeManager.updateField(${row.id}, 'w_czasie_sluzby', this.value)" class="cell-select">
-                            <option value="TAK" ${row.w_czasie_sluzby === 'TAK' ? 'selected' : ''}>TAK</option>
-                            <option value="NIE" ${row.w_czasie_sluzby === 'NIE' ? 'selected' : ''}>NIE</option>
-                        </select>
+                        <input type="checkbox" ${row.w_czasie_sluzby ? 'checked' : ''}
+                               onchange="SankcjeManager.updateField(${row.id}, 'w_czasie_sluzby', this.checked)">
                     </td>
                     <td>
                         <select onchange="SankcjeManager.updateField(${row.id}, 'jzw_prowadzaca', this.value)" class="cell-select">
@@ -5308,8 +6136,32 @@ const SankcjeManager = {
                     }
                 });
             }
-            
+
+            // REAL-TIME WALIDACJA przy zmianie pól Przyczyna lub Sankcja
+            const isPrzyczynaField = ['pod_wplywem_alk', 'nie_zapiecie_pasow', 'telefon_podczas_jazdy',
+                                      'nie_stosowanie_znakow', 'nie_zabezpieczony_ladunek', 'brak_dokumentow',
+                                      'wyposazenie_pojazdu', 'nie_korzystanie_swiatel', 'parkowanie_niedozwolone',
+                                      'niesprawnosci_techniczne', 'inne_przyczyna'].includes(field);
+            const isSankcjaField = ['zatrzymanie_dr', 'zatrzymanie_pj', 'mandat_bool', 'pouczenie', 'inne_sankcja'].includes(field);
+
+            if (isPrzyczynaField || isSankcjaField) {
+                const validation = ValidationEngine.validateRow('sankcje', row);
+                if (!validation.valid) {
+                    const rowIndex = AppState.sankcjeData.findIndex(r => r.id === id);
+                    const dependencyError = validation.errors.find(e => e.type === 'dependency');
+                    if (dependencyError) {
+                        setTimeout(() => {
+                            alert(`BŁĄD W WIERSZU ${rowIndex + 1}\n\n${dependencyError.message}!\n\nWybierz przynajmniej jedną sankcję:\n• Zatrzymanie DR\n• Zatrzymanie PJ\n• Mandat\n• Pouczenie\n• Inne`);
+                        }, 100);
+                    }
+                }
+            }
+
+            // Auto-oblicz pola RAZEM używając CalculationEngine
+            CalculationEngine.calculate('sankcje', row);
+
             this.renderRows();
+            this.updateToolbarState();
             this.autoSave();
         }
     },
@@ -5346,7 +6198,7 @@ const SankcjeManager = {
 // ============================================
 const KonwojeManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_konwoje_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_konwoje');
         AppState.konwojeData = savedData || [];
         AppState.konwojeSelectedRows.clear();
 
@@ -5941,9 +6793,9 @@ const KonwojeManager = {
             jw_prowadzaca: 'OŻW Elbląg',
             oddzial: 'Elbląg'
         };
-        
-        AppState.konwojeData.unshift(newRow);
-        
+
+        AppState.konwojeData.push(newRow);
+
         this.renderRows();
         this.autoSave();
     },
@@ -5990,7 +6842,7 @@ const KonwojeManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_konwoje_data', AppState.konwojeData);
+        const success = Utils.saveToLocalStorage('aep_data_konwoje', AppState.konwojeData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -5999,7 +6851,7 @@ const KonwojeManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_konwoje_data', AppState.konwojeData);
+        Utils.saveToLocalStorage('aep_data_konwoje', AppState.konwojeData);
     }
 };
 
@@ -6615,14 +7467,14 @@ const DashboardHub = {
 
     loadOgolneStats() {
         // Pobierz dane BEZPOŚREDNIO z localStorage (jak na stronie startowej!)
-        const patrole = Utils.loadFromLocalStorage('aep_patrole_data') || [];
-        const wykroczenia = Utils.loadFromLocalStorage('aep_wykroczenia_data') || [];
-        const wkrd = Utils.loadFromLocalStorage('aep_wkrd_data') || [];
-        const sankcje = Utils.loadFromLocalStorage('aep_sankcje_data') || [];
-        const konwoje = Utils.loadFromLocalStorage('aep_konwoje_data') || [];
-        const spb = Utils.loadFromLocalStorage('aep_spb_data') || [];
-        const pilotaze = Utils.loadFromLocalStorage('aep_pilotaze_data') || [];
-        const zdarzenia = Utils.loadFromLocalStorage('aep_zdarzenia_data') || [];
+        const patrole = Utils.loadFromLocalStorage('aep_data_patrole') || [];
+        const wykroczenia = Utils.loadFromLocalStorage('aep_data_wykroczenia') || [];
+        const wkrd = Utils.loadFromLocalStorage('aep_data_wkrd') || [];
+        const sankcje = Utils.loadFromLocalStorage('aep_data_sankcje') || [];
+        const konwoje = Utils.loadFromLocalStorage('aep_data_konwoje') || [];
+        const spb = Utils.loadFromLocalStorage('aep_data_spb') || [];
+        const pilotaze = Utils.loadFromLocalStorage('aep_data_pilotaze') || [];
+        const zdarzenia = Utils.loadFromLocalStorage('aep_data_zdarzenia') || [];
 
         console.log('📊 DASHBOARD - Dane załadowane z localStorage:');
         console.log('  → Patrole:', patrole.length, 'wierszy');
@@ -6705,7 +7557,7 @@ const DashboardHub = {
         }
 
         // Pobierz dane BEZPOŚREDNIO z localStorage (jak na stronie startowej!)
-        const savedData = Utils.loadFromLocalStorage('aep_patrole_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_patrole');
         
         let labels = [];
         let values = [];
@@ -6885,7 +7737,7 @@ const DashboardHub = {
             'pozostale': 'Pozostałe'
         };
         
-        const savedData = Utils.loadFromLocalStorage('aep_wykroczenia_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_wykroczenia');
         
         let labels = [];
         let values = [];
@@ -7638,8 +8490,8 @@ const DashboardHub = {
     },
 
     loadWykroczeniaStats() {
-        const wykroczenia = Utils.loadFromLocalStorage('aep_wykroczenia_data') || [];
-        const sankcje = Utils.loadFromLocalStorage('aep_sankcje_data') || [];
+        const wykroczenia = Utils.loadFromLocalStorage('aep_data_wykroczenia') || [];
+        const sankcje = Utils.loadFromLocalStorage('aep_data_sankcje') || [];
 
         console.log('📊 Wykroczenia:', wykroczenia.length);
         console.log('💰 Sankcje:', sankcje.length);
@@ -8397,7 +9249,7 @@ const DashboardHub = {
 // ============================================
 const ZdarzeniaManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_zdarzenia_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_zdarzenia');
         AppState.zdarzeniaData = savedData || [];
         AppState.zdarzeniaSelectedRows.clear();
 
@@ -9230,9 +10082,9 @@ const ZdarzeniaManager = {
             jzw: 'OŻW Elbląg',
             oddzial: 'Elbląg'
         };
-        
-        AppState.zdarzeniaData.unshift(newRow);
-        
+
+        AppState.zdarzeniaData.push(newRow);
+
         this.renderRows();
         this.autoSave();
     },
@@ -9425,7 +10277,7 @@ const ZdarzeniaManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_zdarzenia_data', AppState.zdarzeniaData);
+        const success = Utils.saveToLocalStorage('aep_data_zdarzenia', AppState.zdarzeniaData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -9434,14 +10286,14 @@ const ZdarzeniaManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_zdarzenia_data', AppState.zdarzeniaData);
+        Utils.saveToLocalStorage('aep_data_zdarzenia', AppState.zdarzeniaData);
     }
 };
 // PILOTAŻE MANAGER
 // ============================================
 const PilotazeManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_pilotaze_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_pilotaze');
         AppState.pilotazeData = savedData || [];
         AppState.pilotazeSelectedRows.clear();
 
@@ -9960,9 +10812,9 @@ const PilotazeManager = {
             jzw: 'OŻW Elbląg',
             oddzial: 'Elbląg'
         };
-        
-        AppState.pilotazeData.unshift(newRow);
-        
+
+        AppState.pilotazeData.push(newRow);
+
         this.renderRows();
         this.autoSave();
     },
@@ -10009,7 +10861,7 @@ const PilotazeManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_pilotaze_data', AppState.pilotazeData);
+        const success = Utils.saveToLocalStorage('aep_data_pilotaze', AppState.pilotazeData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -10018,7 +10870,7 @@ const PilotazeManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_pilotaze_data', AppState.pilotazeData);
+        Utils.saveToLocalStorage('aep_data_pilotaze', AppState.pilotazeData);
     }
 };
 
@@ -10027,7 +10879,7 @@ const PilotazeManager = {
 // ============================================
 const SPBManager = {
     render() {
-        const savedData = Utils.loadFromLocalStorage('aep_spb_data');
+        const savedData = Utils.loadFromLocalStorage('aep_data_spb');
         AppState.spbData = savedData || [];
         AppState.spbSelectedRows.clear();
 
@@ -10747,9 +11599,9 @@ const SPBManager = {
             jzw_prowadzaca: 'OŻW Elbląg',
             oddzial: 'Elbląg'
         };
-        
-        AppState.spbData.unshift(newRow);
-        
+
+        AppState.spbData.push(newRow);
+
         this.renderRows();
         this.autoSave();
     },
@@ -10870,7 +11722,7 @@ const SPBManager = {
     },
 
     saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_spb_data', AppState.spbData);
+        const success = Utils.saveToLocalStorage('aep_data_spb', AppState.spbData);
         if (success) {
             alert('Arkusz zapisany pomyślnie w localStorage');
         } else {
@@ -10879,7 +11731,7 @@ const SPBManager = {
     },
 
     autoSave() {
-        Utils.saveToLocalStorage('aep_spb_data', AppState.spbData);
+        Utils.saveToLocalStorage('aep_data_spb', AppState.spbData);
     }
 };
 
