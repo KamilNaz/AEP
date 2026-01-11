@@ -9172,13 +9172,63 @@ const DashboardHub = {
     }
 };
 
-// ZDARZENIA DROGOWE MANAGER  
+// ZDARZENIA DROGOWE MANAGER
 // ============================================
-const ZdarzeniaManager = {
-    render() {
-        const savedData = Utils.loadFromLocalStorage('aep_data_zdarzenia');
-        AppState.zdarzeniaData = savedData || [];
-        AppState.zdarzeniaSelectedRows.clear();
+const ZdarzeniaManager = createBaseTableManager({
+    module: 'zdarzenia',
+    dataKey: 'zdarzeniaData',
+    selectedRowsKey: 'zdarzeniaSelectedRows',
+    storageKey: 'aep_data_zdarzenia',
+    tableBodyId: 'zdarzeniaTableBody',
+    emptyMessage: 'Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.',
+
+    defaultRow: (id, date) => ({
+        id: id,
+        data: date,
+        nr_jw: '',
+        nazwa_jw: '',
+        miejsce: '',
+        podleglosc: '',
+        grupa: '',
+        wypadek: 0,
+        kolizja: 0,
+        wpm: 0,
+        ppm: 0,
+        sprawca: false,
+        poszkodowany: false,
+        przyczyna_alkohol: 0,
+        przyczyna_nietrzezwosc: 0,
+        przyczyna_narkotyki: 0,
+        przyczyna_predkosc: 0,
+        przyczyna_wyprzedzanie: 0,
+        przyczyna_pierwszenstwo: 0,
+        przyczyna_pieszy: 0,
+        przyczyna_inne: 0,
+        sankcja_dowod: 0,
+        sankcja_prawo: 0,
+        sankcja_mandat: 0,
+        sankcja_pouczenie: 0,
+        sankcja_inne: 0,
+        wysokosc_mandatu: 0,
+        w_sluzbie: 'NIE',
+        ranni: 0,
+        zabici: 0,
+        jzw: 'OŻW Elbląg',
+        oddzial: 'Elbląg'
+    }),
+
+    renderRowHTML: () => {
+        // Ta metoda nie jest używana - ZdarzeniaManager używa własnej metody renderRows()
+        return '';
+    },
+
+    customMethods: {
+        currentEditingRowId: null,
+
+        render: function() {
+            const savedData = Utils.loadFromLocalStorage('aep_data_zdarzenia');
+            AppState.zdarzeniaData = savedData || [];
+            AppState.zdarzeniaSelectedRows.clear();
 
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
@@ -9430,7 +9480,7 @@ const ZdarzeniaManager = {
         this.syncScrollbars();
     },
 
-    initDateFilter() {
+    initDateFilter: function() {
         const toggleBtn = document.getElementById('toggleZdarzenieDateFilterBtn');
         const dropdown = document.getElementById('zdarzenieDateFilterDropdown');
         const dateFromInput = document.getElementById('zdarzenieDateFrom');
@@ -9502,7 +9552,7 @@ const ZdarzeniaManager = {
         });
     },
 
-    dateToInputFormat(date) {
+    dateToInputFormat: function(date) {
         if (!date) return '';
         if (typeof date === 'string') {
             const parts = date.split('.');
@@ -9517,14 +9567,14 @@ const ZdarzeniaManager = {
         return `${year}-${month}-${day}`;
     },
 
-    parsePolishDate(dateStr) {
+    parsePolishDate: function(dateStr) {
         if (!dateStr) return null;
         const parts = dateStr.split('.');
         if (parts.length === 3) {
             const day = parseInt(parts[0], 10);
             const month = parseInt(parts[1], 10) - 1;
             const year = parseInt(parts[2], 10);
-            
+
             const date = new Date(year, month, day);
             date.setHours(0, 0, 0, 0);
             return date;
@@ -9532,15 +9582,15 @@ const ZdarzeniaManager = {
         return null;
     },
 
-    getMonthFromDate(dateStr) {
-        const monthsShort = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 
+    getMonthFromDate: function(dateStr) {
+        const monthsShort = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze',
                             'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'];
-        
+
         const date = this.parsePolishDate(dateStr);
         return date ? monthsShort[date.getMonth()] : '—';
     },
 
-    applyDateFilter() {
+    applyDateFilter: function() {
         const { dateFrom, dateTo } = AppState.zdarzenieDateFilter;
         
         let matchCount = 0;
@@ -9606,7 +9656,7 @@ const ZdarzeniaManager = {
         this.renderRows();
     },
 
-    clearDateFilter() {
+    clearDateFilter: function() {
         AppState.zdarzenieDateFilter.active = false;
         AppState.zdarzenieDateFilter.dateFrom = null;
         AppState.zdarzenieDateFilter.dateTo = null;
@@ -9622,7 +9672,7 @@ const ZdarzeniaManager = {
         this.renderRows();
     },
 
-    renderPrzyczynaChips(row) {
+    renderPrzyczynaChips: function(row) {
         const przyczynyMap = {
             przyczyna_alkohol: 'Alkohol',
             przyczyna_nietrzezwosc: 'Nietrz',
@@ -9664,7 +9714,7 @@ const ZdarzeniaManager = {
         }
     },
 
-    renderSankcjaChips(row) {
+    renderSankcjaChips: function(row) {
         const sankcjeMap = {
             sankcja_dowod: 'Dowód',
             sankcja_prawo: 'Prawo',
@@ -9703,7 +9753,7 @@ const ZdarzeniaManager = {
         }
     },
 
-    syncScrollbars() {
+    syncScrollbars: function() {
         const topScrollbar = document.getElementById('topScrollbar');
         const bottomScrollbar = document.getElementById('bottomScrollbar');
         const tableWrapper = document.getElementById('zdarzeniaTableWrapper');
@@ -9757,7 +9807,7 @@ const ZdarzeniaManager = {
 
 // ============================================
 
-    renderRows() {
+    renderRows: function() {
         const tbody = document.getElementById('zdarzeniaTableBody');
         if (!tbody) return;
 
@@ -9949,116 +9999,8 @@ const ZdarzeniaManager = {
         }
     },
 
-    updateField(id, field, value) {
-        const row = AppState.zdarzeniaData.find(r => r.id === id);
-        if (row) {
-            if (field === 'data' && value) {
-                const date = new Date(value);
-                const polishDate = date.toLocaleDateString('pl-PL');
-                row.data = polishDate;
-            } else {
-                if (typeof value === 'number' && value < 0) {
-                    value = 0;
-                }
-                row[field] = value;
-            }
-            
-            this.renderRows();
-            this.autoSave();
-        }
-    },
-
-    addRow() {
-        const newId = AppState.zdarzeniaData.length > 0 ? 
-            Math.max(...AppState.zdarzeniaData.map(r => r.id)) + 1 : 1;
-        
-        const today = new Date();
-        const todayPolish = today.toLocaleDateString('pl-PL');
-        
-        const newRow = {
-            id: newId,
-            data: todayPolish,
-            nr_jw: '',
-            nazwa_jw: '',
-            miejsce: '',
-            podleglosc: '',
-            grupa: '',
-            wypadek: 0,
-            kolizja: 0,
-            wpm: 0,
-            ppm: 0,
-            sprawca: false,
-            poszkodowany: false,
-            przyczyna_alkohol: 0,
-            przyczyna_nietrzezwosc: 0,
-            przyczyna_narkotyki: 0,
-            przyczyna_predkosc: 0,
-            przyczyna_wyprzedzanie: 0,
-            przyczyna_pierwszenstwo: 0,
-            przyczyna_pieszy: 0,
-            przyczyna_inne: 0,
-            sankcja_dowod: 0,
-            sankcja_prawo: 0,
-            sankcja_mandat: 0,
-            sankcja_pouczenie: 0,
-            sankcja_inne: 0,
-            wysokosc_mandatu: 0,
-            w_sluzbie: 'NIE',
-            ranni: 0,
-            zabici: 0,
-            jzw: 'OŻW Elbląg',
-            oddzial: 'Elbląg'
-        };
-
-        AppState.zdarzeniaData.push(newRow);
-
-        this.renderRows();
-        this.autoSave();
-    },
-
-    toggleSelectAll(checked) {
-        if (checked) {
-            AppState.zdarzeniaData.forEach(row => AppState.zdarzeniaSelectedRows.add(row.id));
-        } else {
-            AppState.zdarzeniaSelectedRows.clear();
-        }
-        this.renderRows();
-    },
-
-    toggleRowSelect(id, checked) {
-        if (checked) {
-            AppState.zdarzeniaSelectedRows.add(id);
-        } else {
-            AppState.zdarzeniaSelectedRows.delete(id);
-        }
-        
-        const row = document.querySelector(`tr[data-id="${id}"]`);
-        if (row) {
-            row.classList.toggle('selected', checked);
-        }
-
-        const selectAll = document.getElementById('selectAllZdarzenia');
-        if (selectAll) {
-            selectAll.checked = AppState.zdarzeniaSelectedRows.size === AppState.zdarzeniaData.length;
-        }
-    },
-
-    clearSelected() {
-        if (AppState.zdarzeniaSelectedRows.size === 0) {
-            alert('Nie zaznaczono żadnych wierszy do usunięcia.');
-            return;
-        }
-
-        if (confirm(`Czy na pewno usunąć ${AppState.zdarzeniaSelectedRows.size} zaznaczonych wierszy?`)) {
-            AppState.zdarzeniaData = AppState.zdarzeniaData.filter(row => !AppState.zdarzeniaSelectedRows.has(row.id));
-            AppState.zdarzeniaSelectedRows.clear();
-            this.renderRows();
-            this.autoSave();
-        }
-    },
-
     // Przyczyna Modal Methods
-    removePrzyczyna(rowId, field) {
+    removePrzyczyna: function(rowId, field) {
         const row = AppState.zdarzeniaData.find(r => r.id === rowId);
         if (row) {
             row[field] = 0;
@@ -10067,7 +10009,7 @@ const ZdarzeniaManager = {
         }
     },
 
-    openPrzyczynaModal(rowId) {
+    openPrzyczynaModal: function(rowId) {
         this.currentEditingRowId = rowId;
         const row = AppState.zdarzeniaData.find(r => r.id === rowId);
         if (!row) return;
@@ -10084,23 +10026,23 @@ const ZdarzeniaManager = {
         modal.classList.remove('hidden');
     },
 
-    closePrzyczynaModal() {
+    closePrzyczynaModal: function() {
         const modal = document.getElementById('zdarzeniaPrzyczynaModal');
         modal.classList.add('hidden');
         this.currentEditingRowId = null;
     },
 
-    updatePrzyczynaCount() {
+    updatePrzyczynaCount: function() {
         const modal = document.getElementById('zdarzeniaPrzyczynaModal');
         const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
         const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
         const total = checkboxes.length;
-        
+
         const countSpan = document.getElementById('zdarzeniaPrzyczynaCount');
         countSpan.textContent = `Wybrano: ${checked}/${total} przyczyn`;
     },
 
-    savePrzyczyny() {
+    savePrzyczyny: function() {
         if (!this.currentEditingRowId) return;
 
         const row = AppState.zdarzeniaData.find(r => r.id === this.currentEditingRowId);
@@ -10119,10 +10061,10 @@ const ZdarzeniaManager = {
         this.autoSave();
     },
 
-    clearAllPrzyczyny() {
+    clearAllPrzyczyny: function() {
         const modal = document.getElementById('zdarzeniaPrzyczynaModal');
         const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
-        
+
         checkboxes.forEach(cb => {
             cb.checked = false;
         });
@@ -10131,7 +10073,7 @@ const ZdarzeniaManager = {
     },
 
     // Sankcja Modal Methods
-    removeSankcja(rowId, field) {
+    removeSankcja: function(rowId, field) {
         const row = AppState.zdarzeniaData.find(r => r.id === rowId);
         if (row) {
             row[field] = 0;
@@ -10140,14 +10082,14 @@ const ZdarzeniaManager = {
         }
     },
 
-    openSankcjaModal(rowId) {
+    openSankcjaModal: function(rowId) {
         this.currentEditingRowId = rowId;
         const row = AppState.zdarzeniaData.find(r => r.id === rowId);
         if (!row) return;
 
         const modal = document.getElementById('zdarzeniaSankcjaModal');
         const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
-        
+
         checkboxes.forEach(cb => {
             const field = cb.dataset.field;
             cb.checked = row[field] === 1;
@@ -10157,23 +10099,23 @@ const ZdarzeniaManager = {
         modal.classList.remove('hidden');
     },
 
-    closeSankcjaModal() {
+    closeSankcjaModal: function() {
         const modal = document.getElementById('zdarzeniaSankcjaModal');
         modal.classList.add('hidden');
         this.currentEditingRowId = null;
     },
 
-    updateSankcjaCount() {
+    updateSankcjaCount: function() {
         const modal = document.getElementById('zdarzeniaSankcjaModal');
         const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
         const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
         const total = checkboxes.length;
-        
+
         const countSpan = document.getElementById('zdarzeniaSankcjaCount');
         countSpan.textContent = `Wybrano: ${checked}/${total} sankcji`;
     },
 
-    saveSankcje() {
+    saveSankcje: function() {
         if (!this.currentEditingRowId) return;
 
         const row = AppState.zdarzeniaData.find(r => r.id === this.currentEditingRowId);
@@ -10192,30 +10134,18 @@ const ZdarzeniaManager = {
         this.autoSave();
     },
 
-    clearAllSankcje() {
+    clearAllSankcje: function() {
         const modal = document.getElementById('zdarzeniaSankcjaModal');
         const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
-        
+
         checkboxes.forEach(cb => {
             cb.checked = false;
         });
 
         this.updateSankcjaCount();
-    },
-
-    saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_data_zdarzenia', AppState.zdarzeniaData);
-        if (success) {
-            alert('Arkusz zapisany pomyślnie w localStorage');
-        } else {
-            alert('Błąd podczas zapisywania arkusza');
-        }
-    },
-
-    autoSave() {
-        Utils.saveToLocalStorage('aep_data_zdarzenia', AppState.zdarzeniaData);
     }
-};
+    }
+});
 // PILOTAŻE MANAGER
 // ============================================
 const PilotazeManager = createBaseTableManager({
