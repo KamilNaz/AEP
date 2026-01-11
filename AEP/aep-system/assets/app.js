@@ -86,6 +86,42 @@ const SECTIONS = [
 // ============================================
 // STATE MANAGEMENT
 // ============================================
+/**
+ * Global application state
+ * @typedef {Object} AppState
+ * @property {string|null} currentSection - Currently active section ID
+ * @property {Array<Object>} currentData - Current section's data
+ * @property {Array<Object>} filteredData - Filtered data for current view
+ * @property {number} currentPage - Current pagination page
+ * @property {number} rowsPerPage - Number of rows per page
+ * @property {string|null} sortColumn - Column being sorted
+ * @property {string} sortDirection - Sort direction ('asc' or 'desc')
+ * @property {Set} selectedRows - Set of selected row IDs
+ * @property {Array<Object>} patroleData - Patrole module data
+ * @property {Set} patroleSelectedRows - Selected rows in Patrole module
+ * @property {Array<Object>} wykroczeniaData - Wykroczenia module data
+ * @property {Set} wykroczeniaSelectedRows - Selected rows in Wykroczenia module
+ * @property {Object} wykroczeniaVisibleColumns - Visible columns configuration for Wykroczenia
+ * @property {Array<Object>} wkrdData - WKRD module data
+ * @property {Set} wkrdSelectedRows - Selected rows in WKRD module
+ * @property {Object} wkrdVisibleColumns - Visible columns configuration for WKRD
+ * @property {Array<Object>} sankcjeData - Sankcje module data
+ * @property {Set} sankcjeSelectedRows - Selected rows in Sankcje module
+ * @property {Object} sankcjeVisibleColumns - Visible columns configuration for Sankcje
+ * @property {Array<Object>} konwojeData - Konwoje module data
+ * @property {Set} konwojeSelectedRows - Selected rows in Konwoje module
+ * @property {Object} konwojeVisibleColumns - Visible columns configuration for Konwoje
+ * @property {Array<Object>} spbData - ŚPB module data
+ * @property {Set} spbSelectedRows - Selected rows in ŚPB module
+ * @property {Array<Object>} pilotazeData - Pilotaże module data
+ * @property {Set} pilotazeSelectedRows - Selected rows in Pilotaże module
+ * @property {Array<Object>} zdarzeniaData - Zdarzenia drogowe module data
+ * @property {Set} zdarzeniaSelectedRows - Selected rows in Zdarzenia module
+ * @property {string} dashboardView - Current dashboard view
+ * @property {Object} dashboardFilters - Dashboard filters configuration
+ * @property {Object} patroleVisibleColumns - Visible columns configuration for Patrole
+ * @property {Object} patroleDateFilter - Date filter configuration for Patrole
+ */
 const AppState = {
     currentSection: null,
     currentData: [],
@@ -298,7 +334,17 @@ const AppState = {
 // ============================================
 // UTILITY FUNCTIONS
 // ============================================
+/**
+ * Utility functions for the application
+ * @namespace Utils
+ */
 const Utils = {
+    /**
+     * Generates test data for a given set of columns
+     * @param {string[]} columns - Array of column names
+     * @param {number} [count=25] - Number of rows to generate
+     * @returns {Array<Object>} Array of generated data objects
+     */
     generateTestData(columns, count = 25) {
         const data = [];
         const sampleValues = {
@@ -319,6 +365,12 @@ const Utils = {
         return data;
     },
 
+    /**
+     * Saves data to localStorage
+     * @param {string} key - The localStorage key
+     * @param {*} data - The data to save (will be JSON stringified)
+     * @returns {boolean} True if successful, false otherwise
+     */
     saveToLocalStorage(key, data) {
         try {
             localStorage.setItem(key, JSON.stringify(data));
@@ -329,6 +381,11 @@ const Utils = {
         }
     },
 
+    /**
+     * Loads data from localStorage
+     * @param {string} key - The localStorage key
+     * @returns {*} The parsed data or null if not found or on error
+     */
     loadFromLocalStorage(key) {
         try {
             const data = localStorage.getItem(key);
@@ -339,6 +396,12 @@ const Utils = {
         }
     },
 
+    /**
+     * Creates a debounced function that delays invoking func until after wait milliseconds
+     * @param {Function} func - The function to debounce
+     * @param {number} wait - The number of milliseconds to delay
+     * @returns {Function} The debounced function
+     */
     debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
@@ -355,8 +418,15 @@ const Utils = {
 // ============================================
 // MIGRACJA DANYCH LOCALSTORAGE
 // ============================================
+/**
+ * Data migration utilities for localStorage
+ * @namespace DataMigration
+ */
 const DataMigration = {
-    // Mapa starych kluczy -> nowe klucze
+    /**
+     * Mapping of old localStorage keys to new keys
+     * @type {Array<{old: string, new: string}>}
+     */
     migrations: [
         { old: 'aep_patrole_data', new: 'aep_data_patrole' },
         { old: 'aep_wykroczenia_data', new: 'aep_data_wykroczenia' },
@@ -368,6 +438,10 @@ const DataMigration = {
         { old: 'aep_zdarzenia_data', new: 'aep_data_zdarzenia' }
     ],
 
+    /**
+     * Migrates data from old localStorage keys to new keys
+     * @returns {void}
+     */
     migrate() {
         console.log('🔄 Rozpoczynam migrację danych localStorage...');
         let migratedCount = 0;
@@ -401,6 +475,10 @@ const DataMigration = {
         this.migrateBooleanTypes();
     },
 
+    /**
+     * Migrates boolean types from string to proper boolean values
+     * @returns {void}
+     */
     migrateBooleanTypes() {
         console.log('🔄 Migracja typów boolean...');
 
@@ -430,6 +508,16 @@ DataMigration.migrate();
 // ============================================
 // VALIDATION ENGINE - Centralny system walidacji
 // ============================================
+/**
+ * Validation rules for different modules
+ * @typedef {Object} ValidationRule
+ * @property {string[]} [required] - Array of required field names
+ * @property {Array<{name: string, ifFields: string[], thenFields: string[], message: string}>} [dependencies] - Dependency rules
+ */
+
+/**
+ * @type {Object.<string, ValidationRule>}
+ */
 const VALIDATION_RULES = {
     wykroczenia: {
         required: ['data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'grupa', 'jzw_prowadzaca', 'oddzial'],
@@ -481,6 +569,10 @@ const VALIDATION_RULES = {
     }
 };
 
+/**
+ * Validation engine for data integrity
+ * @namespace ValidationEngine
+ */
 const ValidationEngine = {
     /**
      * Waliduje pojedynczy wiersz według reguł modułu
@@ -628,6 +720,17 @@ const ValidationEngine = {
 // ============================================
 // AUTO-CALCULATE ENGINE - Automatyczne obliczenia
 // ============================================
+/**
+ * Auto-calculation configuration for different modules
+ * @typedef {Object} CalculationConfig
+ * @property {string} target - Target field name for calculation result
+ * @property {string[]} sources - Source field names to sum
+ * @property {string[]} [includeBooleans] - Boolean fields to include (1 if true)
+ */
+
+/**
+ * @type {Object.<string, CalculationConfig[]>}
+ */
 const AUTO_CALCULATE_CONFIG = {
     patrole: [
         {
@@ -676,6 +779,10 @@ const AUTO_CALCULATE_CONFIG = {
     ]
 };
 
+/**
+ * Calculation engine for automatic field calculations
+ * @namespace CalculationEngine
+ */
 const CalculationEngine = {
     /**
      * Automatycznie oblicza pola RAZEM według konfiguracji
@@ -727,6 +834,18 @@ const CalculationEngine = {
 // ============================================
 // DEFAULT VALUES - Centralna konfiguracja wartości domyślnych
 // ============================================
+/**
+ * Default values for different modules
+ * @typedef {Object} DefaultValues
+ * @property {Object} common - Common default values shared across modules
+ * @property {Object} wykroczenia - Default values for Wykroczenia module
+ * @property {Object} sankcje - Default values for Sankcje module
+ * @property {Object} wkrd - Default values for WKRD module
+ */
+
+/**
+ * @type {DefaultValues}
+ */
 const DEFAULT_VALUES = {
     common: {
         jwProwadzaca: 'OŻW Elbląg',
@@ -760,9 +879,23 @@ const DEFAULT_VALUES = {
 // BASE TABLE MANAGER - Wspólna architektura dla managerów tabel
 // ============================================
 /**
- * Factory function tworzący bazowy manager tabeli z wspólną funkcjonalnością
- * @param {object} config - Konfiguracja managera
- * @returns {object} Manager z wspólnymi metodami
+ * Configuration for table manager
+ * @typedef {Object} TableManagerConfig
+ * @property {string} module - Module name (e.g., 'patrole', 'wkrd')
+ * @property {string} dataKey - Key in AppState (e.g., 'patroleData')
+ * @property {string} selectedRowsKey - Key for selected rows (e.g., 'patroleSelectedRows')
+ * @property {string} storageKey - localStorage key (e.g., 'aep_data_patrole')
+ * @property {string} tableBodyId - ID of tbody element
+ * @property {string} emptyMessage - Message when no data
+ * @property {Function} defaultRow - Function returning default row object
+ * @property {Function} renderRowHTML - Function rendering row HTML
+ * @property {Object} [customMethods] - Additional module-specific methods
+ */
+
+/**
+ * Factory function creating base table manager with shared functionality
+ * @param {TableManagerConfig} config - Manager configuration
+ * @returns {Object} Manager with shared methods
  */
 const createBaseTableManager = (config) => {
     const {
@@ -1225,16 +1358,28 @@ window.toggleSidebar = function() {
 // ============================================
 // ROUTER
 // ============================================
+/**
+ * Application router for handling navigation and rendering sections
+ * @namespace Router
+ */
 const Router = {
+    /**
+     * Initializes the router by setting up event listeners
+     * @returns {void}
+     */
     init() {
         window.addEventListener('hashchange', () => this.handleRoute());
         this.handleRoute();
     },
 
+    /**
+     * Handles route changes based on URL hash
+     * @returns {void}
+     */
     handleRoute() {
         const hash = window.location.hash.slice(1) || 'start';
         const section = SECTIONS.find(s => s.id === hash);
-        
+
         if (hash === 'start' || hash === '') {
             this.renderStartPage();
         } else if (section) {
@@ -1249,6 +1394,10 @@ const Router = {
         this.updateActiveNav(hash);
     },
 
+    /**
+     * Renders the start/dashboard page
+     * @returns {void}
+     */
     renderStartPage() {
         // Pobierz aktualne statystyki z localStorage
         const stats = this.getDashboardStats();
@@ -1837,6 +1986,11 @@ const Router = {
         }
     },
 
+    /**
+     * Updates breadcrumbs navigation
+     * @param {string} hash - Current route hash
+     * @returns {void}
+     */
     updateBreadcrumbs(hash) {
         const breadcrumbs = document.getElementById('breadcrumbs');
         const section = SECTIONS.find(s => s.id === hash);
@@ -1853,6 +2007,11 @@ const Router = {
         }
     },
 
+    /**
+     * Updates active state of navigation items
+     * @param {string} hash - Current route hash
+     * @returns {void}
+     */
     updateActiveNav(hash) {
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
@@ -1868,7 +2027,15 @@ const Router = {
 // ============================================
 // PATROLE MANAGER
 // ============================================
+/**
+ * Manager for Patrole (Patrols) module
+ * @namespace PatroleManager
+ */
 const PatroleManager = {
+    /**
+     * Renders the Patrole module view
+     * @returns {void}
+     */
     render() {
         const savedData = Utils.loadFromLocalStorage('aep_data_patrole');
         AppState.patroleData = savedData || [];
@@ -2698,7 +2865,15 @@ const PatroleManager = {
 // ============================================
 // WYKROCZENIA MANAGER
 // ============================================
+/**
+ * Manager for Wykroczenia (Violations) module
+ * @namespace WykroczeniaManager
+ */
 const WykroczeniaManager = {
+    /**
+     * Renders the Wykroczenia module view
+     * @returns {void}
+     */
     render() {
         const savedData = Utils.loadFromLocalStorage('aep_data_wykroczenia');
         AppState.wykroczeniaData = savedData || [];
@@ -4277,7 +4452,15 @@ const WykroczeniaManager = {
 // ============================================
 // WKRD MANAGER
 // ============================================
+/**
+ * Manager for WKRD (Kontrola Ruchu Drogowego) module
+ * @namespace WKRDManager
+ */
 const WKRDManager = {
+    /**
+     * Renders the WKRD module view
+     * @returns {void}
+     */
     render() {
         const savedData = Utils.loadFromLocalStorage('aep_data_wkrd');
         AppState.wkrdData = savedData || [];
@@ -4986,7 +5169,15 @@ const WKRDManager = {
 // ============================================
 // SANKCJE MANAGER
 // ============================================
+/**
+ * Manager for Sankcje (Sanctions) module
+ * @namespace SankcjeManager
+ */
 const SankcjeManager = {
+    /**
+     * Renders the Sankcje module view
+     * @returns {void}
+     */
     render() {
         const savedData = Utils.loadFromLocalStorage('aep_data_sankcje');
         AppState.sankcjeData = savedData || [];
@@ -6785,7 +6976,15 @@ const KonwojeManager = createBaseTableManager({
 // ============================================
 // RAPORTY MANAGER
 // ============================================
+/**
+ * Manager for Raporty (Reports) module
+ * @namespace RaportyManager
+ */
 const RaportyManager = {
+    /**
+     * Renders the Raporty module view
+     * @returns {void}
+     */
     render() {
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
@@ -7083,8 +7282,15 @@ const RaportyManager = {
 // ============================================
 // DASHBOARD HUB
 // ============================================
+/**
+ * Dashboard Hub for analytics and visualizations
+ * @namespace DashboardHub
+ */
 const DashboardHub = {
-    // Globalna konfiguracja dla WSZYSTKICH wykresów
+    /**
+     * Global configuration for all charts
+     * @type {Object}
+     */
     chartDefaults: {
         devicePixelRatio: 2,
         font: {
@@ -11456,7 +11662,15 @@ const SPBManager = createBaseTableManager({
 // ============================================
 // TABLE MANAGER
 // ============================================
+/**
+ * Generic table manager for rendering and managing data tables
+ * @namespace TableManager
+ */
 const TableManager = {
+    /**
+     * Renders the data table
+     * @returns {void}
+     */
     renderTable() {
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
@@ -11578,7 +11792,15 @@ const TableManager = {
 // ============================================
 // SIDEBAR
 // ============================================
+/**
+ * Sidebar UI component manager
+ * @namespace Sidebar
+ */
 const Sidebar = {
+    /**
+     * Initializes the sidebar component
+     * @returns {void}
+     */
     init() {
         const sidebar = document.getElementById('sidebar');
         const toggleBtn = document.getElementById('sidebarToggle');
@@ -11669,7 +11891,15 @@ const HeaderActions = {
 // ============================================
 // MODAL
 // ============================================
+/**
+ * Modal dialog component manager
+ * @namespace Modal
+ */
 const Modal = {
+    /**
+     * Initializes the modal component
+     * @returns {void}
+     */
     init() {
         const modal = document.getElementById('modal');
         const closeBtn = document.getElementById('modalClose');
