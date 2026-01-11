@@ -10877,11 +10877,55 @@ const PilotazeManager = {
 // ============================================
 // ŚPB MANAGER
 // ============================================
-const SPBManager = {
-    render() {
-        const savedData = Utils.loadFromLocalStorage('aep_data_spb');
-        AppState.spbData = savedData || [];
-        AppState.spbSelectedRows.clear();
+const SPBManager = createBaseTableManager({
+    module: 'spb',
+    dataKey: 'spbData',
+    selectedRowsKey: 'spbSelectedRows',
+    storageKey: 'aep_data_spb',
+    tableBodyId: 'spbTableBody',
+    emptyMessage: 'Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.',
+
+    defaultRow: (id, date) => ({
+        id: id,
+        data: date,
+        nr_jw: '',
+        nazwa_jw: '',
+        miejsce: '',
+        podleglosc: '',
+        grupa: '',
+        sila_fizyczna: 0,
+        kajdanki: 0,
+        kaftan: 0,
+        kask: 0,
+        siatka: 0,
+        palka: 0,
+        pies: 0,
+        chem_sr: 0,
+        paralizator: 0,
+        kolczatka: 0,
+        bron: 0,
+        podczas_konw: 'NIE',
+        zatrzymania: 0,
+        doprowadzenia: 0,
+        inne_patrol: 0,
+        ranny: 'NIE',
+        smierc: 'NIE',
+        jzw_prowadzaca: 'OŻW Elbląg',
+        oddzial: 'Elbląg'
+    }),
+
+    renderRowHTML: () => {
+        // Ta metoda nie jest używana - SPBManager używa własnej metody renderRows()
+        return '';
+    },
+
+    customMethods: {
+        currentEditingRowId: null,
+
+        render: function() {
+            const savedData = Utils.loadFromLocalStorage('aep_data_spb');
+            AppState.spbData = savedData || [];
+            AppState.spbSelectedRows.clear();
 
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
@@ -11077,7 +11121,7 @@ const SPBManager = {
         this.syncScrollbars();
     },
 
-    initDateFilter() {
+    initDateFilter: function() {
         const toggleBtn = document.getElementById('toggleSPBDateFilterBtn');
         const dropdown = document.getElementById('spbDateFilterDropdown');
         const dateFromInput = document.getElementById('spbDateFrom');
@@ -11102,7 +11146,7 @@ const SPBManager = {
                 const days = parseInt(btn.dataset.days);
                 const today = new Date();
                 const from = new Date(today);
-                
+
                 if (days === 0) {
                     from.setHours(0, 0, 0, 0);
                 } else {
@@ -11125,7 +11169,7 @@ const SPBManager = {
 
             const dateFrom = new Date(from);
             const dateTo = new Date(to);
-            
+
             dateFrom.setHours(0, 0, 0, 0);
             dateTo.setHours(23, 59, 59, 999);
 
@@ -11149,7 +11193,7 @@ const SPBManager = {
         });
     },
 
-    dateToInputFormat(date) {
+    dateToInputFormat: function(date) {
         if (!date) return '';
         if (typeof date === 'string') {
             const parts = date.split('.');
@@ -11164,14 +11208,14 @@ const SPBManager = {
         return `${year}-${month}-${day}`;
     },
 
-    parsePolishDate(dateStr) {
+    parsePolishDate: function(dateStr) {
         if (!dateStr) return null;
         const parts = dateStr.split('.');
         if (parts.length === 3) {
             const day = parseInt(parts[0], 10);
             const month = parseInt(parts[1], 10) - 1;
             const year = parseInt(parts[2], 10);
-            
+
             const date = new Date(year, month, day);
             date.setHours(0, 0, 0, 0);
             return date;
@@ -11179,15 +11223,15 @@ const SPBManager = {
         return null;
     },
 
-    getMonthFromDate(dateStr) {
-        const monthsShort = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 
+    getMonthFromDate: function(dateStr) {
+        const monthsShort = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze',
                             'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'];
-        
+
         const date = this.parsePolishDate(dateStr);
         return date ? monthsShort[date.getMonth()] : '—';
     },
 
-    applyDateFilter() {
+    applyDateFilter: function() {
         const { dateFrom, dateTo } = AppState.spbDateFilter;
         
         let matchCount = 0;
@@ -11253,7 +11297,7 @@ const SPBManager = {
         this.renderRows();
     },
 
-    clearDateFilter() {
+    clearDateFilter: function() {
         AppState.spbDateFilter.active = false;
         AppState.spbDateFilter.dateFrom = null;
         AppState.spbDateFilter.dateTo = null;
@@ -11269,7 +11313,7 @@ const SPBManager = {
         this.renderRows();
     },
 
-    syncScrollbars() {
+    syncScrollbars: function() {
         const topScrollbar = document.getElementById('topScrollbar');
         const bottomScrollbar = document.getElementById('bottomScrollbar');
         const tableWrapper = document.getElementById('spbTableWrapper');
@@ -11321,7 +11365,7 @@ const SPBManager = {
         });
     },
 
-    renderSrodkiChips(row) {
+    renderSrodkiChips: function(row) {
         const srodkiMap = {
             sila_fizyczna: 'SiłaF',
             kajdanki: 'Kajd',
@@ -11367,7 +11411,7 @@ const SPBManager = {
         }
     },
 
-    getSrodkiLabel(row) {
+    getSrodkiLabel: function(row) {
         const srodkiMap = {
             sila_fizyczna: 'SiłaF',
             kajdanki: 'Kajd',
@@ -11398,7 +11442,7 @@ const SPBManager = {
         }
     },
 
-    renderRows() {
+    renderRows: function() {
         const tbody = document.getElementById('spbTableBody');
         if (!tbody) return;
 
@@ -11548,106 +11592,7 @@ const SPBManager = {
         }
     },
 
-    updateField(id, field, value) {
-        const row = AppState.spbData.find(r => r.id === id);
-        if (row) {
-            if (field === 'data' && value) {
-                const date = new Date(value);
-                const polishDate = date.toLocaleDateString('pl-PL');
-                row.data = polishDate;
-            } else {
-                row[field] = value;
-            }
-            
-            this.renderRows();
-            this.autoSave();
-        }
-    },
-
-    addRow() {
-        const newId = AppState.spbData.length > 0 ? 
-            Math.max(...AppState.spbData.map(r => r.id)) + 1 : 1;
-        
-        const today = new Date();
-        const todayPolish = today.toLocaleDateString('pl-PL');
-        
-        const newRow = {
-            id: newId,
-            data: todayPolish,
-            nr_jw: '',
-            nazwa_jw: '',
-            miejsce: '',
-            podleglosc: '',
-            grupa: '',
-            sila_fizyczna: 0,
-            kajdanki: 0,
-            kaftan: 0,
-            kask: 0,
-            siatka: 0,
-            palka: 0,
-            pies: 0,
-            chem_sr: 0,
-            paralizator: 0,
-            kolczatka: 0,
-            bron: 0,
-            podczas_konw: 'NIE',
-            zatrzymania: 0,
-            doprowadzenia: 0,
-            inne_patrol: 0,
-            ranny: 'NIE',
-            smierc: 'NIE',
-            jzw_prowadzaca: 'OŻW Elbląg',
-            oddzial: 'Elbląg'
-        };
-
-        AppState.spbData.push(newRow);
-
-        this.renderRows();
-        this.autoSave();
-    },
-
-    toggleSelectAll(checked) {
-        if (checked) {
-            AppState.spbData.forEach(row => AppState.spbSelectedRows.add(row.id));
-        } else {
-            AppState.spbSelectedRows.clear();
-        }
-        this.renderRows();
-    },
-
-    toggleRowSelect(id, checked) {
-        if (checked) {
-            AppState.spbSelectedRows.add(id);
-        } else {
-            AppState.spbSelectedRows.delete(id);
-        }
-        
-        const row = document.querySelector(`tr[data-id="${id}"]`);
-        if (row) {
-            row.classList.toggle('selected', checked);
-        }
-
-        const selectAll = document.getElementById('selectAllSPB');
-        if (selectAll) {
-            selectAll.checked = AppState.spbSelectedRows.size === AppState.spbData.length;
-        }
-    },
-
-    clearSelected() {
-        if (AppState.spbSelectedRows.size === 0) {
-            alert('Nie zaznaczono żadnych wierszy do usunięcia.');
-            return;
-        }
-
-        if (confirm(`Czy na pewno usunąć ${AppState.spbSelectedRows.size} zaznaczonych wierszy?`)) {
-            AppState.spbData = AppState.spbData.filter(row => !AppState.spbSelectedRows.has(row.id));
-            AppState.spbSelectedRows.clear();
-            this.renderRows();
-            this.autoSave();
-        }
-    },
-
-    removeSrodek(rowId, field) {
+    removeSrodek: function(rowId, field) {
         const row = AppState.spbData.find(r => r.id === rowId);
         if (row) {
             row[field] = 0;
@@ -11656,7 +11601,7 @@ const SPBManager = {
         }
     },
 
-    openSrodkiModal(rowId) {
+    openSrodkiModal: function(rowId) {
         this.currentEditingRowId = rowId;
         const row = AppState.spbData.find(r => r.id === rowId);
         if (!row) return;
@@ -11674,23 +11619,23 @@ const SPBManager = {
         modal.classList.remove('hidden');
     },
 
-    closeSrodkiModal() {
+    closeSrodkiModal: function() {
         const modal = document.getElementById('spbSrodkiModal');
         modal.classList.add('hidden');
         this.currentEditingRowId = null;
     },
 
-    updateSrodkiCount() {
+    updateSrodkiCount: function() {
         const modal = document.getElementById('spbSrodkiModal');
         const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
         const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
         const total = checkboxes.length;
-        
+
         const countSpan = document.getElementById('spbSrodkiCount');
         countSpan.textContent = `Wybrano: ${checked}/${total} środków`;
     },
 
-    saveSrodki() {
+    saveSrodki: function() {
         if (!this.currentEditingRowId) return;
 
         const row = AppState.spbData.find(r => r.id === this.currentEditingRowId);
@@ -11710,30 +11655,18 @@ const SPBManager = {
         this.autoSave();
     },
 
-    clearAllSrodki() {
+    clearAllSrodki: function() {
         const modal = document.getElementById('spbSrodkiModal');
         const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
-        
+
         checkboxes.forEach(cb => {
             cb.checked = false;
         });
 
         this.updateSrodkiCount();
-    },
-
-    saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_data_spb', AppState.spbData);
-        if (success) {
-            alert('Arkusz zapisany pomyślnie w localStorage');
-        } else {
-            alert('Błąd podczas zapisywania arkusza');
-        }
-    },
-
-    autoSave() {
-        Utils.saveToLocalStorage('aep_data_spb', AppState.spbData);
     }
-};
+    }
+});
 
 // ============================================
 // TABLE MANAGER
