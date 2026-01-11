@@ -10291,11 +10291,37 @@ const ZdarzeniaManager = {
 };
 // PILOTAŻE MANAGER
 // ============================================
-const PilotazeManager = {
-    render() {
-        const savedData = Utils.loadFromLocalStorage('aep_data_pilotaze');
-        AppState.pilotazeData = savedData || [];
-        AppState.pilotazeSelectedRows.clear();
+const PilotazeManager = createBaseTableManager({
+    module: 'pilotaze',
+    dataKey: 'pilotazeData',
+    selectedRowsKey: 'pilotazeSelectedRows',
+    storageKey: 'aep_data_pilotaze',
+    tableBodyId: 'pilotazeTableBody',
+    emptyMessage: 'Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.',
+
+    defaultRow: (id, date) => ({
+        id: id,
+        data: date,
+        wlasne: 0,
+        sojusznicze: 0,
+        zmotoryzowany: 0,
+        wkrd: 0,
+        ilosc_zw: 0,
+        wpm: 0,
+        jzw: 'OŻW Elbląg',
+        oddzial: 'Elbląg'
+    }),
+
+    renderRowHTML: () => {
+        // Ta metoda nie jest używana - PilotazeManager używa własnej metody renderRows()
+        return '';
+    },
+
+    customMethods: {
+        render: function() {
+            const savedData = Utils.loadFromLocalStorage('aep_data_pilotaze');
+            AppState.pilotazeData = savedData || [];
+            AppState.pilotazeSelectedRows.clear();
 
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
@@ -10406,7 +10432,7 @@ const PilotazeManager = {
         this.syncScrollbars();
     },
 
-    initDateFilter() {
+    initDateFilter: function() {
         const toggleBtn = document.getElementById('togglePilotazeDateFilterBtn');
         const dropdown = document.getElementById('pilotazeDateFilterDropdown');
         const dateFromInput = document.getElementById('pilotazeDateFrom');
@@ -10478,7 +10504,7 @@ const PilotazeManager = {
         });
     },
 
-    dateToInputFormat(date) {
+    dateToInputFormat: function(date) {
         if (!date) return '';
         if (typeof date === 'string') {
             const parts = date.split('.');
@@ -10493,14 +10519,14 @@ const PilotazeManager = {
         return `${year}-${month}-${day}`;
     },
 
-    parsePolishDate(dateStr) {
+    parsePolishDate: function(dateStr) {
         if (!dateStr) return null;
         const parts = dateStr.split('.');
         if (parts.length === 3) {
             const day = parseInt(parts[0], 10);
             const month = parseInt(parts[1], 10) - 1;
             const year = parseInt(parts[2], 10);
-            
+
             const date = new Date(year, month, day);
             date.setHours(0, 0, 0, 0);
             return date;
@@ -10508,15 +10534,15 @@ const PilotazeManager = {
         return null;
     },
 
-    getMonthFromDate(dateStr) {
-        const monthsShort = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 
+    getMonthFromDate: function(dateStr) {
+        const monthsShort = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze',
                             'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'];
-        
+
         const date = this.parsePolishDate(dateStr);
         return date ? monthsShort[date.getMonth()] : '—';
     },
 
-    applyDateFilter() {
+    applyDateFilter: function() {
         const { dateFrom, dateTo } = AppState.pilotazeDateFilter;
         
         let matchCount = 0;
@@ -10582,7 +10608,7 @@ const PilotazeManager = {
         this.renderRows();
     },
 
-    clearDateFilter() {
+    clearDateFilter: function() {
         AppState.pilotazeDateFilter.active = false;
         AppState.pilotazeDateFilter.dateFrom = null;
         AppState.pilotazeDateFilter.dateTo = null;
@@ -10598,7 +10624,7 @@ const PilotazeManager = {
         this.renderRows();
     },
 
-    syncScrollbars() {
+    syncScrollbars: function() {
         const topScrollbar = document.getElementById('topScrollbar');
         const bottomScrollbar = document.getElementById('bottomScrollbar');
         const tableWrapper = document.getElementById('pilotazeTableWrapper');
@@ -10650,7 +10676,7 @@ const PilotazeManager = {
         });
     },
 
-    renderRows() {
+    renderRows: function() {
         const tbody = document.getElementById('pilotazeTableBody');
         if (!tbody) return;
 
@@ -10772,107 +10798,9 @@ const PilotazeManager = {
         
         // Aktualizuj scrollbar po każdej zmianie danych
         this.syncScrollbars();
-    },
-
-    updateField(id, field, value) {
-        const row = AppState.pilotazeData.find(r => r.id === id);
-        if (row) {
-            if (field === 'data' && value) {
-                const date = new Date(value);
-                const polishDate = date.toLocaleDateString('pl-PL');
-                row.data = polishDate;
-            } else {
-                if (typeof value === 'number' && value < 0) {
-                    value = 0;
-                }
-                row[field] = value;
-            }
-            
-            this.renderRows();
-            this.autoSave();
-        }
-    },
-
-    addRow() {
-        const newId = AppState.pilotazeData.length > 0 ? 
-            Math.max(...AppState.pilotazeData.map(r => r.id)) + 1 : 1;
-        
-        const today = new Date();
-        const todayPolish = today.toLocaleDateString('pl-PL');
-        
-        const newRow = {
-            id: newId,
-            data: todayPolish,
-            wlasne: 0,
-            sojusznicze: 0,
-            zmotoryzowany: 0,
-            wkrd: 0,
-            ilosc_zw: 0,
-            wpm: 0,
-            jzw: 'OŻW Elbląg',
-            oddzial: 'Elbląg'
-        };
-
-        AppState.pilotazeData.push(newRow);
-
-        this.renderRows();
-        this.autoSave();
-    },
-
-    toggleSelectAll(checked) {
-        if (checked) {
-            AppState.pilotazeData.forEach(row => AppState.pilotazeSelectedRows.add(row.id));
-        } else {
-            AppState.pilotazeSelectedRows.clear();
-        }
-        this.renderRows();
-    },
-
-    toggleRowSelect(id, checked) {
-        if (checked) {
-            AppState.pilotazeSelectedRows.add(id);
-        } else {
-            AppState.pilotazeSelectedRows.delete(id);
-        }
-        
-        const row = document.querySelector(`tr[data-id="${id}"]`);
-        if (row) {
-            row.classList.toggle('selected', checked);
-        }
-
-        const selectAll = document.getElementById('selectAllPilotaze');
-        if (selectAll) {
-            selectAll.checked = AppState.pilotazeSelectedRows.size === AppState.pilotazeData.length;
-        }
-    },
-
-    clearSelected() {
-        if (AppState.pilotazeSelectedRows.size === 0) {
-            alert('Nie zaznaczono żadnych wierszy do usunięcia.');
-            return;
-        }
-
-        if (confirm(`Czy na pewno usunąć ${AppState.pilotazeSelectedRows.size} zaznaczonych wierszy?`)) {
-            AppState.pilotazeData = AppState.pilotazeData.filter(row => !AppState.pilotazeSelectedRows.has(row.id));
-            AppState.pilotazeSelectedRows.clear();
-            this.renderRows();
-            this.autoSave();
-        }
-    },
-
-    saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_data_pilotaze', AppState.pilotazeData);
-        if (success) {
-            alert('Arkusz zapisany pomyślnie w localStorage');
-        } else {
-            alert('Błąd podczas zapisywania arkusza');
-        }
-    },
-
-    autoSave() {
-        Utils.saveToLocalStorage('aep_data_pilotaze', AppState.pilotazeData);
     }
-};
+    }
+});
 
 // ============================================
 // ŚPB MANAGER
