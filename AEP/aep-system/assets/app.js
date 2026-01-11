@@ -6196,11 +6196,42 @@ const SankcjeManager = {
 // ============================================
 // KONWOJE MANAGER
 // ============================================
-const KonwojeManager = {
-    render() {
-        const savedData = Utils.loadFromLocalStorage('aep_data_konwoje');
-        AppState.konwojeData = savedData || [];
-        AppState.konwojeSelectedRows.clear();
+const KonwojeManager = createBaseTableManager({
+    module: 'konwoje',
+    dataKey: 'konwojeData',
+    selectedRowsKey: 'konwojeSelectedRows',
+    storageKey: 'aep_data_konwoje',
+    tableBodyId: 'konwojeTableBody',
+    emptyMessage: 'Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.',
+
+    defaultRow: (id, date) => ({
+        id: id,
+        data: date,
+        miejscowy: 0,
+        zamiejscowy: 0,
+        ilosc_zw: 0,
+        ilosc_wpm: 0,
+        prokuratura: 0,
+        sad: 0,
+        wlasne: 0,
+        jzw: '',
+        dokumenty: 0,
+        osoby: 0,
+        przedmioty: 0,
+        jw_prowadzaca: 'OŻW Elbląg',
+        oddzial: 'Elbląg'
+    }),
+
+    renderRowHTML: () => {
+        // Ta metoda nie jest używana - KonwojeManager używa własnej metody renderRows()
+        return '';
+    },
+
+    customMethods: {
+        render: function() {
+            const savedData = Utils.loadFromLocalStorage('aep_data_konwoje');
+            AppState.konwojeData = savedData || [];
+            AppState.konwojeSelectedRows.clear();
 
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
@@ -6319,7 +6350,7 @@ const KonwojeManager = {
         this.syncScrollbars();
     },
 
-    initDateFilter() {
+    initDateFilter: function() {
         const toggleBtn = document.getElementById('toggleKonwojeDateFilterBtn');
         const dropdown = document.getElementById('konwojeDateFilterDropdown');
         const dateFromInput = document.getElementById('konwojeDateFrom');
@@ -6394,7 +6425,7 @@ const KonwojeManager = {
         });
     },
 
-    dateToInputFormat(date) {
+    dateToInputFormat: function(date) {
         if (!date) return '';
         if (typeof date === 'string') {
             const parts = date.split('.');
@@ -6409,14 +6440,14 @@ const KonwojeManager = {
         return `${year}-${month}-${day}`;
     },
 
-    parsePolishDate(dateStr) {
+    parsePolishDate: function(dateStr) {
         if (!dateStr) return null;
         const parts = dateStr.split('.');
         if (parts.length === 3) {
             const day = parseInt(parts[0], 10);
             const month = parseInt(parts[1], 10) - 1;
             const year = parseInt(parts[2], 10);
-            
+
             const date = new Date(year, month, day);
             date.setHours(0, 0, 0, 0);
             return date;
@@ -6424,15 +6455,15 @@ const KonwojeManager = {
         return null;
     },
 
-    getMonthFromDate(dateStr) {
-        const monthsShort = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 
+    getMonthFromDate: function(dateStr) {
+        const monthsShort = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze',
                             'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'];
-        
+
         const date = this.parsePolishDate(dateStr);
         return date ? monthsShort[date.getMonth()] : '—';
     },
 
-    applyDateFilter() {
+    applyDateFilter: function() {
         const { dateFrom, dateTo } = AppState.konwojeDateFilter;
         
         console.log('🔍 FILTROWANIE KONWOJÓW:', {
@@ -6511,7 +6542,7 @@ const KonwojeManager = {
         this.renderRows();
     },
 
-    clearDateFilter() {
+    clearDateFilter: function() {
         AppState.konwojeDateFilter.active = false;
         AppState.konwojeDateFilter.dateFrom = null;
         AppState.konwojeDateFilter.dateTo = null;
@@ -6527,7 +6558,7 @@ const KonwojeManager = {
         this.renderRows();
     },
 
-    syncScrollbars() {
+    syncScrollbars: function() {
         const topScrollbar = document.getElementById('topScrollbar');
         const bottomScrollbar = document.getElementById('bottomScrollbar');
         const tableWrapper = document.getElementById('konwojeTableWrapper');
@@ -6585,7 +6616,7 @@ const KonwojeManager = {
         });
     },
 
-    renderRows() {
+    renderRows: function() {
         const tbody = document.getElementById('konwojeTableBody');
         if (!tbody) return;
 
@@ -6747,113 +6778,9 @@ const KonwojeManager = {
         if (clearBtn) {
             clearBtn.disabled = AppState.konwojeData.length === 0;
         }
-    },
-
-    updateField(id, field, value) {
-        const row = AppState.konwojeData.find(r => r.id === id);
-        if (row) {
-            if (field === 'data' && value) {
-                const date = new Date(value);
-                const polishDate = date.toLocaleDateString('pl-PL');
-                row.data = polishDate;
-            } else {
-                // Walidacja: nie pozwalaj na wartości ujemne dla pól numerycznych
-                if (typeof value === 'number' && value < 0) {
-                    value = 0;
-                }
-                row[field] = value;
-            }
-            
-            this.renderRows();
-            this.autoSave();
-        }
-    },
-
-    addRow() {
-        const newId = AppState.konwojeData.length > 0 ? 
-            Math.max(...AppState.konwojeData.map(r => r.id)) + 1 : 1;
-        
-        const today = new Date();
-        const todayPolish = today.toLocaleDateString('pl-PL');
-        
-        const newRow = {
-            id: newId,
-            data: todayPolish,
-            miejscowy: 0,
-            zamiejscowy: 0,
-            ilosc_zw: 0,
-            ilosc_wpm: 0,
-            prokuratura: 0,
-            sad: 0,
-            wlasne: 0,
-            jzw: '',
-            dokumenty: 0,
-            osoby: 0,
-            przedmioty: 0,
-            jw_prowadzaca: 'OŻW Elbląg',
-            oddzial: 'Elbląg'
-        };
-
-        AppState.konwojeData.push(newRow);
-
-        this.renderRows();
-        this.autoSave();
-    },
-
-    toggleSelectAll(checked) {
-        if (checked) {
-            AppState.konwojeData.forEach(row => AppState.konwojeSelectedRows.add(row.id));
-        } else {
-            AppState.konwojeSelectedRows.clear();
-        }
-        this.renderRows();
-    },
-
-    toggleRowSelect(id, checked) {
-        if (checked) {
-            AppState.konwojeSelectedRows.add(id);
-        } else {
-            AppState.konwojeSelectedRows.delete(id);
-        }
-        
-        const row = document.querySelector(`tr[data-id="${id}"]`);
-        if (row) {
-            row.classList.toggle('selected', checked);
-        }
-
-        const selectAll = document.getElementById('selectAllKonwoje');
-        if (selectAll) {
-            selectAll.checked = AppState.konwojeSelectedRows.size === AppState.konwojeData.length;
-        }
-    },
-
-    clearSelected() {
-        if (AppState.konwojeSelectedRows.size === 0) {
-            alert('Nie zaznaczono żadnych wierszy do usunięcia.');
-            return;
-        }
-
-        if (confirm(`Czy na pewno usunąć ${AppState.konwojeSelectedRows.size} zaznaczonych wierszy?`)) {
-            AppState.konwojeData = AppState.konwojeData.filter(row => !AppState.konwojeSelectedRows.has(row.id));
-            AppState.konwojeSelectedRows.clear();
-            this.renderRows();
-            this.autoSave();
-        }
-    },
-
-    saveDraft() {
-        const success = Utils.saveToLocalStorage('aep_data_konwoje', AppState.konwojeData);
-        if (success) {
-            alert('Arkusz zapisany pomyślnie w localStorage');
-        } else {
-            alert('Błąd podczas zapisywania arkusza');
-        }
-    },
-
-    autoSave() {
-        Utils.saveToLocalStorage('aep_data_konwoje', AppState.konwojeData);
     }
-};
+    }
+});
 
 // ============================================
 // RAPORTY MANAGER
