@@ -7096,34 +7096,112 @@ const RaportyManager = {
                         </div>
                     </div>
 
-                    <!-- SEKCJA 2: GENERATOR RAPORTÓW (Coming Soon) -->
-                    <div class="raport-card raport-card-disabled">
+                    <!-- SEKCJA 2: GENERATOR RAPORTÓW PROFESJONALNYCH -->
+                    <div class="raport-card">
                         <div class="raport-card-header">
                             <i class="fas fa-file-pdf"></i>
-                            <h2>Generator raportów</h2>
-                            <span class="badge-soon">Wkrótce</span>
+                            <h2>Generator Raportów Profesjonalnych</h2>
+                            <span class="badge-new">Nowe!</span>
                         </div>
                         <div class="raport-card-body">
-                            <p class="raport-description">Generuj kompleksowe raporty PDF z wykresami i statystykami</p>
-                            <button class="btn-secondary" disabled>
-                                <i class="fas fa-lock"></i> Dostępne wkrótce
-                            </button>
-                        </div>
-                    </div>
+                            <p class="raport-description">Generuj kompleksowe raporty PDF z analizą, insights i rekomendacjami</p>
 
-                    <!-- SEKCJA 3: SZYBKIE RAPORTY (Coming Soon) -->
-                    <div class="raport-card raport-card-disabled">
-                        <div class="raport-card-header">
-                            <i class="fas fa-chart-bar"></i>
-                            <h2>Szybkie raporty</h2>
-                            <span class="badge-soon">Wkrótce</span>
-                        </div>
-                        <div class="raport-card-body">
-                            <p class="raport-description">Gotowe raporty: dzienny, tygodniowy, miesięczny</p>
-                            <div class="quick-reports-preview">
-                                <button class="btn-secondary btn-sm" disabled><i class="fas fa-calendar-day"></i> Raport dzienny</button>
-                                <button class="btn-secondary btn-sm" disabled><i class="fas fa-calendar-week"></i> Raport tygodniowy</button>
-                                <button class="btn-secondary btn-sm" disabled><i class="fas fa-calendar-alt"></i> Raport miesięczny</button>
+                            <div class="raport-form">
+                                <!-- TYP RAPORTU -->
+                                <div class="form-row">
+                                    <label>Typ raportu:</label>
+                                    <div class="report-type-selector">
+                                        <label class="report-type-card" data-type="executive">
+                                            <input type="radio" name="reportType" value="executive" checked>
+                                            <div class="report-type-content">
+                                                <i class="fas fa-crown"></i>
+                                                <h4>Executive Summary</h4>
+                                                <p>1-strona, key insights, dla zarządu</p>
+                                            </div>
+                                        </label>
+                                        <label class="report-type-card" data-type="operational">
+                                            <input type="radio" name="reportType" value="operational">
+                                            <div class="report-type-content">
+                                                <i class="fas fa-chart-line"></i>
+                                                <h4>Raport Operacyjny</h4>
+                                                <p>Pełny, z wykresami i tabelami</p>
+                                            </div>
+                                        </label>
+                                        <label class="report-type-card" data-type="performance">
+                                            <input type="radio" name="reportType" value="performance" disabled>
+                                            <div class="report-type-content">
+                                                <i class="fas fa-gauge-high"></i>
+                                                <h4>Performance Report</h4>
+                                                <p>Wkrótce</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- OKRES -->
+                                <div class="form-row">
+                                    <label>Okres raportu:</label>
+                                    <div class="period-selector">
+                                        <label class="radio-label">
+                                            <input type="radio" name="reportPeriod" value="last7" checked>
+                                            <span>Ostatnie 7 dni</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="reportPeriod" value="last30">
+                                            <span>Ostatnie 30 dni</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="reportPeriod" value="lastMonth">
+                                            <span>Poprzedni miesiąc</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="reportPeriod" value="custom">
+                                            <span>Zakres custom</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-row" id="customDateRange" style="display: none;">
+                                    <label>Zakres dat:</label>
+                                    <div class="date-range">
+                                        <input type="date" id="reportDateFrom" class="raport-date">
+                                        <span>do</span>
+                                        <input type="date" id="reportDateTo" class="raport-date">
+                                    </div>
+                                </div>
+
+                                <!-- OPCJE -->
+                                <div class="form-row">
+                                    <label>Opcje:</label>
+                                    <div class="checkbox-options">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="includeCharts" checked>
+                                            <span>Wykresy i wizualizacje</span>
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="includeInsights" checked>
+                                            <span>Auto-generated insights</span>
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="includeRecommendations" checked>
+                                            <span>Rekomendacje</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- GENERUJ -->
+                                <div class="form-actions">
+                                    <button class="btn-primary btn-large" id="generateReportButton">
+                                        <i class="fas fa-file-pdf"></i> Generuj raport PDF
+                                    </button>
+                                </div>
+
+                                <div id="reportProgress" class="report-progress" style="display: none;">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill"></div>
+                                    </div>
+                                    <p class="progress-text">Generowanie raportu...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -7137,10 +7215,25 @@ const RaportyManager = {
     attachEventListeners() {
         // Eksport pojedynczej zakładki
         document.getElementById('exportButton')?.addEventListener('click', () => this.exportSingleSection());
-        
+
         // Szybki eksport wszystkiego
         document.getElementById('exportAllExcel')?.addEventListener('click', () => this.exportAll('xlsx'));
         document.getElementById('exportAllCSV')?.addEventListener('click', () => this.exportAll('csv'));
+
+        // Generator raportów
+        document.getElementById('generateReportButton')?.addEventListener('click', () => this.generateProfessionalReport());
+
+        // Pokaż/ukryj custom date range
+        document.querySelectorAll('input[name="reportPeriod"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const customDateRange = document.getElementById('customDateRange');
+                if (e.target.value === 'custom') {
+                    customDateRange.style.display = 'block';
+                } else {
+                    customDateRange.style.display = 'none';
+                }
+            });
+        });
     },
 
     exportSingleSection() {
@@ -7297,6 +7390,93 @@ const RaportyManager = {
                     setTimeout(() => this.exportToCSV(data, section), 100);
                 }
             });
+        }
+    },
+
+    async generateProfessionalReport() {
+        try {
+            // Pokaż progress bar
+            const progressDiv = document.getElementById('reportProgress');
+            const progressText = progressDiv.querySelector('.progress-text');
+            const progressFill = progressDiv.querySelector('.progress-fill');
+            const button = document.getElementById('generateReportButton');
+
+            button.disabled = true;
+            progressDiv.style.display = 'block';
+            progressFill.style.width = '0%';
+
+            // Zbierz parametry
+            const reportType = document.querySelector('input[name="reportType"]:checked').value;
+            const reportPeriod = document.querySelector('input[name="reportPeriod"]:checked').value;
+
+            let dateFrom = null;
+            let dateTo = null;
+
+            // Oblicz daty na podstawie okresu
+            if (reportPeriod === 'last7') {
+                dateTo = new Date();
+                dateFrom = new Date(dateTo.getTime() - 7 * 24 * 60 * 60 * 1000);
+            } else if (reportPeriod === 'last30') {
+                dateTo = new Date();
+                dateFrom = new Date(dateTo.getTime() - 30 * 24 * 60 * 60 * 1000);
+            } else if (reportPeriod === 'lastMonth') {
+                dateTo = new Date();
+                dateTo.setDate(0); // Ostatni dzień poprzedniego miesiąca
+                dateFrom = new Date(dateTo.getFullYear(), dateTo.getMonth(), 1);
+            } else if (reportPeriod === 'custom') {
+                const fromInput = document.getElementById('reportDateFrom').value;
+                const toInput = document.getElementById('reportDateTo').value;
+
+                if (!fromInput || !toInput) {
+                    alert('Wybierz zakres dat');
+                    button.disabled = false;
+                    progressDiv.style.display = 'none';
+                    return;
+                }
+
+                dateFrom = new Date(fromInput);
+                dateTo = new Date(toInput);
+            }
+
+            // Konwertuj daty na format YYYY-MM-DD
+            const dateFromStr = dateFrom ? dateFrom.toISOString().split('T')[0] : null;
+            const dateToStr = dateTo ? dateTo.toISOString().split('T')[0] : null;
+
+            // Update progress
+            progressFill.style.width = '30%';
+            progressText.textContent = 'Przetwarzanie danych...';
+
+            // Generuj raport używając ReportGenerator
+            await new Promise(resolve => setTimeout(resolve, 300));
+            progressFill.style.width = '60%';
+            progressText.textContent = 'Generowanie PDF...';
+
+            const pdf = await ReportGenerator.generate(reportType, {
+                dateFrom: dateFromStr,
+                dateTo: dateToStr
+            });
+
+            progressFill.style.width = '100%';
+            progressText.textContent = 'Pobieranie...';
+
+            // Pobierz PDF
+            const filename = `Raport_${reportType}_${dateToStr || 'wszystkie'}.pdf`;
+            pdf.save(filename);
+
+            // Reset UI
+            await new Promise(resolve => setTimeout(resolve, 500));
+            button.disabled = false;
+            progressDiv.style.display = 'none';
+
+            console.log('Raport wygenerowany:', filename);
+        } catch (error) {
+            console.error('Błąd generowania raportu:', error);
+            alert('Wystąpił błąd podczas generowania raportu. Sprawdź konsolę.');
+
+            const button = document.getElementById('generateReportButton');
+            const progressDiv = document.getElementById('reportProgress');
+            button.disabled = false;
+            progressDiv.style.display = 'none';
         }
     }
 };
