@@ -7475,69 +7475,14 @@ const DashboardHub = {
                     </div>
                 </div>
 
-                <div class="stats-grid-compact">
-                    <div class="stat-card-mini stat-card-primary">
-                        <div class="stat-icon-mini"><i class="fas fa-car-side"></i></div>
-                        <div class="stat-content-mini">
-                            <div class="stat-label-mini">Patrole</div>
-                            <div class="stat-value-mini" id="stat-patrole">0</div>
-                        </div>
+                <!-- PERFORMANCE MATRIX - Wskaźniki Analityczne -->
+                <div class="performance-matrix-section">
+                    <div class="performance-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Performance Matrix - Wskaźniki Efektywności</h3>
                     </div>
-
-                    <div class="stat-card-mini stat-card-warning">
-                        <div class="stat-icon-mini"><i class="fas fa-exclamation-triangle"></i></div>
-                        <div class="stat-content-mini">
-                            <div class="stat-label-mini">Wykroczenia</div>
-                            <div class="stat-value-mini" id="stat-wykroczenia">0</div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card-mini stat-card-danger">
-                        <div class="stat-icon-mini"><i class="fas fa-shield-halved"></i></div>
-                        <div class="stat-content-mini">
-                            <div class="stat-label-mini">WKRD</div>
-                            <div class="stat-value-mini" id="stat-wkrd">0</div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card-mini stat-card-success">
-                        <div class="stat-icon-mini"><i class="fas fa-money-bill-wave"></i></div>
-                        <div class="stat-content-mini">
-                            <div class="stat-label-mini">Mandaty</div>
-                            <div class="stat-value-mini" id="stat-mandaty">0 PLN</div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card-mini stat-card-info">
-                        <div class="stat-icon-mini"><i class="fas fa-arrow-right-arrow-left"></i></div>
-                        <div class="stat-content-mini">
-                            <div class="stat-label-mini">Konwoje</div>
-                            <div class="stat-value-mini" id="stat-konwoje">0</div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card-mini stat-card-primary">
-                        <div class="stat-icon-mini"><i class="fas fa-hand-fist"></i></div>
-                        <div class="stat-content-mini">
-                            <div class="stat-label-mini">ŚPB</div>
-                            <div class="stat-value-mini" id="stat-spb">0</div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card-mini stat-card-warning">
-                        <div class="stat-icon-mini"><i class="fas fa-road"></i></div>
-                        <div class="stat-content-mini">
-                            <div class="stat-label-mini">Pilotaże</div>
-                            <div class="stat-value-mini" id="stat-pilotaze">0</div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card-mini stat-card-danger">
-                        <div class="stat-icon-mini"><i class="fas fa-car-burst"></i></div>
-                        <div class="stat-content-mini">
-                            <div class="stat-label-mini">Zdarzenia</div>
-                            <div class="stat-value-mini" id="stat-zdarzenia">0</div>
-                        </div>
+                    <div id="performance-matrix-grid" class="performance-matrix-grid">
+                        <!-- Wypełniane przez renderPerformanceMatrix() -->
                     </div>
                 </div>
 
@@ -7846,15 +7791,18 @@ const DashboardHub = {
             mandatyCount: sankcje.length
         });
 
-        // Aktualizuj karty KPI z trendami
-        this.updateKPICard('stat-patrole', currentPatrole, '', patroleTrend, patroleSparkline);
-        this.updateKPICard('stat-wykroczenia', currentWykroczenia, '', wykroczeniaTrend);
-        this.updateKPICard('stat-wkrd', currentWkrd, '', wkrdTrend);
-        this.updateKPICard('stat-mandaty', sumaMandatow.toLocaleString('pl-PL'), 'PLN', mandatyTrend);
-        this.updateKPICard('stat-konwoje', konwoje.length, '');
-        this.updateKPICard('stat-spb', spb.length, '');
-        this.updateKPICard('stat-pilotaze', pilotaze.length, '');
-        this.updateKPICard('stat-zdarzenia', zdarzenia.length, '');
+        // Renderuj Performance Matrix - Wskaźniki Analityczne
+        this.renderPerformanceMatrix({
+            patroleCount: currentPatrole,
+            wykroczeniaCount: currentWykroczenia,
+            wkrdCount: currentWkrd,
+            mandatySum: sumaMandatow,
+            mandatyCount: sankcje.length,
+            konwojeCount: konwoje.length,
+            spbCount: spb.length,
+            pilotazeCount: pilotaze.length,
+            zdarzeniaCount: zdarzenia.length
+        });
 
         // Wyświetl Top Insights
         this.renderTopInsights(insights);
@@ -8111,6 +8059,179 @@ const DashboardHub = {
     drawGaugeCharts(data) {
         // Ta metoda jest już niepotrzebna, usuwamy duplikację
         // Wszystko robi renderGoalGauges
+    },
+
+    // ============================================
+    // PERFORMANCE MATRIX - WSKAŹNIKI ANALITYCZNE
+    // ============================================
+
+    /**
+     * Oblicza wskaźniki efektywności dla Performance Matrix
+     * @param {Object} data - Dane wejściowe
+     * @returns {Array} Tablica wskaźników KPI
+     */
+    calculatePerformanceMetrics(data) {
+        const {
+            patroleCount,
+            wykroczeniaCount,
+            wkrdCount,
+            mandatySum,
+            mandatyCount,
+            konwojeCount,
+            spbCount,
+            pilotazeCount,
+            zdarzeniaCount
+        } = data;
+
+        const metrics = [];
+
+        // 1. Wykroczenia na Patrol (Detection Rate)
+        const wykroczeniaPerPatrol = patroleCount > 0
+            ? (wykroczeniaCount / patroleCount).toFixed(2)
+            : '0.00';
+        const wykroczeniaPerPatrolBenchmark = 2.5; // Benchmark: 2.5 wykroczeń na patrol
+        const wykroczeniaPerPatrolStatus = parseFloat(wykroczeniaPerPatrol) >= wykroczeniaPerPatrolBenchmark ? 'high' : 'low';
+
+        metrics.push({
+            name: 'Wykroczenia / Patrol',
+            value: wykroczeniaPerPatrol,
+            unit: 'wyk/patrol',
+            benchmark: wykroczeniaPerPatrolBenchmark,
+            status: wykroczeniaPerPatrolStatus,
+            description: 'Średnia liczba wykrytych wykroczeń na jeden patrol',
+            icon: 'fa-bullseye'
+        });
+
+        // 2. Mandaty na Patrol (Revenue Efficiency)
+        const mandatyPerPatrol = patroleCount > 0
+            ? Math.round(mandatySum / patroleCount)
+            : 0;
+        const mandatyPerPatrolBenchmark = 1500; // 1500 PLN na patrol
+        const mandatyPerPatrolStatus = mandatyPerPatrol >= mandatyPerPatrolBenchmark ? 'high' : 'low';
+
+        metrics.push({
+            name: 'Mandaty / Patrol',
+            value: mandatyPerPatrol.toLocaleString('pl-PL'),
+            unit: 'PLN/patrol',
+            benchmark: mandatyPerPatrolBenchmark.toLocaleString('pl-PL'),
+            status: mandatyPerPatrolStatus,
+            description: 'Średnia wartość mandatów wystawionych na jeden patrol',
+            icon: 'fa-coins'
+        });
+
+        // 3. Efektywność Wykrywania (Detection Efficiency)
+        const detectionEfficiency = wykroczeniaCount > 0
+            ? ((mandatyCount / wykroczeniaCount) * 100).toFixed(1)
+            : '0.0';
+        const detectionEfficiencyBenchmark = 75; // 75% - wykroczenia zakończone mandatem
+        const detectionEfficiencyStatus = parseFloat(detectionEfficiency) >= detectionEfficiencyBenchmark ? 'high' : 'low';
+
+        metrics.push({
+            name: 'Efektywność Wykrywania',
+            value: detectionEfficiency,
+            unit: '%',
+            benchmark: detectionEfficiencyBenchmark,
+            status: detectionEfficiencyStatus,
+            description: 'Odsetek wykroczeń zakończonych nałożeniem mandatu',
+            icon: 'fa-percentage'
+        });
+
+        // 4. Średnia Wartość Mandatu (Avg Fine Value)
+        const avgMandat = mandatyCount > 0
+            ? Math.round(mandatySum / mandatyCount)
+            : 0;
+        const avgMandatBenchmark = 300; // 300 PLN średni mandat
+        const avgMandatStatus = avgMandat >= avgMandatBenchmark ? 'high' : 'low';
+
+        metrics.push({
+            name: 'Średnia Wartość Mandatu',
+            value: avgMandat.toLocaleString('pl-PL'),
+            unit: 'PLN',
+            benchmark: avgMandatBenchmark.toLocaleString('pl-PL'),
+            status: avgMandatStatus,
+            description: 'Średnia wartość jednego wystawionego mandatu',
+            icon: 'fa-money-bill-trend-up'
+        });
+
+        // 5. Wskaźnik Zajętości (Activity Rate)
+        const totalActivities = wykroczeniaCount + wkrdCount + konwojeCount + spbCount + pilotazeCount + zdarzeniaCount;
+        const activityRate = patroleCount > 0
+            ? (totalActivities / patroleCount).toFixed(2)
+            : '0.00';
+        const activityRateBenchmark = 4.0; // 4 aktywności na patrol
+        const activityRateStatus = parseFloat(activityRate) >= activityRateBenchmark ? 'high' : 'low';
+
+        metrics.push({
+            name: 'Wskaźnik Zajętości',
+            value: activityRate,
+            unit: 'akt/patrol',
+            benchmark: activityRateBenchmark,
+            status: activityRateStatus,
+            description: 'Średnia liczba wszystkich aktywności na patrol',
+            icon: 'fa-gauge-high'
+        });
+
+        // 6. WKRD Coverage (WKRD per 100 patroli)
+        const wkrdPer100 = patroleCount > 0
+            ? ((wkrdCount / patroleCount) * 100).toFixed(1)
+            : '0.0';
+        const wkrdPer100Benchmark = 15; // 15 WKRD na 100 patroli
+        const wkrdPer100Status = parseFloat(wkrdPer100) >= wkrdPer100Benchmark ? 'high' : 'low';
+
+        metrics.push({
+            name: 'WKRD Coverage',
+            value: wkrdPer100,
+            unit: 'na 100 patroli',
+            benchmark: wkrdPer100Benchmark,
+            status: wkrdPer100Status,
+            description: 'Liczba kontroli WKRD na 100 patroli',
+            icon: 'fa-shield-halved'
+        });
+
+        return metrics;
+    },
+
+    /**
+     * Renderuje Performance Matrix
+     */
+    renderPerformanceMatrix(data) {
+        const container = document.getElementById('performance-matrix-grid');
+        if (!container) {
+            console.warn('Performance Matrix container not found');
+            return;
+        }
+
+        const metrics = this.calculatePerformanceMetrics(data);
+
+        const html = metrics.map(metric => {
+            const statusClass = metric.status === 'high' ? 'status-high' : 'status-low';
+            const statusIcon = metric.status === 'high' ? 'fa-arrow-up' : 'fa-arrow-down';
+            const statusText = metric.status === 'high' ? 'Powyżej benchmarku' : 'Poniżej benchmarku';
+
+            return `
+                <div class="performance-metric-card ${statusClass}">
+                    <div class="metric-header">
+                        <i class="fas ${metric.icon}"></i>
+                        <span class="metric-name">${metric.name}</span>
+                    </div>
+                    <div class="metric-value-row">
+                        <div class="metric-value">${metric.value}</div>
+                        <div class="metric-unit">${metric.unit}</div>
+                    </div>
+                    <div class="metric-benchmark">
+                        <span class="benchmark-label">Benchmark:</span>
+                        <span class="benchmark-value">${metric.benchmark} ${metric.unit}</span>
+                    </div>
+                    <div class="metric-status">
+                        <i class="fas ${statusIcon}"></i>
+                        <span>${statusText}</span>
+                    </div>
+                    <div class="metric-description">${metric.description}</div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = html;
     },
 
     /**
