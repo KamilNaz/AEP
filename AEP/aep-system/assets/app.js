@@ -2865,15 +2865,7 @@ const PatroleManager = {
 // ============================================
 // WYKROCZENIA MANAGER
 // ============================================
-/**
- * Manager for Wykroczenia (Violations) module
- * @namespace WykroczeniaManager
- */
 const WykroczeniaManager = {
-    /**
-     * Renders the Wykroczenia module view
-     * @returns {void}
-     */
     render() {
         const savedData = Utils.loadFromLocalStorage('aep_data_wykroczenia');
         AppState.wykroczeniaData = savedData || [];
