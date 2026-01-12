@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AEP - Arkusz Ewidencji Prewencyjnej - System zarządzania działaniami prewencyjnymi">
+    <title>AEP - Arkusz Ewidencji Prewencyjnej</title>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="assets/oswald.css">
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span class="logo-text">AEP</span>
+            </div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li>
+                    <a href="#start" class="nav-item" data-section="start">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        <span class="nav-text">Start</span>
+                    </a>
+                </li>
+                <li class="nav-separator"></li>
+                <li>
+                    <a href="#patrole" class="nav-item" data-section="patrole">
+                        <i class="fas fa-car-side nav-icon"></i>
+                        <span class="nav-text">Patrole</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#wykroczenia" class="nav-item" data-section="wykroczenia">
+                        <i class="fas fa-scale-balanced nav-icon"></i>
+                        <span class="nav-text">Wykroczenia</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#wkrd" class="nav-item" data-section="wkrd">
+                        <i class="fas fa-shield-halved nav-icon"></i>
+                        <span class="nav-text">WKRD</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#sankcje" class="nav-item" data-section="sankcje">
+                        <i class="fas fa-money-bill-wave nav-icon"></i>
+                        <span class="nav-text">Sankcje</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#konwoje" class="nav-item" data-section="konwoje">
+                        <i class="fas fa-arrow-right-arrow-left nav-icon"></i>
+                        <span class="nav-text">Konwoje</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#spb" class="nav-item" data-section="spb">
+                        <i class="fas fa-hand-fist nav-icon"></i>
+                        <span class="nav-text">ŚPB</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#pilotaze" class="nav-item" data-section="pilotaze">
+                        <i class="fas fa-road nav-icon"></i>
+                        <span class="nav-text">Pilotaże</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#zdarzenia" class="nav-item" data-section="zdarzenia">
+                        <i class="fas fa-car-burst nav-icon"></i>
+                        <span class="nav-text">Zdarzenia drogowe</span>
+                    </a>
+                </li>
+                <li class="nav-separator"></li>
+                <li>
+                    <a href="#inne" class="nav-item has-submenu" data-section="inne">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                        <span class="nav-text">Inne funkcjonalności</span>
+                        <svg class="submenu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </a>
+                    <ul class="submenu">
+                        <li><a href="#dashboardy" class="nav-item submenu-item" data-section="dashboardy">
+                            <i class="fas fa-chart-line nav-icon"></i>
+                            <span class="nav-text">Dashboardy</span>
+                        </a></li>
+                        <li><a href="#raporty" class="nav-item submenu-item" data-section="raporty">
+                            <i class="fas fa-file-lines nav-icon"></i>
+                            <span class="nav-text">Raporty</span>
+                        </a></li>
+                        <li><a href="#kalendarz" class="nav-item submenu-item" data-section="kalendarz">
+                            <i class="fas fa-calendar-days nav-icon"></i>
+                            <span class="nav-text">Kalendarz</span>
+                        </a></li>
+                        <li><a href="#mapa" class="nav-item submenu-item" data-section="mapa">
+                            <i class="fas fa-map-location-dot nav-icon"></i>
+                            <span class="nav-text">Mapa zdarzeń</span>
+                        </a></li>
+                        <li><a href="#audyt" class="nav-item submenu-item" data-section="audyt">
+                            <i class="fas fa-clock-rotate-left nav-icon"></i>
+                            <span class="nav-text">Log zmian / Audyt</span>
+                        </a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Toggle Button - FIXED POSITION, zawsze widoczny -->
+    <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar" onclick="toggleSidebar()">
+        <svg class="icon-hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <svg class="icon-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6"/>
+        </svg>
+    </button>
+
+    <!-- Main Content Area -->
+    <div class="main-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <nav class="breadcrumbs" id="breadcrumbs" aria-label="Breadcrumb">
+                    <span class="breadcrumb-item">Start</span>
+                </nav>
+            </div>
+            <div class="header-right">
+                <div class="search-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    <input type="text" id="globalSearch" placeholder="Szukaj..." aria-label="Search">
+                </div>
+                <button class="header-btn" id="importBtn" aria-label="Import danych">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    <span>Import</span>
+                </button>
+                <button class="header-btn" id="exportBtn" aria-label="Export danych">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    <span>Eksport</span>
+                </button>
+                <button class="header-btn" id="settingsBtn" aria-label="Ustawienia">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>Ustawienia</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <!-- Dynamic content will be injected here -->
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Footer © 2025</p>
+        </footer>
+    </div>
+
+    <!-- Modal for Import/Export -->
+    <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Placeholder</h2>
+                <button class="modal-close" id="modalClose" aria-label="Zamknij">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- SheetJS dla Export Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Chart.js dla wykresów -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    
+    <script src="assets/app.js"></script>
+</body>
+</html>
