@@ -557,3 +557,207 @@
         grid-template-columns: 35px 1fr 50px;
     }
 }
+
+/* ============================================
+   PERFORMANCE MATRIX - WSKAŹNIKI ANALITYCZNE
+   Profesjonalne odcienie szarości
+   ============================================ */
+
+/* === PERFORMANCE MATRIX SECTION === */
+.performance-matrix-section {
+    background: linear-gradient(135deg, rgba(75, 85, 99, 0.08), rgba(55, 65, 81, 0.05));
+    border: 1px solid rgba(107, 114, 128, 0.15);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    backdrop-filter: blur(10px);
+}
+
+.performance-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    color: #9ca3af;
+}
+
+.performance-header i {
+    font-size: 1.5rem;
+}
+
+.performance-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #e6e6e6;
+}
+
+/* === GRID LAYOUT === */
+.performance-matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+}
+
+/* === METRIC CARD === */
+.performance-metric-card {
+    background: rgba(26, 29, 41, 0.6);
+    border-radius: 10px;
+    padding: 1.5rem;
+    border: 1px solid rgba(107, 114, 128, 0.15);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.performance-metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(75, 85, 99, 0.05), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.performance-metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(75, 85, 99, 0.2);
+    border-color: rgba(107, 114, 128, 0.3);
+}
+
+.performance-metric-card:hover::before {
+    opacity: 1;
+}
+
+/* === STATUS INDICATORS === */
+.performance-metric-card.status-high {
+    border-left: 3px solid #9ca3af;
+}
+
+.performance-metric-card.status-low {
+    border-left: 3px solid #4b5563;
+}
+
+/* === METRIC HEADER === */
+.metric-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.metric-header i {
+    font-size: 1.5rem;
+    color: #9ca3af;
+}
+
+.metric-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e6e6e6;
+}
+
+/* === METRIC VALUE ROW === */
+.metric-value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.metric-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #e6e6e6;
+    line-height: 1;
+}
+
+.metric-unit {
+    font-size: 0.9rem;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+/* === BENCHMARK === */
+.metric-benchmark {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(75, 85, 99, 0.15);
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.benchmark-label {
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.benchmark-value {
+    color: #d1d5db;
+    font-weight: 600;
+}
+
+/* === STATUS === */
+.metric-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-high .metric-status {
+    color: #9ca3af;
+}
+
+.status-low .metric-status {
+    color: #6b7280;
+}
+
+.metric-status i {
+    font-size: 0.9rem;
+}
+
+/* === DESCRIPTION === */
+.metric-description {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    line-height: 1.4;
+    font-style: italic;
+}
+
+/* === ANIMACJE === */
+.performance-metric-card {
+    animation: fadeInUp 0.6s ease backwards;
+}
+
+.performance-metric-card:nth-child(1) { animation-delay: 0.1s; }
+.performance-metric-card:nth-child(2) { animation-delay: 0.15s; }
+.performance-metric-card:nth-child(3) { animation-delay: 0.2s; }
+.performance-metric-card:nth-child(4) { animation-delay: 0.25s; }
+.performance-metric-card:nth-child(5) { animation-delay: 0.3s; }
+.performance-metric-card:nth-child(6) { animation-delay: 0.35s; }
+
+/* === RESPONSYWNOŚĆ === */
+@media (max-width: 768px) {
+    .performance-matrix-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .metric-value {
+        font-size: 1.75rem;
+    }
+
+    .performance-metric-card {
+        padding: 1.25rem;
+    }
+}
