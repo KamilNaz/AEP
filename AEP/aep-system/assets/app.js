@@ -7486,17 +7486,6 @@ const DashboardHub = {
                     </div>
                 </div>
 
-                <!-- FAZA 2: PORÓWNANIA OKRESÓW -->
-                <div class="period-comparison-section">
-                    <div class="comparison-header">
-                        <i class="fas fa-calendar-days"></i>
-                        <h3>Porównanie okresów</h3>
-                    </div>
-                    <div class="comparison-grid" id="period-comparison-grid">
-                        <!-- Będzie generowane dynamicznie -->
-                    </div>
-                </div>
-
                 <!-- FAZA 2: TOP PERFORMERS -->
                 <div class="top-performers-section">
                     <div class="performers-header">
@@ -7807,18 +7796,6 @@ const DashboardHub = {
         // Wyświetl Top Insights
         this.renderTopInsights(insights);
 
-        // FAZA 2: Porównania okresów
-        this.renderPeriodComparison({
-            currentPatrole,
-            currentWykroczenia,
-            currentWkrd,
-            currentMandaty: sumaMandatow,
-            prevPatrole,
-            prevWykroczenia,
-            prevWkrd,
-            prevMandaty
-        });
-
         // FAZA 2: Top Performers
         this.renderTopPerformers(patrole, wykroczenia);
 
@@ -7840,16 +7817,6 @@ const DashboardHub = {
         this.drawPilotazeChart(pilotaze);
         this.drawZdarzeniaChart(zdarzenia);
 
-        // FAZA 2: Renderuj porównania okresów
-        this.renderPeriodComparison({
-            currentPatrole,
-            currentWykroczenia,
-            currentWkrd,
-            prevPatrole,
-            prevWykroczenia,
-            prevWkrd
-        });
-
         // FAZA 2: Renderuj Top Performers
         this.renderTopPerformers(patrole, wykroczenia);
 
@@ -7865,70 +7832,6 @@ const DashboardHub = {
     // ============================================
     // FAZA 2: NOWE METODY - PORÓWNANIA, TOP PERFORMERS, GAUGE CHARTS
     // ============================================
-
-    /**
-     * Renderuje porównanie okresów
-     */
-    renderPeriodComparison(data) {
-        const container = document.getElementById('period-comparison-grid');
-        if (!container) return;
-
-        const html = `
-            <div class="comparison-item">
-                <div class="comparison-metric">Patrole</div>
-                <div class="comparison-values">
-                    <div class="period-value current">
-                        <span class="period-label">Ten okres</span>
-                        <span class="period-number">${data.currentPatrole}</span>
-                    </div>
-                    <div class="period-value previous">
-                        <span class="period-label">Poprzedni</span>
-                        <span class="period-number">${data.prevPatrole}</span>
-                    </div>
-                    <div class="period-value change ${data.currentPatrole > data.prevPatrole ? 'positive' : 'negative'}">
-                        <span class="period-label">Zmiana</span>
-                        <span class="period-number">${data.currentPatrole > data.prevPatrole ? '+' : ''}${data.currentPatrole - data.prevPatrole}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="comparison-item">
-                <div class="comparison-metric">Wykroczenia</div>
-                <div class="comparison-values">
-                    <div class="period-value current">
-                        <span class="period-label">Ten okres</span>
-                        <span class="period-number">${data.currentWykroczenia}</span>
-                    </div>
-                    <div class="period-value previous">
-                        <span class="period-label">Poprzedni</span>
-                        <span class="period-number">${data.prevWykroczenia}</span>
-                    </div>
-                    <div class="period-value change ${data.currentWykroczenia > data.prevWykroczenia ? 'positive' : 'negative'}">
-                        <span class="period-label">Zmiana</span>
-                        <span class="period-number">${data.currentWykroczenia > data.prevWykroczenia ? '+' : ''}${data.currentWykroczenia - data.prevWykroczenia}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="comparison-item">
-                <div class="comparison-metric">WKRD</div>
-                <div class="comparison-values">
-                    <div class="period-value current">
-                        <span class="period-label">Ten okres</span>
-                        <span class="period-number">${data.currentWkrd}</span>
-                    </div>
-                    <div class="period-value previous">
-                        <span class="period-label">Poprzedni</span>
-                        <span class="period-number">${data.prevWkrd}</span>
-                    </div>
-                    <div class="period-value change ${data.currentWkrd > data.prevWkrd ? 'positive' : 'negative'}">
-                        <span class="period-label">Zmiana</span>
-                        <span class="period-number">${data.currentWkrd > data.prevWkrd ? '+' : ''}${data.currentWkrd - data.prevWkrd}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        container.innerHTML = html;
-    },
 
     /**
      * Renderuje Top Performers
