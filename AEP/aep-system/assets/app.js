@@ -7541,6 +7541,67 @@ const DashboardHub = {
                     </div>
                 </div>
 
+                <!-- FAZA 2: PORÓWNANIA OKRESÓW -->
+                <div class="period-comparison-section">
+                    <div class="comparison-header">
+                        <i class="fas fa-calendar-days"></i>
+                        <h3>Porównanie okresów</h3>
+                    </div>
+                    <div class="comparison-grid" id="period-comparison-grid">
+                        <!-- Będzie generowane dynamicznie -->
+                    </div>
+                </div>
+
+                <!-- FAZA 2: TOP PERFORMERS -->
+                <div class="top-performers-section">
+                    <div class="performers-header">
+                        <i class="fas fa-trophy"></i>
+                        <h3>Top Performers</h3>
+                    </div>
+                    <div class="performers-grid">
+                        <div class="performer-card">
+                            <div class="performer-header">
+                                <i class="fas fa-building"></i>
+                                <h4>Najaktywniejsze JŻW (Patrole)</h4>
+                            </div>
+                            <div class="performer-list" id="top-jzw-patrole">
+                                <!-- Dynamicznie generowane -->
+                            </div>
+                        </div>
+                        <div class="performer-card">
+                            <div class="performer-header">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <h4>Najaktywniejsze JŻW (Wykroczenia)</h4>
+                            </div>
+                            <div class="performer-list" id="top-jzw-wykroczenia">
+                                <!-- Dynamicznie generowane -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAZA 2: GAUGE CHARTS - CELE MIESIĘCZNE -->
+                <div class="goals-section">
+                    <div class="goals-header">
+                        <i class="fas fa-bullseye"></i>
+                        <h3>Realizacja celów miesięcznych</h3>
+                    </div>
+                    <div class="goals-grid">
+                        <div class="goal-gauge-card">
+                            <div id="gauge-patrole"></div>
+                        </div>
+                        <div class="goal-gauge-card">
+                            <div id="gauge-wykroczenia"></div>
+                        </div>
+                        <div class="goal-gauge-card">
+                            <div id="gauge-mandaty"></div>
+                        </div>
+                        <div class="goal-gauge-card">
+                            <div id="gauge-wkrd"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="charts-row-large">
                     <div class="chart-container-large">
                         <h3><i class="fas fa-chart-line"></i> Trend Patroli (ostatnie 30 dni)</h3>
@@ -7798,6 +7859,29 @@ const DashboardHub = {
         // Wyświetl Top Insights
         this.renderTopInsights(insights);
 
+        // FAZA 2: Porównania okresów
+        this.renderPeriodComparison({
+            currentPatrole,
+            currentWykroczenia,
+            currentWkrd,
+            currentMandaty: sumaMandatow,
+            prevPatrole,
+            prevWykroczenia,
+            prevWkrd,
+            prevMandaty
+        });
+
+        // FAZA 2: Top Performers
+        this.renderTopPerformers(patrole, wykroczenia);
+
+        // FAZA 2: Gauge Charts dla celów
+        this.renderGoalGauges({
+            patrole: { current: currentPatrole, target: 300 },
+            wykroczenia: { current: currentWykroczenia, target: 150 },
+            mandaty: { current: sumaMandatow, target: 50000 },
+            wkrd: { current: currentWkrd, target: 80 }
+        });
+
         // Rysuj wykresy
         this.drawPatroleTrendChart(patrole);
         this.drawWykroczeniaPieChart(wykroczenia);
@@ -7807,6 +7891,226 @@ const DashboardHub = {
         this.drawSPBChart(spb);
         this.drawPilotazeChart(pilotaze);
         this.drawZdarzeniaChart(zdarzenia);
+
+        // FAZA 2: Renderuj porównania okresów
+        this.renderPeriodComparison({
+            currentPatrole,
+            currentWykroczenia,
+            currentWkrd,
+            prevPatrole,
+            prevWykroczenia,
+            prevWkrd
+        });
+
+        // FAZA 2: Renderuj Top Performers
+        this.renderTopPerformers(patrole, wykroczenia);
+
+        // FAZA 2: Rysuj Gauge Charts
+        this.drawGaugeCharts({
+            patrole: currentPatrole,
+            wykroczenia: currentWykroczenia,
+            mandaty: sumaMandatow,
+            wkrd: currentWkrd
+        });
+    },
+
+    // ============================================
+    // FAZA 2: NOWE METODY - PORÓWNANIA, TOP PERFORMERS, GAUGE CHARTS
+    // ============================================
+
+    /**
+     * Renderuje porównanie okresów
+     */
+    renderPeriodComparison(data) {
+        const container = document.getElementById('period-comparison-grid');
+        if (!container) return;
+
+        const html = `
+            <div class="comparison-item">
+                <div class="comparison-metric">Patrole</div>
+                <div class="comparison-values">
+                    <div class="period-value current">
+                        <span class="period-label">Ten okres</span>
+                        <span class="period-number">${data.currentPatrole}</span>
+                    </div>
+                    <div class="period-value previous">
+                        <span class="period-label">Poprzedni</span>
+                        <span class="period-number">${data.prevPatrole}</span>
+                    </div>
+                    <div class="period-value change ${data.currentPatrole > data.prevPatrole ? 'positive' : 'negative'}">
+                        <span class="period-label">Zmiana</span>
+                        <span class="period-number">${data.currentPatrole > data.prevPatrole ? '+' : ''}${data.currentPatrole - data.prevPatrole}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="comparison-item">
+                <div class="comparison-metric">Wykroczenia</div>
+                <div class="comparison-values">
+                    <div class="period-value current">
+                        <span class="period-label">Ten okres</span>
+                        <span class="period-number">${data.currentWykroczenia}</span>
+                    </div>
+                    <div class="period-value previous">
+                        <span class="period-label">Poprzedni</span>
+                        <span class="period-number">${data.prevWykroczenia}</span>
+                    </div>
+                    <div class="period-value change ${data.currentWykroczenia > data.prevWykroczenia ? 'positive' : 'negative'}">
+                        <span class="period-label">Zmiana</span>
+                        <span class="period-number">${data.currentWykroczenia > data.prevWykroczenia ? '+' : ''}${data.currentWykroczenia - data.prevWykroczenia}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="comparison-item">
+                <div class="comparison-metric">WKRD</div>
+                <div class="comparison-values">
+                    <div class="period-value current">
+                        <span class="period-label">Ten okres</span>
+                        <span class="period-number">${data.currentWkrd}</span>
+                    </div>
+                    <div class="period-value previous">
+                        <span class="period-label">Poprzedni</span>
+                        <span class="period-number">${data.prevWkrd}</span>
+                    </div>
+                    <div class="period-value change ${data.currentWkrd > data.prevWkrd ? 'positive' : 'negative'}">
+                        <span class="period-label">Zmiana</span>
+                        <span class="period-number">${data.currentWkrd > data.prevWkrd ? '+' : ''}${data.currentWkrd - data.prevWkrd}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = html;
+    },
+
+    /**
+     * Renderuje Top Performers
+     */
+    renderTopPerformers(patroleData, wykroczeniaData) {
+        // Top JŻW dla Patroli (placeholder - w przyszłości z prawdziwymi danymi)
+        const topJzwPatrole = [
+            { name: 'OŻW Elbląg', value: 89, percent: 100 },
+            { name: 'OŻW Warszawa', value: 67, percent: 75 },
+            { name: 'OŻW Kraków', value: 45, percent: 51 }
+        ];
+
+        const topJzwWykroczenia = [
+            { name: 'OŻW Elbląg', value: 134, percent: 100 },
+            { name: 'OŻW Gdańsk', value: 98, percent: 73 },
+            { name: 'OŻW Poznań', value: 76, percent: 57 }
+        ];
+
+        this.renderTopPerformerList('top-jzw-patrole', topJzwPatrole);
+        this.renderTopPerformerList('top-jzw-wykroczenia', topJzwWykroczenia);
+    },
+
+    renderTopPerformerList(containerId, data) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const html = data.map((item, index) => `
+            <div class="performer-item">
+                <div class="performer-rank">${index + 1}</div>
+                <div class="performer-name">${item.name}</div>
+                <div class="performer-value">${item.value}</div>
+                <div class="performer-bar">
+                    <div class="performer-bar-fill" style="width: ${item.percent}%"></div>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = html;
+    },
+
+    /**
+     * Renderuje Gauge Charts dla celów miesięcznych
+     */
+    renderGoalGauges(goals) {
+        // Gauge dla Patroli
+        this.drawGaugeChart('gauge-patrole', 'Patrole', goals.patrole.current, goals.patrole.target);
+        this.drawGaugeChart('gauge-wykroczenia', 'Wykroczenia', goals.wykroczenia.current, goals.wykroczenia.target);
+        this.drawGaugeChart('gauge-mandaty', 'Mandaty (PLN)', goals.mandaty.current, goals.mandaty.target);
+        this.drawGaugeChart('gauge-wkrd', 'WKRD', goals.wkrd.current, goals.wkrd.target);
+    },
+
+    /**
+     * Rysuje pojedynczy Gauge Chart używając ApexCharts
+     */
+    drawGaugeChart(containerId, label, current, target) {
+        const percent = Math.round((current / target) * 100);
+
+        const options = {
+            series: [percent],
+            chart: {
+                type: 'radialBar',
+                height: 250,
+                background: 'transparent'
+            },
+            plotOptions: {
+                radialBar: {
+                    hollow: {
+                        size: '65%',
+                        background: 'rgba(26, 29, 41, 0.5)'
+                    },
+                    track: {
+                        background: 'rgba(74, 144, 226, 0.1)',
+                        strokeWidth: '100%'
+                    },
+                    dataLabels: {
+                        show: true,
+                        name: {
+                            show: true,
+                            fontSize: '14px',
+                            color: '#e6e6e6',
+                            offsetY: -10
+                        },
+                        value: {
+                            show: true,
+                            fontSize: '24px',
+                            fontWeight: 700,
+                            color: '#e6e6e6',
+                            offsetY: 5,
+                            formatter: function (val) {
+                                return val + '%';
+                            }
+                        }
+                    }
+                }
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shade: 'dark',
+                    type: 'horizontal',
+                    shadeIntensity: 0.5,
+                    gradientToColors: percent >= 100 ? ['#10b981'] : percent >= 75 ? ['#4a90e2'] : ['#f59e0b'],
+                    opacityFrom: 1,
+                    opacityTo: 1,
+                    stops: [0, 100]
+                }
+            },
+            stroke: {
+                lineCap: 'round'
+            },
+            labels: [label],
+            colors: percent >= 100 ? ['#10b981'] : percent >= 75 ? ['#4a90e2'] : ['#f59e0b']
+        };
+
+        const chart = new ApexCharts(document.getElementById(containerId), options);
+        chart.render();
+
+        // Dodaj tekst pod wykresem
+        const container = document.getElementById(containerId);
+        if (container) {
+            const info = document.createElement('div');
+            info.className = 'gauge-info';
+            info.innerHTML = `<span>${current.toLocaleString('pl-PL')} / ${target.toLocaleString('pl-PL')}</span>`;
+            container.appendChild(info);
+        }
+    },
+
+    drawGaugeCharts(data) {
+        // Ta metoda jest już niepotrzebna, usuwamy duplikację
+        // Wszystko robi renderGoalGauges
     },
 
     /**
