@@ -3800,6 +3800,37 @@ const WykroczeniaManager = {
         }
     },
 
+    validatePodstawaRodzaj(row) {
+        // Sprawdź czy jest jakaś podstawa interwencji
+        const maPodstawe = (row.nar_ubiorcz || 0) +
+                           (row.inne_nar || 0) +
+                           (row.nar_kk || 0) +
+                           (row.wykr_porzadek || 0) +
+                           (row.wykr_bezp || 0) +
+                           (row.nar_dyscyplina || 0) +
+                           (row.nar_bron || 0) +
+                           (row.nar_ochr_zdr || 0) +
+                           (row.nar_zakwat || 0) +
+                           (row.pozostale || 0) > 0;
+
+        // Sprawdź czy jest jakiś rodzaj interwencji
+        const maRodzaj = (row.zatrzymanie || 0) +
+                         (row.doprowadzenie || 0) +
+                         (row.wylegitymowanie || 0) +
+                         (row.pouczenie || 0) +
+                         (row.mandat_bool ? 1 : 0) > 0;
+
+        // BŁĄD: Jest podstawa, ale brak rodzaju
+        if (maPodstawe && !maRodzaj) {
+            return {
+                valid: false,
+                message: "Zaznaczono podstawę interwencji, ale nie wybrano rodzaju interwencji"
+            };
+        }
+
+        return { valid: true };
+    },
+
     autoSave() {
         Utils.saveToLocalStorage('aep_data_wykroczenia', AppState.wykroczeniaData);
     },
