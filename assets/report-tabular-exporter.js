@@ -478,8 +478,27 @@ const TabularExporter = {
             putOnlyUsedFonts: true
         });
 
-        // Set font that supports Polish characters - courier has better UTF-8 support
-        doc.setFont('courier');
+        // Add Roboto font for full Polish character support (ą, ć, ę, ł, ń, ó, ś, ź, ż)
+        // vfs_fonts.js provides the font data
+        if (window.pdfMake && window.pdfMake.vfs) {
+            try {
+                const robotoFont = window.pdfMake.vfs['Roboto-Regular.ttf'];
+                if (robotoFont) {
+                    doc.addFileToVFS('Roboto-Regular.ttf', robotoFont);
+                    doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+                    doc.setFont('Roboto');
+                } else {
+                    console.warn('Roboto font not found in vfs_fonts, falling back to helvetica');
+                    doc.setFont('helvetica');
+                }
+            } catch (error) {
+                console.error('Error loading Roboto font:', error);
+                doc.setFont('helvetica');
+            }
+        } else {
+            console.warn('vfs_fonts not loaded, falling back to helvetica');
+            doc.setFont('helvetica');
+        }
 
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
@@ -493,12 +512,12 @@ const TabularExporter = {
 
         // Title
         doc.setFontSize(16);
-        doc.setFont('courier', 'bold');
+        doc.setFont('Roboto', 'bold');
         doc.text('Raport Tabelaryczny - AEP', marginLeft, yPos);
 
         yPos += 6;
         doc.setFontSize(9);
-        doc.setFont('courier', 'normal');
+        doc.setFont('Roboto', 'normal');
         doc.text(`Data wygenerowania: ${new Date().toLocaleString('pl-PL')}`, marginLeft, yPos);
 
         if (dateFrom || dateTo) {
@@ -515,11 +534,11 @@ const TabularExporter = {
 
             if (!data || data.length === 0) {
                 doc.setFontSize(12);
-                doc.setFont('courier', 'bold');
+                doc.setFont('Roboto', 'bold');
                 doc.text(this.moduleNames[module], marginLeft, yPos);
                 yPos += 6;
                 doc.setFontSize(9);
-                doc.setFont('courier', 'italic');
+                doc.setFont('Roboto', 'italic');
                 doc.text('Brak danych', marginLeft, yPos);
                 yPos += 8;
                 continue;
@@ -528,11 +547,11 @@ const TabularExporter = {
             const filteredData = this.filterByDateRange(data, dateFrom, dateTo);
             if (filteredData.length === 0) {
                 doc.setFontSize(12);
-                doc.setFont('courier', 'bold');
+                doc.setFont('Roboto', 'bold');
                 doc.text(this.moduleNames[module], marginLeft, yPos);
                 yPos += 6;
                 doc.setFontSize(9);
-                doc.setFont('courier', 'italic');
+                doc.setFont('Roboto', 'italic');
                 doc.text('Brak danych w wybranym zakresie dat', marginLeft, yPos);
                 yPos += 8;
                 continue;
@@ -540,11 +559,11 @@ const TabularExporter = {
 
             // Module header
             doc.setFontSize(12);
-            doc.setFont('courier', 'bold');
+            doc.setFont('Roboto', 'bold');
             doc.text(this.moduleNames[module], marginLeft, yPos);
             yPos += 5;
             doc.setFontSize(8);
-            doc.setFont('courier', 'normal');
+            doc.setFont('Roboto', 'normal');
             doc.text(`Liczba rekordów: ${filteredData.length}`, marginLeft, yPos);
             yPos += 4;
 
@@ -600,9 +619,9 @@ const TabularExporter = {
                 margin: { left: marginLeft, right: marginRight },
                 tableWidth: 'auto',
                 styles: {
-                    font: 'courier',
-                    fontSize: 5,
-                    cellPadding: 1,
+                    font: 'Roboto',
+                    fontSize: 4.5,
+                    cellPadding: 0.8,
                     overflow: 'linebreak',
                     cellWidth: 'auto',
                     halign: 'left',
@@ -611,12 +630,12 @@ const TabularExporter = {
                     lineWidth: 0.1
                 },
                 headStyles: {
-                    font: 'courier',
+                    font: 'Roboto',
                     fillColor: [75, 85, 99],
                     textColor: [255, 255, 255],
                     fontStyle: 'bold',
                     halign: 'center',
-                    fontSize: 5.5
+                    fontSize: 5
                 },
                 alternateRowStyles: {
                     fillColor: [245, 245, 245]
@@ -625,7 +644,7 @@ const TabularExporter = {
                     const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
                     const totalPages = doc.internal.getNumberOfPages();
                     doc.setFontSize(7);
-                    doc.setFont('courier', 'normal');
+                    doc.setFont('Roboto', 'normal');
                     doc.text(`Strona ${pageNumber} / ${totalPages}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
                 }
             });
@@ -643,7 +662,7 @@ const TabularExporter = {
         for (let i = 1; i <= totalPages; i++) {
             doc.setPage(i);
             doc.setFontSize(7);
-            doc.setFont('courier', 'normal');
+            doc.setFont('Roboto', 'normal');
             doc.text(`Strona ${i} / ${totalPages}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
         }
 
