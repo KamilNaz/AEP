@@ -360,9 +360,108 @@ const TabularExporter = {
         });
         ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w, 50) })); // Max width 50
 
-        // Apply bold styling to headers (first row of each table section)
-        // Note: SheetJS styling requires additional library (xlsx-style),
-        // so we'll skip advanced styling for now. Headers are still readable.
+        // Apply professional styling
+        const range = XLSX.utils.decode_range(ws['!ref']);
+
+        // Track which rows are headers
+        const headerRows = new Set();
+        let currentRow = 0;
+
+        // Find header rows (they contain column names from columnDefinitions)
+        worksheetData.forEach((row, rowIndex) => {
+            if (row.length > 5 && row[0] && typeof row[0] === 'string') {
+                // Check if this looks like a data header (contains terms like "Data", "Miesiąc", etc.)
+                const firstCells = row.slice(0, 3).join(' ').toLowerCase();
+                if (firstCells.includes('miesiąc') || firstCells.includes('data') ||
+                    firstCells.includes('nr jw') || firstCells.includes('nazwa jw')) {
+                    headerRows.add(rowIndex);
+                }
+            }
+            // Title row (first row)
+            if (rowIndex === 0) {
+                headerRows.add(rowIndex);
+            }
+            // Module name rows (single cell with module name)
+            if (row.length > 0 && row[0] && typeof row[0] === 'string' &&
+                (row[0].includes('Patrole') || row[0].includes('Wykroczenia') ||
+                 row[0].includes('WKRD') || row[0].includes('Sankcje') ||
+                 row[0].includes('Konwoje') || row[0].includes('ŚPB') ||
+                 row[0].includes('Pilotaże') || row[0].includes('Zdarzenia'))) {
+                headerRows.add(rowIndex);
+            }
+        });
+
+        // Apply styles to all cells
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[cellAddress]) continue;
+
+                const cell = ws[cellAddress];
+
+                // Initialize style object
+                if (!cell.s) cell.s = {};
+
+                // Apply styles based on row type
+                if (R === 0) {
+                    // Title row - bold, large, centered
+                    cell.s = {
+                        font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
+                        fill: { fgColor: { rgb: "4B5563" } },
+                        alignment: { horizontal: "center", vertical: "center" },
+                        border: {
+                            top: { style: "thin", color: { rgb: "000000" } },
+                            bottom: { style: "thin", color: { rgb: "000000" } },
+                            left: { style: "thin", color: { rgb: "000000" } },
+                            right: { style: "thin", color: { rgb: "000000" } }
+                        }
+                    };
+                } else if (headerRows.has(R) && worksheetData[R].length > 5) {
+                    // Data header rows - bold, gray background
+                    cell.s = {
+                        font: { bold: true, sz: 11, color: { rgb: "FFFFFF" } },
+                        fill: { fgColor: { rgb: "6B7280" } },
+                        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+                        border: {
+                            top: { style: "thin", color: { rgb: "000000" } },
+                            bottom: { style: "thin", color: { rgb: "000000" } },
+                            left: { style: "thin", color: { rgb: "000000" } },
+                            right: { style: "thin", color: { rgb: "000000" } }
+                        }
+                    };
+                } else if (headerRows.has(R)) {
+                    // Module name rows - bold, darker gray
+                    cell.s = {
+                        font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
+                        fill: { fgColor: { rgb: "374151" } },
+                        alignment: { horizontal: "left", vertical: "center" },
+                        border: {
+                            top: { style: "thin", color: { rgb: "000000" } },
+                            bottom: { style: "thin", color: { rgb: "000000" } },
+                            left: { style: "thin", color: { rgb: "000000" } },
+                            right: { style: "thin", color: { rgb: "000000" } }
+                        }
+                    };
+                } else {
+                    // Regular data rows - alternating colors
+                    const isEvenRow = R % 2 === 0;
+                    cell.s = {
+                        font: { sz: 10 },
+                        fill: { fgColor: { rgb: isEvenRow ? "FFFFFF" : "F3F4F6" } },
+                        alignment: { horizontal: "left", vertical: "center", wrapText: true },
+                        border: {
+                            top: { style: "thin", color: { rgb: "E5E7EB" } },
+                            bottom: { style: "thin", color: { rgb: "E5E7EB" } },
+                            left: { style: "thin", color: { rgb: "E5E7EB" } },
+                            right: { style: "thin", color: { rgb: "E5E7EB" } }
+                        }
+                    };
+                }
+            }
+        }
+
+        // Freeze first 4 rows (title + metadata)
+        ws['!freeze'] = { xSplit: 0, ySplit: 4, topLeftCell: 'A5', activePane: 'bottomLeft' };
 
         // Add worksheet to workbook
         XLSX.utils.book_append_sheet(wb, ws, 'Raport');
@@ -504,20 +603,30 @@ const TabularExporter = {
                 body: body,
                 startY: yPos,
                 margin: { left: marginLeft, right: marginRight },
+                tableWidth: 'auto',
                 styles: {
-                    fontSize: 7,
-                    cellPadding: 2,
+                    fontSize: 6,
+                    cellPadding: 1.5,
                     overflow: 'linebreak',
-                    cellWidth: 'wrap'
+                    cellWidth: 'auto',
+                    halign: 'left',
+                    valign: 'middle',
+                    font: 'helvetica',
+                    lineColor: [200, 200, 200],
+                    lineWidth: 0.1
                 },
                 headStyles: {
-                    fillColor: [75, 85, 99], // Grey
+                    fillColor: [75, 85, 99],
                     textColor: [255, 255, 255],
                     fontStyle: 'bold',
-                    halign: 'center'
+                    halign: 'center',
+                    fontSize: 6.5
                 },
                 alternateRowStyles: {
                     fillColor: [245, 245, 245]
+                },
+                columnStyles: {
+                    // Auto-adjust column widths
                 },
                 didDrawPage: (data) => {
                     // Add page numbers

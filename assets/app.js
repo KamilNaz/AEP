@@ -7013,16 +7013,16 @@ const RaportyManager = {
         mainContent.innerHTML = `
             <div class="section-view">
                 <div class="section-header">
-                    <h1 class="section-title">📊 Raporty</h1>
+                    <h1 class="section-title"><i class="fas fa-file-lines" style="color: #9ca3af;"></i> Raporty</h1>
                     <p class="section-subtitle">Eksportuj dane i generuj raporty</p>
                 </div>
 
                 <div class="raporty-container">
-                    <!-- SEKCJA 1: RAPORT TABELARYCZNY (MULTI-KATEGORIA) -->
+                    <!-- SEKCJA 1: RAPORT TABELARYCZNY -->
                     <div class="raport-card">
                         <div class="raport-card-header">
                             <i class="fas fa-table"></i>
-                            <h2>Raport Tabelaryczny - Multi-kategoria</h2>
+                            <h2>Raport tabelaryczny</h2>
                         </div>
                         <div class="raport-card-body">
                             <p class="raport-description">Eksportuj surowe dane z wielu modułów jednocześnie do PDF (landscape) lub Excel</p>
