@@ -1,186 +1,12 @@
 /**
- * Tabular Report Exporter for AEP
- * Exports raw data tables to PDF (landscape) or XLSX formats
+ * Tabular Report Exporter for AEP - Version 2
+ * With proper two-level headers and abbreviated column names
  *
  * @author AEP System
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 const TabularExporter = {
-    /**
-     * Column definitions with labels for all modules
-     * Maps internal field names to human-readable Polish labels
-     */
-    columnDefinitions: {
-        patrole: {
-            month: 'Miesiąc',
-            date: 'Data',
-            razem_rodzaj: 'Rodzaj - RAZEM',
-            interven: 'Interwencyjny',
-            pieszych: 'Pieszych',
-            wodnych: 'Wodnych',
-            zmot: 'Zmotoryzowany',
-            wkrd: 'WKRD',
-            zand: 'Żandarmeria',
-            wpm: 'WPM',
-            motorowek: 'Motorowerki',
-            razem_wspolz: 'Współdziałanie - RAZEM',
-            policja: 'Policja',
-            sg: 'Straż Graniczna',
-            sop: 'SOP',
-            sok: 'SOK',
-            inne: 'Inne',
-            jwProwadzaca: 'JW Prowadząca',
-            oddzialZW: 'Oddział ZW'
-        },
-        wykroczenia: {
-            month: 'Miesiąc',
-            data: 'Data',
-            nr_jw: 'Nr JW',
-            nazwa_jw: 'Nazwa JW',
-            miejsce: 'Miejsce stacjonowania',
-            podleglosc: 'Podległość RSZ',
-            grupa: 'Grupa osobowa',
-            legitymowany: 'Legitymowany',
-            podstawa: 'Podstawa interwencji',
-            stan_razem: 'Stan - RAZEM',
-            pod_wplywem_alk: 'Pod wpływem alkoholu',
-            nietrzezwy: 'W stanie nietrzeźwości',
-            pod_wplywem_srod: 'Pod wpływem środków odurzających',
-            rodzaj_razem: 'Rodzaj - RAZEM',
-            zatrzymanie: 'Zatrzymanie',
-            doprowadzenie: 'Doprowadzenie',
-            wylegitymowanie: 'Wylegitymowanie',
-            pouczenie: 'Pouczenie',
-            mandat: 'Mandat',
-            wysokosc_mandatu: 'Wysokość mandatu (zł)',
-            w_czasie_sluzby: 'W czasie służby',
-            jzw_prowadzaca: 'JŻW Prowadząca',
-            oddzial: 'Oddział'
-        },
-        wkrd: {
-            month: 'Miesiąc',
-            data: 'Data',
-            nr_jw: 'Nr JW',
-            nazwa_jw: 'Nazwa JW',
-            miejsce: 'Miejsce stacjonowania',
-            podleglosc: 'Podległość RSZ',
-            razem: 'RAZEM',
-            wpm: 'WPM',
-            ppm: 'PPM',
-            pozostale: 'Pozostałe',
-            oddzial: 'Oddział'
-        },
-        sankcje: {
-            month: 'Miesiąc',
-            data: 'Data',
-            nr_jw: 'Nr JW',
-            nazwa_jw: 'Nazwa JW',
-            miejsce: 'Miejsce stacjonowania',
-            podleglosc: 'Podległość RSZ',
-            grupa: 'Grupa osobowa',
-            legitymowany: 'Legitymowany',
-            rodzaj_razem: 'Rodzaj pojazdu - RAZEM',
-            wpm: 'WPM',
-            ppm: 'PPM',
-            pieszy: 'Pieszy',
-            przyczyna: 'Przyczyna',
-            sankcja_razem: 'Sankcja - RAZEM',
-            zatrzymanie_dr: 'Zatrzymanie DR',
-            zatrzymanie_pj: 'Zatrzymanie PJ',
-            mandat: 'Mandat',
-            pouczenie: 'Pouczenie',
-            inne: 'Inne',
-            wysokosc_mandatu: 'Wysokość mandatu (zł)',
-            w_czasie_sluzby: 'W czasie służby',
-            jzw_prowadzaca: 'JŻW Prowadząca',
-            oddzial: 'Oddział'
-        },
-        konwoje: {
-            month: 'Miesiąc',
-            data: 'Data',
-            rodzaj_razem: 'Rodzaj - RAZEM',
-            miejscowy: 'Miejscowy',
-            zamiejscowy: 'Zamiejscowy',
-            ilosc_zw: 'Ilość żołnierzy',
-            ilosc_wpm: 'Ilość WPM',
-            zleceniodawca_razem: 'Zleceniodawca - RAZEM',
-            prokuratura: 'Prokuratura',
-            sad: 'Sąd',
-            wlasne: 'Własne',
-            jzw: 'JŻW',
-            co_konwojowano_razem: 'Co konwojowano - RAZEM',
-            dokumenty: 'Dokumenty',
-            osoby: 'Osoby',
-            przedmioty: 'Przedmioty',
-            jw_prowadzaca: 'JW Prowadząca',
-            oddzial: 'Oddział'
-        },
-        spb: {
-            data: 'Data',
-            nr_jw: 'Nr JW',
-            nazwa_jw: 'Nazwa JW',
-            miejsce: 'Miejsce stacjonowania',
-            podleglosc: 'Podległość RSZ',
-            grupa: 'Grupa osobowa',
-            sila_fizyczna: 'Siła fizyczna',
-            kajdanki: 'Kajdanki',
-            kaftan: 'Kaftan bezpieczeństwa',
-            kask: 'Kask ochronny',
-            siatka: 'Siatka obezwładniająca',
-            palka: 'Pałka wielofunkcyjna',
-            pies: 'Pies służbowy',
-            chem_sr: 'Środki chemiczne',
-            paralizator: 'Paralizator',
-            kolczatka: 'Kolczatka drogowa',
-            bron: 'Broń palna',
-            podczas_konw: 'Podczas konwoju',
-            zatrzymania: 'Liczba zatrzymań',
-            doprowadzenia: 'Liczba doprowadzeń',
-            inne_patrol: 'Inne/Patrol',
-            ranny: 'Skutek - Ranny',
-            smierc: 'Skutek - Śmierć',
-            jzw_prowadzaca: 'JŻW Prowadząca',
-            oddzial: 'Oddział'
-        },
-        pilotaze: {
-            data: 'Data',
-            wlasne: 'Własne',
-            sojusznicze: 'Sojusznicze',
-            zmotoryzowany: 'Zmotoryzowany',
-            wkrd: 'WKRD',
-            ilosc_zw: 'Ilość żołnierzy',
-            wpm: 'WPM',
-            jzw: 'JŻW',
-            oddzial: 'Oddział'
-        },
-        zdarzenia: {
-            month: 'Miesiąc',
-            data: 'Data',
-            nr_jw: 'Nr JW',
-            nazwa_jw: 'Nazwa JW',
-            miejsce: 'Miejsce stacjonowania',
-            podleglosc: 'Podległość RSZ',
-            grupa: 'Grupa osobowa',
-            rodzaj_razem: 'Rodzaj zdarzenia - RAZEM',
-            wypadek: 'Wypadek',
-            kolizja: 'Kolizja',
-            pojazd_razem: 'Rodzaj pojazdu - RAZEM',
-            wpm: 'WPM',
-            ppm: 'PPM',
-            typ_sprawca: 'Typ - Sprawca',
-            typ_poszkodowany: 'Typ - Poszkodowany',
-            przyczyna: 'Przyczyna',
-            sankcja: 'Sankcja',
-            wysokosc_mandatu: 'Wysokość mandatu (zł)',
-            w_czasie_sluzby: 'W czasie służby',
-            ilosc_rannych: 'Ilość rannych',
-            ilosc_zabitych: 'Ilość zabitych',
-            jzw_prowadzaca: 'JŻW Prowadząca',
-            oddzial: 'Oddział'
-        }
-    },
-
     /**
      * Module display names in Polish
      */
@@ -196,9 +22,213 @@ const TabularExporter = {
     },
 
     /**
+     * Two-level header structure for PDF export
+     * Each module defines:
+     * - headers: array of {label, colspan, rowspan} for level 1
+     * - subheaders: array of labels for level 2 (only for colspan > 1)
+     * - fields: array of field names matching data structure
+     */
+    tableStructures: {
+        patrole: {
+            headers: [
+                {label: 'Mc', rowspan: 2},
+                {label: 'Data', rowspan: 2},
+                {label: 'Rodzaj Patrolu', colspan: 6},
+                {label: 'Ilość', colspan: 3},
+                {label: 'Współdziałanie', colspan: 6},
+                {label: 'JW Prow.', rowspan: 2},
+                {label: 'Oddz. ŻW', rowspan: 2}
+            ],
+            subheaders: [
+                'RAZ', 'Int.', 'Pie.', 'Wod.', 'Zmo.', 'WKR',  // Rodzaj Patrolu
+                'Żan', 'WPM', 'Mot.',  // Ilość
+                'RAZ', 'Pol', 'SG', 'SOP', 'SOK', 'Inn'  // Współdziałanie
+            ],
+            fields: ['month', 'date', 'razem_rodzaj', 'interven', 'pieszych', 'wodnych', 'zmot', 'wkrd',
+                     'zand', 'wpm', 'motorowek', 'razem_wspolz', 'policja', 'sg', 'sop', 'sok', 'inne',
+                     'jwProwadzaca', 'oddzialZW']
+        },
+
+        wykroczenia: {
+            headers: [
+                {label: 'Mc', rowspan: 2},
+                {label: 'Data', rowspan: 2},
+                {label: 'Nr JW', rowspan: 2},
+                {label: 'Naz. JW', rowspan: 2},
+                {label: 'M. stac.', rowspan: 2},
+                {label: 'Podl.', rowspan: 2},
+                {label: 'Gr. os.', rowspan: 2},
+                {label: 'Leg.', rowspan: 2},
+                {label: 'Podst.', rowspan: 2},
+                {label: 'Stan', colspan: 4},
+                {label: 'Rodzaj interw.', colspan: 6},
+                {label: 'Wys. mand.', rowspan: 2},
+                {label: 'W czs. sł.', rowspan: 2},
+                {label: 'JŻW prow.', rowspan: 2},
+                {label: 'Oddz.', rowspan: 2}
+            ],
+            subheaders: [
+                'RAZ', 'P.alk', 'Ntrz', 'P.śr',  // Stan
+                'RAZ', 'Zat', 'Dop', 'Wyl', 'Pou', 'Man'  // Rodzaj interw.
+            ],
+            fields: ['month', 'data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'grupa', 'legitymowany',
+                     'podstawa', 'stan_razem', 'pod_wplywem_alk', 'nietrzezwy', 'pod_wplywem_srod',
+                     'rodzaj_razem', 'zatrzymanie', 'doprowadzenie', 'wylegitymowanie', 'pouczenie', 'mandat',
+                     'wysokosc_mandatu', 'w_czasie_sluzby', 'jzw_prowadzaca', 'oddzial']
+        },
+
+        wkrd: {
+            headers: [
+                {label: 'Mc', rowspan: 2},
+                {label: 'Data', rowspan: 2},
+                {label: 'Nr JW', rowspan: 2},
+                {label: 'Naz. JW', rowspan: 2},
+                {label: 'M. stac.', rowspan: 2},
+                {label: 'Podl.', rowspan: 2},
+                {label: 'RAZEM', rowspan: 2},
+                {label: 'WPM', rowspan: 2},
+                {label: 'PPM', rowspan: 2},
+                {label: 'Pozost.', rowspan: 2},
+                {label: 'Oddz.', rowspan: 2}
+            ],
+            subheaders: [],
+            fields: ['month', 'data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'razem', 'wpm', 'ppm', 'pozostale', 'oddzial']
+        },
+
+        sankcje: {
+            headers: [
+                {label: 'Mc', rowspan: 2},
+                {label: 'Data', rowspan: 2},
+                {label: 'Nr JW', rowspan: 2},
+                {label: 'Naz. JW', rowspan: 2},
+                {label: 'M. stac.', rowspan: 2},
+                {label: 'Podl.', rowspan: 2},
+                {label: 'Gr. os.', rowspan: 2},
+                {label: 'Leg.', rowspan: 2},
+                {label: 'Rodz. poj.', colspan: 4},
+                {label: 'Przycz.', rowspan: 2},
+                {label: 'Sankcja', colspan: 5},
+                {label: 'Wys. mand.', rowspan: 2},
+                {label: 'W czs. sł.', rowspan: 2},
+                {label: 'JŻW prow.', rowspan: 2},
+                {label: 'Oddz.', rowspan: 2}
+            ],
+            subheaders: [
+                'RAZ', 'WPM', 'PPM', 'Pie',  // Rodz. poj.
+                'RAZ', 'Z.DR', 'Z.PJ', 'Man', 'Pou', 'Inn'  // Sankcja
+            ],
+            fields: ['month', 'data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'grupa', 'legitymowany',
+                     'rodzaj_razem', 'wpm', 'ppm', 'pieszy', 'przyczyna',
+                     'sankcja_razem', 'zatrzymanie_dr', 'zatrzymanie_pj', 'mandat', 'pouczenie', 'inne',
+                     'wysokosc_mandatu', 'w_czasie_sluzby', 'jzw_prowadzaca', 'oddzial']
+        },
+
+        konwoje: {
+            headers: [
+                {label: 'Mc', rowspan: 2},
+                {label: 'Data', rowspan: 2},
+                {label: 'Rodzaj', colspan: 3},
+                {label: 'Il. żołn.', rowspan: 2},
+                {label: 'Il. WPM', rowspan: 2},
+                {label: 'Zleceniodawca', colspan: 5},
+                {label: 'Co konwoj.', colspan: 4},
+                {label: 'JW prow.', rowspan: 2},
+                {label: 'Oddz.', rowspan: 2}
+            ],
+            subheaders: [
+                'RAZ', 'Mjsc', 'Zmjsc',  // Rodzaj
+                'RAZ', 'Prok', 'Sąd', 'Włas', 'JŻW',  // Zleceniodawca
+                'RAZ', 'Dok', 'Osb', 'Przd'  // Co konwoj.
+            ],
+            fields: ['month', 'data', 'rodzaj_razem', 'miejscowy', 'zamiejscowy', 'ilosc_zw', 'ilosc_wpm',
+                     'zleceniodawca_razem', 'prokuratura', 'sad', 'wlasne', 'jzw',
+                     'co_konwojowano_razem', 'dokumenty', 'osoby', 'przedmioty',
+                     'jw_prowadzaca', 'oddzial']
+        },
+
+        spb: {
+            headers: [
+                {label: 'Data', rowspan: 2},
+                {label: 'Nr JW', rowspan: 2},
+                {label: 'Naz. JW', rowspan: 2},
+                {label: 'M. stac.', rowspan: 2},
+                {label: 'Podl.', rowspan: 2},
+                {label: 'Gr. os.', rowspan: 2},
+                {label: 'Śr. przymusu', colspan: 11},
+                {label: 'Podcs konw.', rowspan: 2},
+                {label: 'Zatrz.', rowspan: 2},
+                {label: 'Dopr.', rowspan: 2},
+                {label: 'Inn/Pat', rowspan: 2},
+                {label: 'Skutek', colspan: 2},
+                {label: 'JŻW prow.', rowspan: 2},
+                {label: 'Oddz.', rowspan: 2}
+            ],
+            subheaders: [
+                'S.fiz', 'Kaj', 'Kaf', 'Ksk', 'Siat', 'Pał', 'Pies', 'Chem', 'Par', 'Kolcz', 'Broń',  // Śr. przymusu
+                'Ran', 'Śmr'  // Skutek
+            ],
+            fields: ['data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'grupa',
+                     'sila_fizyczna', 'kajdanki', 'kaftan', 'kask', 'siatka', 'palka', 'pies',
+                     'chem_sr', 'paralizator', 'kolczatka', 'bron',
+                     'podczas_konw', 'zatrzymania', 'doprowadzenia', 'inne_patrol',
+                     'ranny', 'smierc',
+                     'jzw_prowadzaca', 'oddzial']
+        },
+
+        pilotaze: {
+            headers: [
+                {label: 'Data', rowspan: 2},
+                {label: 'Własne', rowspan: 2},
+                {label: 'Sojuszn.', rowspan: 2},
+                {label: 'Zmot.', rowspan: 2},
+                {label: 'WKRD', rowspan: 2},
+                {label: 'Il. żołn.', rowspan: 2},
+                {label: 'WPM', rowspan: 2},
+                {label: 'JŻW', rowspan: 2},
+                {label: 'Oddz.', rowspan: 2}
+            ],
+            subheaders: [],
+            fields: ['data', 'wlasne', 'sojusznicze', 'zmotoryzowany', 'wkrd', 'ilosc_zw', 'wpm', 'jzw', 'oddzial']
+        },
+
+        zdarzenia: {
+            headers: [
+                {label: 'Mc', rowspan: 2},
+                {label: 'Data', rowspan: 2},
+                {label: 'Nr JW', rowspan: 2},
+                {label: 'Naz. JW', rowspan: 2},
+                {label: 'M. stac.', rowspan: 2},
+                {label: 'Podl.', rowspan: 2},
+                {label: 'Gr. os.', rowspan: 2},
+                {label: 'Rodz. zdar.', colspan: 3},
+                {label: 'Rodz. poj.', colspan: 3},
+                {label: 'Typ uczest.', colspan: 2},
+                {label: 'Przycz.', rowspan: 2},
+                {label: 'Sank.', rowspan: 2},
+                {label: 'Wys. mand.', rowspan: 2},
+                {label: 'W czs. sł.', rowspan: 2},
+                {label: 'Il. ran.', rowspan: 2},
+                {label: 'Il. zab.', rowspan: 2},
+                {label: 'JŻW prow.', rowspan: 2},
+                {label: 'Oddz.', rowspan: 2}
+            ],
+            subheaders: [
+                'RAZ', 'Wyp', 'Kol',  // Rodz. zdar.
+                'RAZ', 'WPM', 'PPM',  // Rodz. poj.
+                'Spr', 'Psz'  // Typ uczest.
+            ],
+            fields: ['month', 'data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'grupa',
+                     'rodzaj_razem', 'wypadek', 'kolizja',
+                     'pojazd_razem', 'wpm', 'ppm',
+                     'typ_sprawca', 'typ_poszkodowany',
+                     'przyczyna', 'sankcja', 'wysokosc_mandatu', 'w_czasie_sluzby',
+                     'ilosc_rannych', 'ilosc_zabitych',
+                     'jzw_prowadzaca', 'oddzial']
+        }
+    },
+
+    /**
      * Loads data from localStorage for selected modules
-     * @param {string[]} modules - Array of module names (e.g., ['patrole', 'wykroczenia'])
-     * @returns {Object} Object with module names as keys and data arrays as values
      */
     loadData(modules) {
         const data = {};
@@ -211,10 +241,6 @@ const TabularExporter = {
 
     /**
      * Filters data by date range
-     * @param {Array} data - Array of data objects
-     * @param {string} dateFrom - Start date (YYYY-MM-DD) or null
-     * @param {string} dateTo - End date (YYYY-MM-DD) or null
-     * @returns {Array} Filtered data
      */
     filterByDateRange(data, dateFrom, dateTo) {
         if (!dateFrom && !dateTo) {
@@ -222,11 +248,9 @@ const TabularExporter = {
         }
 
         return data.filter(row => {
-            // Check both 'data' and 'date' field names
             const rowDate = row.data || row.date;
             if (!rowDate) return false;
 
-            // Convert to Date objects for comparison
             const dateObj = this.parseDate(rowDate);
             if (!dateObj) return false;
 
@@ -242,111 +266,108 @@ const TabularExporter = {
 
     /**
      * Parses various date formats to Date object
-     * @param {string} dateStr - Date string in various formats
-     * @returns {Date|null} Date object or null if invalid
      */
     parseDate(dateStr) {
         if (!dateStr) return null;
 
-        // Try YYYY-MM-DD format
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
             return new Date(dateStr);
         }
 
-        // Try DD.MM.YYYY format (Polish locale)
         if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateStr)) {
             const parts = dateStr.split('.');
             return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
         }
 
-        // Try parsing as-is
         const date = new Date(dateStr);
         return isNaN(date.getTime()) ? null : date;
     },
 
     /**
-     * Exports data to XLSX format (all modules in one sheet, stacked vertically)
-     * @param {string[]} modules - Array of selected module names
-     * @param {string} dateFrom - Start date filter (YYYY-MM-DD) or null
-     * @param {string} dateTo - End date filter (YYYY-MM-DD) or null
+     * Exports data to XLSX format
      */
     exportToXLSX(modules, dateFrom, dateTo) {
         console.log('📊 Eksport do XLSX:', modules);
 
-        // Load and filter data
         const allData = this.loadData(modules);
-
-        // Build worksheet data - all modules stacked vertically
         const worksheetData = [];
 
-        // Add header with generation info
+        // Header
         worksheetData.push(['Raport Tabelaryczny - AEP']);
         worksheetData.push(['Data wygenerowania:', new Date().toLocaleString('pl-PL')]);
         if (dateFrom || dateTo) {
-            worksheetData.push([
-                'Zakres dat:',
-                `${dateFrom || 'początek'} - ${dateTo || 'koniec'}`
-            ]);
+            worksheetData.push(['Zakres dat:', `${dateFrom || 'początek'} - ${dateTo || 'koniec'}`]);
         }
-        worksheetData.push([]); // Empty row
+        worksheetData.push([]);
 
         modules.forEach((module, moduleIndex) => {
             const data = allData[module];
             if (!data || data.length === 0) {
-                // Add module header even if no data
                 worksheetData.push([this.moduleNames[module]]);
                 worksheetData.push(['Brak danych']);
-                worksheetData.push([]); // Empty row separator
+                worksheetData.push([]);
                 return;
             }
 
-            // Filter by date
             const filteredData = this.filterByDateRange(data, dateFrom, dateTo);
-
             if (filteredData.length === 0) {
                 worksheetData.push([this.moduleNames[module]]);
                 worksheetData.push(['Brak danych w wybranym zakresie dat']);
-                worksheetData.push([]); // Empty row separator
+                worksheetData.push([]);
                 return;
             }
 
-            // Add module header
+            // Module header
             worksheetData.push([this.moduleNames[module]]);
             worksheetData.push([`Liczba rekordów: ${filteredData.length}`]);
-            worksheetData.push([]); // Empty row
+            worksheetData.push([]);
 
-            // Get column definitions for this module
-            const columnDefs = this.columnDefinitions[module];
-            const columns = Object.keys(columnDefs);
+            // Get structure
+            const structure = this.tableStructures[module];
 
-            // Add table headers (bold will be applied via cell styling)
-            const headerRow = columns.map(col => columnDefs[col]);
-            worksheetData.push(headerRow);
+            // Build header rows
+            const headerRow1 = [];
+            const headerRow2 = [];
+            let subHeaderIndex = 0;
 
-            // Add data rows
+            structure.headers.forEach(header => {
+                if (header.rowspan === 2) {
+                    headerRow1.push(header.label);
+                    headerRow2.push(''); // Empty for merged cell
+                } else if (header.colspan) {
+                    headerRow1.push(header.label);
+                    // Add empty cells for colspan
+                    for (let i = 1; i < header.colspan; i++) {
+                        headerRow1.push('');
+                    }
+                    // Add subheaders
+                    for (let i = 0; i < header.colspan; i++) {
+                        headerRow2.push(structure.subheaders[subHeaderIndex++]);
+                    }
+                }
+            });
+
+            worksheetData.push(headerRow1);
+            worksheetData.push(headerRow2);
+
+            // Data rows
             filteredData.forEach(row => {
-                const dataRow = columns.map(col => {
-                    const value = row[col];
-                    // Convert arrays/objects to readable strings
-                    if (Array.isArray(value)) {
-                        return value.join(', ');
-                    }
-                    if (typeof value === 'object' && value !== null) {
-                        return JSON.stringify(value);
-                    }
+                const dataRow = structure.fields.map(field => {
+                    const value = row[field];
+                    if (Array.isArray(value)) return value.join(', ');
+                    if (typeof value === 'object' && value !== null) return JSON.stringify(value);
                     return value !== undefined && value !== null ? value : '';
                 });
                 worksheetData.push(dataRow);
             });
 
-            // Add separator between modules (except after last module)
             if (moduleIndex < modules.length - 1) {
                 worksheetData.push([]);
                 worksheetData.push([]);
             }
         });
 
-        // Create workbook and worksheet
+        // Create workbook
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(worksheetData);
 
@@ -358,53 +379,35 @@ const TabularExporter = {
                 colWidths[colIndex] = Math.max(colWidths[colIndex] || 10, cellLength + 2);
             });
         });
-        ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w, 50) })); // Max width 50
+        ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w, 50) }));
 
-        // Apply professional styling
+        // Apply styling (same as before but adapted to new structure)
         const range = XLSX.utils.decode_range(ws['!ref']);
-
-        // Track which rows are headers
         const headerRows = new Set();
-        let currentRow = 0;
 
-        // Find header rows (they contain column names from columnDefinitions)
+        // Find header rows
         worksheetData.forEach((row, rowIndex) => {
-            if (row.length > 5 && row[0] && typeof row[0] === 'string') {
-                // Check if this looks like a data header (contains terms like "Data", "Miesiąc", etc.)
-                const firstCells = row.slice(0, 3).join(' ').toLowerCase();
-                if (firstCells.includes('miesiąc') || firstCells.includes('data') ||
-                    firstCells.includes('nr jw') || firstCells.includes('nazwa jw')) {
-                    headerRows.add(rowIndex);
-                }
-            }
-            // Title row (first row)
-            if (rowIndex === 0) {
-                headerRows.add(rowIndex);
-            }
-            // Module name rows (single cell with module name)
-            if (row.length > 0 && row[0] && typeof row[0] === 'string' &&
+            if (rowIndex === 0) headerRows.add(rowIndex);
+            if (row[0] && typeof row[0] === 'string' &&
                 (row[0].includes('Patrole') || row[0].includes('Wykroczenia') ||
                  row[0].includes('WKRD') || row[0].includes('Sankcje') ||
                  row[0].includes('Konwoje') || row[0].includes('ŚPB') ||
                  row[0].includes('Pilotaże') || row[0].includes('Zdarzenia'))) {
                 headerRows.add(rowIndex);
+                headerRows.add(rowIndex + 3); // Level 1 header
+                headerRows.add(rowIndex + 4); // Level 2 header
             }
         });
 
-        // Apply styles to all cells
+        // Apply styles
         for (let R = range.s.r; R <= range.e.r; ++R) {
             for (let C = range.s.c; C <= range.e.c; ++C) {
                 const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
                 if (!ws[cellAddress]) continue;
-
                 const cell = ws[cellAddress];
-
-                // Initialize style object
                 if (!cell.s) cell.s = {};
 
-                // Apply styles based on row type
                 if (R === 0) {
-                    // Title row - bold, large, centered
                     cell.s = {
                         font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
                         fill: { fgColor: { rgb: "4B5563" } },
@@ -416,10 +419,9 @@ const TabularExporter = {
                             right: { style: "thin", color: { rgb: "000000" } }
                         }
                     };
-                } else if (headerRows.has(R) && worksheetData[R].length > 5) {
-                    // Data header rows - bold, gray background
+                } else if (headerRows.has(R)) {
                     cell.s = {
-                        font: { bold: true, sz: 11, color: { rgb: "FFFFFF" } },
+                        font: { bold: true, sz: 10, color: { rgb: "FFFFFF" } },
                         fill: { fgColor: { rgb: "6B7280" } },
                         alignment: { horizontal: "center", vertical: "center", wrapText: true },
                         border: {
@@ -429,24 +431,10 @@ const TabularExporter = {
                             right: { style: "thin", color: { rgb: "000000" } }
                         }
                     };
-                } else if (headerRows.has(R)) {
-                    // Module name rows - bold, darker gray
-                    cell.s = {
-                        font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
-                        fill: { fgColor: { rgb: "374151" } },
-                        alignment: { horizontal: "left", vertical: "center" },
-                        border: {
-                            top: { style: "thin", color: { rgb: "000000" } },
-                            bottom: { style: "thin", color: { rgb: "000000" } },
-                            left: { style: "thin", color: { rgb: "000000" } },
-                            right: { style: "thin", color: { rgb: "000000" } }
-                        }
-                    };
                 } else {
-                    // Regular data rows - alternating colors
                     const isEvenRow = R % 2 === 0;
                     cell.s = {
-                        font: { sz: 10 },
+                        font: { sz: 9 },
                         fill: { fgColor: { rgb: isEvenRow ? "FFFFFF" : "F3F4F6" } },
                         alignment: { horizontal: "left", vertical: "center", wrapText: true },
                         border: {
@@ -460,75 +448,60 @@ const TabularExporter = {
             }
         }
 
-        // Freeze first 4 rows (title + metadata)
         ws['!freeze'] = { xSplit: 0, ySplit: 4, topLeftCell: 'A5', activePane: 'bottomLeft' };
-
-        // Add worksheet to workbook
         XLSX.utils.book_append_sheet(wb, ws, 'Raport');
 
-        // Generate filename
         const dateStr = dateTo || new Date().toISOString().split('T')[0];
         const filename = `AEP_Raport_Tabelaryczny_${dateStr}.xlsx`;
-
-        // Download file
         XLSX.writeFile(wb, filename);
 
         console.log(`✅ XLSX downloaded: ${filename}`);
     },
 
     /**
-     * Exports data to PDF format (landscape, with page numbers)
-     * @param {string[]} modules - Array of selected module names
-     * @param {string} dateFrom - Start date filter (YYYY-MM-DD) or null
-     * @param {string} dateTo - End date filter (YYYY-MM-DD) or null
+     * Exports data to PDF format with two-level headers
      */
     async exportToPDF(modules, dateFrom, dateTo) {
         console.log('📄 Eksport do PDF:', modules);
 
-        // Load jsPDF
         const { jsPDF } = window.jspdf;
         if (!jsPDF) {
             alert('Błąd: Biblioteka jsPDF nie jest załadowana.');
             return;
         }
 
-        // Create PDF document in landscape mode
         const doc = new jsPDF({
             orientation: 'landscape',
             unit: 'mm',
             format: 'a4'
         });
 
-        // Page setup
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
-        const marginLeft = 14;
-        const marginRight = 14;
+        const marginLeft = 10;
+        const marginRight = 10;
         const marginTop = 20;
         const marginBottom = 15;
 
-        // Load and filter data
         const allData = this.loadData(modules);
-
-        // Header - first page only
         let yPos = marginTop;
 
         // Title
-        doc.setFontSize(18);
+        doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
         doc.text('Raport Tabelaryczny - AEP', marginLeft, yPos);
 
-        yPos += 8;
-        doc.setFontSize(10);
+        yPos += 6;
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.text(`Data wygenerowania: ${new Date().toLocaleString('pl-PL')}`, marginLeft, yPos);
 
         if (dateFrom || dateTo) {
-            yPos += 5;
+            yPos += 4;
             doc.text(`Zakres dat: ${dateFrom || 'początek'} - ${dateTo || 'koniec'}`, marginLeft, yPos);
         }
 
-        yPos += 10;
+        yPos += 8;
 
         // Process each module
         for (let i = 0; i < modules.length; i++) {
@@ -536,82 +509,98 @@ const TabularExporter = {
             const data = allData[module];
 
             if (!data || data.length === 0) {
-                // Add module header even if no data
-                doc.setFontSize(14);
+                doc.setFontSize(12);
                 doc.setFont('helvetica', 'bold');
                 doc.text(this.moduleNames[module], marginLeft, yPos);
-                yPos += 7;
-                doc.setFontSize(10);
+                yPos += 6;
+                doc.setFontSize(9);
                 doc.setFont('helvetica', 'italic');
                 doc.text('Brak danych', marginLeft, yPos);
-                yPos += 10;
+                yPos += 8;
                 continue;
             }
 
-            // Filter by date
             const filteredData = this.filterByDateRange(data, dateFrom, dateTo);
-
             if (filteredData.length === 0) {
-                doc.setFontSize(14);
+                doc.setFontSize(12);
                 doc.setFont('helvetica', 'bold');
                 doc.text(this.moduleNames[module], marginLeft, yPos);
-                yPos += 7;
-                doc.setFontSize(10);
+                yPos += 6;
+                doc.setFontSize(9);
                 doc.setFont('helvetica', 'italic');
                 doc.text('Brak danych w wybranym zakresie dat', marginLeft, yPos);
-                yPos += 10;
+                yPos += 8;
                 continue;
             }
 
             // Module header
-            doc.setFontSize(14);
+            doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
             doc.text(this.moduleNames[module], marginLeft, yPos);
-
-            yPos += 7;
-            doc.setFontSize(9);
+            yPos += 5;
+            doc.setFontSize(8);
             doc.setFont('helvetica', 'normal');
             doc.text(`Liczba rekordów: ${filteredData.length}`, marginLeft, yPos);
+            yPos += 4;
 
-            yPos += 5;
+            // Get structure
+            const structure = this.tableStructures[module];
 
-            // Prepare table data
-            const columnDefs = this.columnDefinitions[module];
-            const columns = Object.keys(columnDefs);
+            // Build two-level headers for autoTable
+            const headerRow1 = [];
+            const headerRow2 = [];
+            let subHeaderIndex = 0;
 
-            // Table headers
-            const headers = columns.map(col => columnDefs[col]);
+            structure.headers.forEach(header => {
+                if (header.rowspan === 2) {
+                    headerRow1.push({
+                        content: header.label,
+                        rowSpan: 2,
+                        styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 5.5 }
+                    });
+                } else if (header.colspan) {
+                    headerRow1.push({
+                        content: header.label,
+                        colSpan: header.colspan,
+                        styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 5.5 }
+                    });
+                    // Add subheaders for row 2
+                    for (let j = 0; j < header.colspan; j++) {
+                        headerRow2.push({
+                            content: structure.subheaders[subHeaderIndex++],
+                            styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 5 }
+                        });
+                    }
+                }
+            });
 
-            // Table body
+            // Remove undefined from headerRow2 (for rowSpan cells)
+            const cleanHeaderRow2 = headerRow2.filter(h => h !== undefined);
+
+            // Body data
             const body = filteredData.map(row => {
-                return columns.map(col => {
-                    const value = row[col];
-                    // Convert arrays/objects to readable strings
-                    if (Array.isArray(value)) {
-                        return value.join(', ');
-                    }
-                    if (typeof value === 'object' && value !== null) {
-                        return JSON.stringify(value);
-                    }
+                return structure.fields.map(field => {
+                    const value = row[field];
+                    if (Array.isArray(value)) return value.join(', ');
+                    if (typeof value === 'object' && value !== null) return JSON.stringify(value);
                     return value !== undefined && value !== null ? String(value) : '';
                 });
             });
 
-            // Add table using autoTable
+            // Add table with two-level headers
             doc.autoTable({
-                head: [headers],
+                head: [headerRow1, cleanHeaderRow2],
                 body: body,
                 startY: yPos,
                 margin: { left: marginLeft, right: marginRight },
                 tableWidth: 'auto',
                 styles: {
-                    fontSize: 6,
-                    cellPadding: 1.5,
+                    fontSize: 5,
+                    cellPadding: 1,
                     overflow: 'linebreak',
                     cellWidth: 'auto',
                     halign: 'left',
                     valign: 'middle',
-                    font: 'helvetica',
                     lineColor: [200, 200, 200],
                     lineWidth: 0.1
                 },
@@ -620,60 +609,39 @@ const TabularExporter = {
                     textColor: [255, 255, 255],
                     fontStyle: 'bold',
                     halign: 'center',
-                    fontSize: 6.5
+                    fontSize: 5.5
                 },
                 alternateRowStyles: {
                     fillColor: [245, 245, 245]
                 },
-                columnStyles: {
-                    // Auto-adjust column widths
-                },
                 didDrawPage: (data) => {
-                    // Add page numbers
                     const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
                     const totalPages = doc.internal.getNumberOfPages();
-
-                    doc.setFontSize(8);
+                    doc.setFontSize(7);
                     doc.setFont('helvetica', 'normal');
-                    doc.text(
-                        `Strona ${pageNumber} / ${totalPages}`,
-                        pageWidth / 2,
-                        pageHeight - 8,
-                        { align: 'center' }
-                    );
+                    doc.text(`Strona ${pageNumber} / ${totalPages}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
                 }
             });
 
-            // Update yPos after table
-            yPos = doc.lastAutoTable.finalY + 10;
+            yPos = doc.lastAutoTable.finalY + 8;
 
-            // Add new page if not last module and near bottom
             if (i < modules.length - 1 && yPos > pageHeight - 40) {
                 doc.addPage();
                 yPos = marginTop;
             }
         }
 
-        // Update page numbers for all pages (must be done after all content)
+        // Update page numbers
         const totalPages = doc.internal.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
             doc.setPage(i);
-            doc.setFontSize(8);
+            doc.setFontSize(7);
             doc.setFont('helvetica', 'normal');
-            const pageNumber = i;
-            doc.text(
-                `Strona ${pageNumber} / ${totalPages}`,
-                pageWidth / 2,
-                pageHeight - 8,
-                { align: 'center' }
-            );
+            doc.text(`Strona ${i} / ${totalPages}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
         }
 
-        // Generate filename
         const dateStr = dateTo || new Date().toISOString().split('T')[0];
         const filename = `AEP_Raport_Tabelaryczny_${dateStr}.pdf`;
-
-        // Download PDF
         doc.save(filename);
 
         console.log(`✅ PDF downloaded: ${filename}`);
