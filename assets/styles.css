@@ -4722,7 +4722,7 @@ canvas {
 }
 
 .raport-card-header {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--focus) 100%);
+    background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
     padding: 1.5rem;
     display: flex;
     align-items: center;
