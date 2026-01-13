@@ -41,7 +41,7 @@ const TabularExporter = {
             ],
             subheaders: [
                 'RAZ', 'Int.', 'Pie.', 'Wod.', 'Zmo.', 'WKR',  // Rodzaj Patrolu
-                'Żan', 'WPM', 'Mot.',  // Ilość
+                'Żand', 'WPM', 'Mot.',  // Ilość
                 'RAZ', 'Pol', 'SG', 'SOP', 'SOK', 'Inn'  // Współdziałanie
             ],
             fields: ['month', 'date', 'razem_rodzaj', 'interven', 'pieszych', 'wodnych', 'zmot', 'wkrd',
@@ -128,7 +128,7 @@ const TabularExporter = {
                 {label: 'Mc', rowspan: 2},
                 {label: 'Data', rowspan: 2},
                 {label: 'Rodzaj', colspan: 3},
-                {label: 'Il. żołn.', rowspan: 2},
+                {label: 'Il. ŻW', rowspan: 2},
                 {label: 'Il. WPM', rowspan: 2},
                 {label: 'Zleceniodawca', colspan: 5},
                 {label: 'Co konwoj.', colspan: 4},
@@ -182,7 +182,7 @@ const TabularExporter = {
                 {label: 'Sojuszn.', rowspan: 2},
                 {label: 'Zmot.', rowspan: 2},
                 {label: 'WKRD', rowspan: 2},
-                {label: 'Il. żołn.', rowspan: 2},
+                {label: 'Il. żołn. ŻW', rowspan: 2},
                 {label: 'WPM', rowspan: 2},
                 {label: 'JŻW', rowspan: 2},
                 {label: 'Oddz.', rowspan: 2}
@@ -473,8 +473,13 @@ const TabularExporter = {
         const doc = new jsPDF({
             orientation: 'landscape',
             unit: 'mm',
-            format: 'a4'
+            format: 'a4',
+            compress: true,
+            putOnlyUsedFonts: true
         });
+
+        // Set font that supports Polish characters - courier has better UTF-8 support
+        doc.setFont('courier');
 
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
@@ -488,12 +493,12 @@ const TabularExporter = {
 
         // Title
         doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('courier', 'bold');
         doc.text('Raport Tabelaryczny - AEP', marginLeft, yPos);
 
         yPos += 6;
         doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
+        doc.setFont('courier', 'normal');
         doc.text(`Data wygenerowania: ${new Date().toLocaleString('pl-PL')}`, marginLeft, yPos);
 
         if (dateFrom || dateTo) {
@@ -510,11 +515,11 @@ const TabularExporter = {
 
             if (!data || data.length === 0) {
                 doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
+                doc.setFont('courier', 'bold');
                 doc.text(this.moduleNames[module], marginLeft, yPos);
                 yPos += 6;
                 doc.setFontSize(9);
-                doc.setFont('helvetica', 'italic');
+                doc.setFont('courier', 'italic');
                 doc.text('Brak danych', marginLeft, yPos);
                 yPos += 8;
                 continue;
@@ -523,11 +528,11 @@ const TabularExporter = {
             const filteredData = this.filterByDateRange(data, dateFrom, dateTo);
             if (filteredData.length === 0) {
                 doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
+                doc.setFont('courier', 'bold');
                 doc.text(this.moduleNames[module], marginLeft, yPos);
                 yPos += 6;
                 doc.setFontSize(9);
-                doc.setFont('helvetica', 'italic');
+                doc.setFont('courier', 'italic');
                 doc.text('Brak danych w wybranym zakresie dat', marginLeft, yPos);
                 yPos += 8;
                 continue;
@@ -535,11 +540,11 @@ const TabularExporter = {
 
             // Module header
             doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
+            doc.setFont('courier', 'bold');
             doc.text(this.moduleNames[module], marginLeft, yPos);
             yPos += 5;
             doc.setFontSize(8);
-            doc.setFont('helvetica', 'normal');
+            doc.setFont('courier', 'normal');
             doc.text(`Liczba rekordów: ${filteredData.length}`, marginLeft, yPos);
             yPos += 4;
 
@@ -595,6 +600,7 @@ const TabularExporter = {
                 margin: { left: marginLeft, right: marginRight },
                 tableWidth: 'auto',
                 styles: {
+                    font: 'courier',
                     fontSize: 5,
                     cellPadding: 1,
                     overflow: 'linebreak',
@@ -605,6 +611,7 @@ const TabularExporter = {
                     lineWidth: 0.1
                 },
                 headStyles: {
+                    font: 'courier',
                     fillColor: [75, 85, 99],
                     textColor: [255, 255, 255],
                     fontStyle: 'bold',
@@ -618,7 +625,7 @@ const TabularExporter = {
                     const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
                     const totalPages = doc.internal.getNumberOfPages();
                     doc.setFontSize(7);
-                    doc.setFont('helvetica', 'normal');
+                    doc.setFont('courier', 'normal');
                     doc.text(`Strona ${pageNumber} / ${totalPages}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
                 }
             });
@@ -636,7 +643,7 @@ const TabularExporter = {
         for (let i = 1; i <= totalPages; i++) {
             doc.setPage(i);
             doc.setFontSize(7);
-            doc.setFont('helvetica', 'normal');
+            doc.setFont('courier', 'normal');
             doc.text(`Strona ${i} / ${totalPages}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
         }
 
