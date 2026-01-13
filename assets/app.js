@@ -7317,7 +7317,7 @@ const RaportyManager = {
         console.log(`📥 Eksport: ${section}, format: ${format}`);
 
         // Pobierz dane z localStorage
-        let data = Utils.loadFromLocalStorage(`aep_${section}_data`) || [];
+        let data = Utils.loadFromLocalStorage(`aep_data_${section}`) || [];
         
         if (!data || data.length === 0) {
             alert(`Brak danych w zakładce "${section}". Dodaj najpierw jakieś dane.`);
@@ -7457,7 +7457,7 @@ const RaportyManager = {
         } else if (format === 'csv') {
             // Eksportuj każdą zakładkę jako osobny CSV
             sections.forEach(section => {
-                const data = Utils.loadFromLocalStorage(`aep_${section}_data`) || [];
+                const data = Utils.loadFromLocalStorage(`aep_data_${section}`) || [];
                 if (data.length > 0) {
                     setTimeout(() => this.exportToCSV(data, section), 100);
                 }
