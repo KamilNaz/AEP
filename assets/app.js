@@ -7100,6 +7100,8 @@ const RaportyManager = {
                                         Excel: Wszystkie moduły w jednym arkuszu (jeden pod drugim)
                                     </p>
                                 </div>
+                </div>
+            </div>
 
                                 <!-- PRZYCISK GENEROWANIA -->
                                 <div class="form-actions">
@@ -7118,144 +7120,6 @@ const RaportyManager = {
                             </div>
                         </div>
                     </div>
-
-                    <!-- SEKCJA 1.5: LOGO DLA RAPORTÓW -->
-                    <div class="raport-card raport-card-compact">
-                        <div class="raport-card-header">
-                            <i class="fas fa-image"></i>
-                            <h2>Logo organizacji</h2>
-                        </div>
-                        <div class="raport-card-body">
-                            <p class="raport-description">Dodaj logo które będzie wyświetlane w raportach PDF</p>
-
-                            <div class="logo-upload-section">
-                                <div class="logo-preview" id="logoPreview">
-                                    <i class="fas fa-image fa-3x"></i>
-                                    <p>Brak logo</p>
-                                </div>
-                                <div class="logo-actions">
-                                    <label for="logoUpload" class="btn-secondary">
-                                        <i class="fas fa-upload"></i> Wgraj logo
-                                    </label>
-                                    <input type="file" id="logoUpload" accept="image/png,image/jpeg" style="display: none;">
-                                    <button class="btn-secondary btn-sm" id="removeLogo" style="display: none;">
-                                        <i class="fas fa-trash"></i> Usuń
-                                    </button>
-                                </div>
-                                <p class="logo-hint">Zalecany format: PNG z przezroczystym tłem, 200x200px</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SEKCJA 2: GENERATOR RAPORTÓW PROFESJONALNYCH -->
-                    <div class="raport-card">
-                        <div class="raport-card-header">
-                            <i class="fas fa-file-pdf"></i>
-                            <h2>Generator Raportów Profesjonalnych</h2>
-                            <span class="badge-new">Nowe!</span>
-                        </div>
-                        <div class="raport-card-body">
-                            <p class="raport-description">Generuj kompleksowe raporty PDF z analizą, insights i rekomendacjami</p>
-
-                            <div class="raport-form">
-                                <!-- TYP RAPORTU -->
-                                <div class="form-row">
-                                    <label>Typ raportu:</label>
-                                    <div class="report-type-selector">
-                                        <label class="report-type-card" data-type="executive">
-                                            <input type="radio" name="reportType" value="executive" checked>
-                                            <div class="report-type-content">
-                                                <i class="fas fa-crown"></i>
-                                                <h4>Executive Summary</h4>
-                                                <p>1-strona, key insights, dla zarządu</p>
-                                            </div>
-                                        </label>
-                                        <label class="report-type-card" data-type="operational">
-                                            <input type="radio" name="reportType" value="operational">
-                                            <div class="report-type-content">
-                                                <i class="fas fa-chart-line"></i>
-                                                <h4>Raport Operacyjny</h4>
-                                                <p>Pełny, z wykresami i tabelami</p>
-                                            </div>
-                                        </label>
-                                        <label class="report-type-card" data-type="performance">
-                                            <input type="radio" name="reportType" value="performance" disabled>
-                                            <div class="report-type-content">
-                                                <i class="fas fa-gauge-high"></i>
-                                                <h4>Performance Report</h4>
-                                                <p>Wkrótce</p>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <!-- OKRES -->
-                                <div class="form-row">
-                                    <label>Okres raportu:</label>
-                                    <div class="period-selector">
-                                        <label class="radio-label">
-                                            <input type="radio" name="reportPeriod" value="last7" checked>
-                                            <span>Ostatnie 7 dni</span>
-                                        </label>
-                                        <label class="radio-label">
-                                            <input type="radio" name="reportPeriod" value="last30">
-                                            <span>Ostatnie 30 dni</span>
-                                        </label>
-                                        <label class="radio-label">
-                                            <input type="radio" name="reportPeriod" value="lastMonth">
-                                            <span>Poprzedni miesiąc</span>
-                                        </label>
-                                        <label class="radio-label">
-                                            <input type="radio" name="reportPeriod" value="custom">
-                                            <span>Zakres custom</span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="form-row" id="customDateRange" style="display: none;">
-                                    <label>Zakres dat:</label>
-                                    <div class="date-range">
-                                        <input type="date" id="reportDateFrom" class="raport-date">
-                                        <span>do</span>
-                                        <input type="date" id="reportDateTo" class="raport-date">
-                                    </div>
-                                </div>
-
-                                <!-- OPCJE -->
-                                <div class="form-row">
-                                    <label>Opcje:</label>
-                                    <div class="checkbox-options">
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" id="includeCharts" checked>
-                                            <span>Wykresy i wizualizacje</span>
-                                        </label>
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" id="includeInsights" checked>
-                                            <span>Auto-generated insights</span>
-                                        </label>
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" id="includeRecommendations" checked>
-                                            <span>Rekomendacje</span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <!-- GENERUJ -->
-                                <div class="form-actions">
-                                    <button class="btn-primary btn-large" id="generateReportButton">
-                                        <i class="fas fa-file-pdf"></i> Generuj raport PDF
-                                    </button>
-                                </div>
-
-                                <div id="reportProgress" class="report-progress" style="display: none;">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill"></div>
-                                    </div>
-                                    <p class="progress-text">Generowanie raportu...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         `;
@@ -7266,70 +7130,8 @@ const RaportyManager = {
     attachEventListeners() {
         // Raport tabelaryczny (multi-kategoria)
         document.getElementById('generateTabularReportButton')?.addEventListener('click', () => this.generateTabularReport());
-
-        // Generator raportów
-        document.getElementById('generateReportButton')?.addEventListener('click', () => this.generateProfessionalReport());
-
-        // Pokaż/ukryj custom date range
-        document.querySelectorAll('input[name="reportPeriod"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const customDateRange = document.getElementById('customDateRange');
-                if (e.target.value === 'custom') {
-                    customDateRange.style.display = 'block';
-                } else {
-                    customDateRange.style.display = 'none';
-                }
-            });
-        });
-
-        // Logo upload
-        document.getElementById('logoUpload')?.addEventListener('change', (e) => this.handleLogoUpload(e));
-        document.getElementById('removeLogo')?.addEventListener('click', () => this.removeLogo());
-
-        // Załaduj logo jeśli istnieje
-        this.loadLogo();
     },
 
-    handleLogoUpload(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (!file.type.startsWith('image/')) {
-            alert('Proszę wybrać plik obrazu');
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const base64 = event.target.result;
-            localStorage.setItem('aep_report_logo', base64);
-            this.loadLogo();
-        };
-        reader.readAsDataURL(file);
-    },
-
-    removeLogo() {
-        localStorage.removeItem('aep_report_logo');
-        this.loadLogo();
-    },
-
-    loadLogo() {
-        const logoBase64 = localStorage.getItem('aep_report_logo');
-        const logoPreview = document.getElementById('logoPreview');
-        const removeButton = document.getElementById('removeLogo');
-
-        if (logoBase64) {
-            logoPreview.innerHTML = `<img src="${logoBase64}" alt="Logo" style="max-width: 100%; max-height: 150px;">`;
-            removeButton.style.display = 'inline-block';
-        } else {
-            logoPreview.innerHTML = '<i class="fas fa-image fa-3x"></i><p>Brak logo</p>';
-            removeButton.style.display = 'none';
-        }
-    },
-
-    /**
-     * Generates tabular report (multi-category) in PDF or XLSX format
-     */
     async generateTabularReport() {
         try {
             console.log('📊 Generowanie raportu tabelarycznego...');
