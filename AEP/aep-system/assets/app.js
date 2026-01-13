@@ -7096,6 +7096,34 @@ const RaportyManager = {
                         </div>
                     </div>
 
+                    <!-- SEKCJA 1.5: LOGO DLA RAPORTÓW -->
+                    <div class="raport-card raport-card-compact">
+                        <div class="raport-card-header">
+                            <i class="fas fa-image"></i>
+                            <h2>Logo organizacji</h2>
+                        </div>
+                        <div class="raport-card-body">
+                            <p class="raport-description">Dodaj logo które będzie wyświetlane w raportach PDF</p>
+
+                            <div class="logo-upload-section">
+                                <div class="logo-preview" id="logoPreview">
+                                    <i class="fas fa-image fa-3x"></i>
+                                    <p>Brak logo</p>
+                                </div>
+                                <div class="logo-actions">
+                                    <label for="logoUpload" class="btn-secondary">
+                                        <i class="fas fa-upload"></i> Wgraj logo
+                                    </label>
+                                    <input type="file" id="logoUpload" accept="image/png,image/jpeg" style="display: none;">
+                                    <button class="btn-secondary btn-sm" id="removeLogo" style="display: none;">
+                                        <i class="fas fa-trash"></i> Usuń
+                                    </button>
+                                </div>
+                                <p class="logo-hint">Zalecany format: PNG z przezroczystym tłem, 200x200px</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- SEKCJA 2: GENERATOR RAPORTÓW PROFESJONALNYCH -->
                     <div class="raport-card">
                         <div class="raport-card-header">
@@ -7234,6 +7262,50 @@ const RaportyManager = {
                 }
             });
         });
+
+        // Logo upload
+        document.getElementById('logoUpload')?.addEventListener('change', (e) => this.handleLogoUpload(e));
+        document.getElementById('removeLogo')?.addEventListener('click', () => this.removeLogo());
+
+        // Załaduj logo jeśli istnieje
+        this.loadLogo();
+    },
+
+    handleLogoUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            alert('Proszę wybrać plik obrazu');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const base64 = event.target.result;
+            localStorage.setItem('aep_report_logo', base64);
+            this.loadLogo();
+        };
+        reader.readAsDataURL(file);
+    },
+
+    removeLogo() {
+        localStorage.removeItem('aep_report_logo');
+        this.loadLogo();
+    },
+
+    loadLogo() {
+        const logoBase64 = localStorage.getItem('aep_report_logo');
+        const logoPreview = document.getElementById('logoPreview');
+        const removeButton = document.getElementById('removeLogo');
+
+        if (logoBase64) {
+            logoPreview.innerHTML = `<img src="${logoBase64}" alt="Logo" style="max-width: 100%; max-height: 150px;">`;
+            removeButton.style.display = 'inline-block';
+        } else {
+            logoPreview.innerHTML = '<i class="fas fa-image fa-3x"></i><p>Brak logo</p>';
+            removeButton.style.display = 'none';
+        }
     },
 
     exportSingleSection() {
