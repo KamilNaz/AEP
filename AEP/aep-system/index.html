@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="assets/oswald.css">
     <link rel="stylesheet" href="assets/styles.css">
+    <!-- Faza 1: Professional Dashboard Styles -->
+    <link rel="stylesheet" href="assets/styles-phase1.css">
+    <link rel="stylesheet" href="assets/report-styles.css">
 </head>
 <body>
     <!-- Sidebar Navigation -->
@@ -198,10 +201,23 @@
 
     <!-- SheetJS dla Export Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <!-- Chart.js dla wykresów -->
+
+    <!-- Chart.js dla wykresów (legacy support) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-    
+
+    <!-- ApexCharts dla profesjonalnych dashboardów -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <!-- jsPDF i rozszerzenia dla generowania raportów PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- System generowania raportów -->
+    <script src="assets/report-engine.js"></script>
+    <script src="assets/report-engine-charts.js"></script>
+    <script src="assets/report-pdf-exporter.js"></script>
+
     <script src="assets/app.js"></script>
 </body>
 </html>
