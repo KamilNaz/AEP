@@ -7018,80 +7018,103 @@ const RaportyManager = {
                 </div>
 
                 <div class="raporty-container">
-                    <!-- SEKCJA 1: EKSPORT DANYCH -->
+                    <!-- SEKCJA 1: RAPORT TABELARYCZNY (MULTI-KATEGORIA) -->
                     <div class="raport-card">
                         <div class="raport-card-header">
-                            <i class="fas fa-file-download"></i>
-                            <h2>Eksport danych</h2>
+                            <i class="fas fa-table"></i>
+                            <h2>Raport Tabelaryczny - Multi-kategoria</h2>
                         </div>
                         <div class="raport-card-body">
-                            <p class="raport-description">Wyeksportuj dane z wybranej zakładki do pliku Excel lub CSV</p>
-                            
+                            <p class="raport-description">Eksportuj surowe dane z wielu modułów jednocześnie do PDF (landscape) lub Excel</p>
+
                             <div class="raport-form">
+                                <!-- WYBÓR MODUŁÓW (CHECKBOXY) -->
                                 <div class="form-row">
-                                    <label>Wybierz zakładkę:</label>
-                                    <select id="exportSection" class="raport-select">
-                                        <option value="patrole">Patrole</option>
-                                        <option value="wykroczenia">Wykroczenia</option>
-                                        <option value="wkrd">WKRD</option>
-                                        <option value="sankcje">Sankcje</option>
-                                        <option value="konwoje">Konwoje</option>
-                                        <option value="spb">ŚPB</option>
-                                        <option value="pilotaze">Pilotaże</option>
-                                        <option value="zdarzenia">Zdarzenia drogowe</option>
-                                    </select>
+                                    <label style="font-weight: 600; margin-bottom: 0.75rem;">Wybierz moduły do uwzględnienia:</label>
+                                    <div class="module-checkboxes">
+                                        <label class="checkbox-module-item">
+                                            <input type="checkbox" name="tabularModule" value="patrole" checked>
+                                            <span><i class="fas fa-car-side"></i> Patrole</span>
+                                        </label>
+                                        <label class="checkbox-module-item">
+                                            <input type="checkbox" name="tabularModule" value="wykroczenia" checked>
+                                            <span><i class="fas fa-scale-balanced"></i> Wykroczenia</span>
+                                        </label>
+                                        <label class="checkbox-module-item">
+                                            <input type="checkbox" name="tabularModule" value="wkrd" checked>
+                                            <span><i class="fas fa-shield-halved"></i> WKRD</span>
+                                        </label>
+                                        <label class="checkbox-module-item">
+                                            <input type="checkbox" name="tabularModule" value="sankcje" checked>
+                                            <span><i class="fas fa-money-bill-wave"></i> Sankcje</span>
+                                        </label>
+                                        <label class="checkbox-module-item">
+                                            <input type="checkbox" name="tabularModule" value="konwoje" checked>
+                                            <span><i class="fas fa-arrow-right-arrow-left"></i> Konwoje</span>
+                                        </label>
+                                        <label class="checkbox-module-item">
+                                            <input type="checkbox" name="tabularModule" value="spb" checked>
+                                            <span><i class="fas fa-hand-fist"></i> ŚPB</span>
+                                        </label>
+                                        <label class="checkbox-module-item">
+                                            <input type="checkbox" name="tabularModule" value="pilotaze" checked>
+                                            <span><i class="fas fa-road"></i> Pilotaże</span>
+                                        </label>
+                                        <label class="checkbox-module-item">
+                                            <input type="checkbox" name="tabularModule" value="zdarzenia" checked>
+                                            <span><i class="fas fa-car-burst"></i> Zdarzenia drogowe</span>
+                                        </label>
+                                    </div>
                                 </div>
 
+                                <!-- ZAKRES DAT -->
                                 <div class="form-row">
                                     <label>Zakres dat (opcjonalnie):</label>
                                     <div class="date-range">
-                                        <input type="date" id="exportDateFrom" class="raport-date">
+                                        <input type="date" id="tabularDateFrom" class="raport-date">
                                         <span>do</span>
-                                        <input type="date" id="exportDateTo" class="raport-date">
+                                        <input type="date" id="tabularDateTo" class="raport-date">
                                     </div>
+                                    <p class="form-hint">
+                                        <i class="fas fa-info-circle"></i>
+                                        Pozostaw puste aby eksportować wszystkie dane
+                                    </p>
                                 </div>
 
+                                <!-- FORMAT WYJŚCIOWY -->
                                 <div class="form-row">
-                                    <label>Format:</label>
+                                    <label>Format wyjściowy:</label>
                                     <div class="format-options">
                                         <label class="radio-label">
-                                            <input type="radio" name="exportFormat" value="xlsx" checked>
+                                            <input type="radio" name="tabularFormat" value="pdf" checked>
+                                            <span><i class="fas fa-file-pdf"></i> PDF (Landscape, A4)</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="tabularFormat" value="xlsx">
                                             <span><i class="fas fa-file-excel"></i> Excel (.xlsx)</span>
                                         </label>
-                                        <label class="radio-label">
-                                            <input type="radio" name="exportFormat" value="csv">
-                                            <span><i class="fas fa-file-csv"></i> CSV (.csv)</span>
-                                        </label>
-                                        <label class="radio-label">
-                                            <input type="radio" name="exportFormat" value="json">
-                                            <span><i class="fas fa-file-code"></i> JSON (.json)</span>
-                                        </label>
                                     </div>
+                                    <p class="form-hint">
+                                        <i class="fas fa-lightbulb"></i>
+                                        PDF: Wszystkie tabele w jednym pliku (landscape, numeracja stron)<br>
+                                        Excel: Wszystkie moduły w jednym arkuszu (jeden pod drugim)
+                                    </p>
                                 </div>
 
+                                <!-- PRZYCISK GENEROWANIA -->
                                 <div class="form-actions">
-                                    <button class="btn-primary btn-large" id="exportButton">
-                                        <i class="fas fa-download"></i> Pobierz plik
+                                    <button class="btn-primary btn-large" id="generateTabularReportButton">
+                                        <i class="fas fa-file-arrow-down"></i> Generuj raport tabelaryczny
                                     </button>
                                 </div>
-                            </div>
 
-                            <div class="raport-divider"></div>
-
-                            <div class="quick-export">
-                                <h3>Szybki eksport</h3>
-                                <div class="quick-export-buttons">
-                                    <button class="btn-secondary" id="exportAllExcel">
-                                        <i class="fas fa-file-excel"></i> Wszystko do Excel
-                                    </button>
-                                    <button class="btn-secondary" id="exportAllCSV">
-                                        <i class="fas fa-file-csv"></i> Wszystko do CSV
-                                    </button>
+                                <!-- PROGRESS BAR (ukryty domyślnie) -->
+                                <div id="tabularReportProgress" class="progress-container" style="display: none;">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill"></div>
+                                    </div>
+                                    <p class="progress-text">Przygotowywanie danych...</p>
                                 </div>
-                                <p class="quick-export-info">
-                                    <i class="fas fa-info-circle"></i> 
-                                    Eksportuje wszystkie zakładki do jednego pliku (Excel z arkuszami lub wiele plików CSV w ZIP)
-                                </p>
                             </div>
                         </div>
                     </div>
@@ -7241,12 +7264,8 @@ const RaportyManager = {
     },
 
     attachEventListeners() {
-        // Eksport pojedynczej zakładki
-        document.getElementById('exportButton')?.addEventListener('click', () => this.exportSingleSection());
-
-        // Szybki eksport wszystkiego
-        document.getElementById('exportAllExcel')?.addEventListener('click', () => this.exportAll('xlsx'));
-        document.getElementById('exportAllCSV')?.addEventListener('click', () => this.exportAll('csv'));
+        // Raport tabelaryczny (multi-kategoria)
+        document.getElementById('generateTabularReportButton')?.addEventListener('click', () => this.generateTabularReport());
 
         // Generator raportów
         document.getElementById('generateReportButton')?.addEventListener('click', () => this.generateProfessionalReport());
@@ -7308,160 +7327,73 @@ const RaportyManager = {
         }
     },
 
-    exportSingleSection() {
-        const section = document.getElementById('exportSection').value;
-        const dateFrom = document.getElementById('exportDateFrom').value;
-        const dateTo = document.getElementById('exportDateTo').value;
-        const format = document.querySelector('input[name="exportFormat"]:checked').value;
+    /**
+     * Generates tabular report (multi-category) in PDF or XLSX format
+     */
+    async generateTabularReport() {
+        try {
+            console.log('📊 Generowanie raportu tabelarycznego...');
 
-        console.log(`📥 Eksport: ${section}, format: ${format}`);
+            // Get selected modules
+            const checkboxes = document.querySelectorAll('input[name="tabularModule"]:checked');
+            const selectedModules = Array.from(checkboxes).map(cb => cb.value);
 
-        // Pobierz dane z localStorage
-        let data = Utils.loadFromLocalStorage(`aep_data_${section}`) || [];
-        
-        if (!data || data.length === 0) {
-            alert(`Brak danych w zakładce "${section}". Dodaj najpierw jakieś dane.`);
-            return;
-        }
-
-        // Filtruj po dacie jeśli wybrano
-        if (dateFrom || dateTo) {
-            data = this.filterByDate(data, dateFrom, dateTo);
-            if (data.length === 0) {
-                alert('Brak danych w wybranym zakresie dat.');
+            if (selectedModules.length === 0) {
+                alert('Wybierz przynajmniej jeden moduł do eksportu.');
                 return;
             }
-        }
 
-        // Eksportuj
-        if (format === 'xlsx') {
-            this.exportToExcel(data, section);
-        } else if (format === 'csv') {
-            this.exportToCSV(data, section);
-        } else if (format === 'json') {
-            this.exportToJSON(data, section);
-        }
-    },
+            // Get date range
+            const dateFrom = document.getElementById('tabularDateFrom').value || null;
+            const dateTo = document.getElementById('tabularDateTo').value || null;
 
-    filterByDate(data, dateFrom, dateTo) {
-        return data.filter(row => {
-            if (!row.data) return true; // Jeśli brak daty, zostaw
+            // Get format
+            const format = document.querySelector('input[name="tabularFormat"]:checked').value;
 
-            const rowDate = this.parsePolishDate(row.data);
-            if (!rowDate) return true;
+            // Show progress bar
+            const button = document.getElementById('generateTabularReportButton');
+            const progressDiv = document.getElementById('tabularReportProgress');
+            const progressFill = progressDiv.querySelector('.progress-fill');
+            const progressText = progressDiv.querySelector('.progress-text');
 
-            if (dateFrom) {
-                const from = new Date(dateFrom);
-                if (rowDate < from) return false;
+            button.disabled = true;
+            progressDiv.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressText.textContent = 'Przygotowywanie danych...';
+
+            // Simulate progress
+            await new Promise(resolve => setTimeout(resolve, 300));
+            progressFill.style.width = '30%';
+
+            // Export based on format
+            if (format === 'pdf') {
+                progressText.textContent = 'Generowanie PDF...';
+                progressFill.style.width = '60%';
+                await TabularExporter.exportToPDF(selectedModules, dateFrom, dateTo);
+            } else if (format === 'xlsx') {
+                progressText.textContent = 'Generowanie Excel...';
+                progressFill.style.width = '60%';
+                await TabularExporter.exportToXLSX(selectedModules, dateFrom, dateTo);
             }
 
-            if (dateTo) {
-                const to = new Date(dateTo);
-                to.setHours(23, 59, 59); // Koniec dnia
-                if (rowDate > to) return false;
-            }
+            // Complete
+            progressFill.style.width = '100%';
+            progressText.textContent = 'Pobieranie...';
 
-            return true;
-        });
-    },
+            // Reset UI
+            await new Promise(resolve => setTimeout(resolve, 500));
+            button.disabled = false;
+            progressDiv.style.display = 'none';
 
-    parsePolishDate(dateStr) {
-        // "12.11.2024" → Date
-        if (!dateStr) return null;
-        const parts = dateStr.split('.');
-        if (parts.length !== 3) return null;
-        
-        const day = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1; // Miesiące 0-11
-        const year = parseInt(parts[2]);
-        
-        return new Date(year, month, day);
-    },
+            console.log('✅ Raport tabelaryczny wygenerowany');
+        } catch (error) {
+            console.error('❌ Błąd generowania raportu tabelarycznego:', error);
+            alert('Wystąpił błąd podczas generowania raportu. Sprawdź konsolę przeglądarki.');
 
-    exportToExcel(data, section) {
-        console.log('📊 Eksport do Excel:', section, data.length, 'wierszy');
-        
-        // Tutaj będzie kod XLSX
-        // Na razie alert
-        alert(`Eksport do Excel: ${section}\nWierszy: ${data.length}\n\n⚠️ Wymaga biblioteki XLSX - dodamy w następnym kroku!`);
-    },
-
-    exportToCSV(data, section) {
-        console.log('📄 Eksport do CSV:', section, data.length, 'wierszy');
-        
-        if (data.length === 0) return;
-
-        // Pobierz nagłówki (klucze pierwszego obiektu)
-        const headers = Object.keys(data[0]);
-        
-        // Utwórz CSV
-        let csv = headers.join(',') + '\n';
-        
-        data.forEach(row => {
-            const values = headers.map(header => {
-                let value = row[header] || '';
-                // Escapuj przecinki i cudzysłowy
-                if (typeof value === 'string') {
-                    value = value.replace(/"/g, '""');
-                    if (value.includes(',') || value.includes('\n')) {
-                        value = `"${value}"`;
-                    }
-                }
-                return value;
-            });
-            csv += values.join(',') + '\n';
-        });
-
-        // Pobierz
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
-        const filename = `${section}_${new Date().toISOString().slice(0,10)}.csv`;
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        console.log(`✅ CSV pobrany: ${filename}`);
-    },
-
-    exportToJSON(data, section) {
-        console.log('📦 Eksport do JSON:', section, data.length, 'wierszy');
-        
-        const json = JSON.stringify(data, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
-        const filename = `${section}_${new Date().toISOString().slice(0,10)}.json`;
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        console.log(`✅ JSON pobrany: ${filename}`);
-    },
-
-    exportAll(format) {
-        console.log(`📦 Eksport wszystkich zakładek do ${format.toUpperCase()}`);
-        
-        const sections = ['patrole', 'wykroczenia', 'wkrd', 'sankcje', 'konwoje', 'spb', 'pilotaze', 'zdarzenia'];
-        
-        if (format === 'xlsx') {
-            alert('Eksport wszystkiego do Excel - wymaga biblioteki XLSX!\nDodamy w następnym kroku.');
-        } else if (format === 'csv') {
-            // Eksportuj każdą zakładkę jako osobny CSV
-            sections.forEach(section => {
-                const data = Utils.loadFromLocalStorage(`aep_data_${section}`) || [];
-                if (data.length > 0) {
-                    setTimeout(() => this.exportToCSV(data, section), 100);
-                }
-            });
+            const button = document.getElementById('generateTabularReportButton');
+            const progressDiv = document.getElementById('tabularReportProgress');
+            button.disabled = false;
+            progressDiv.style.display = 'none';
         }
     },
 
