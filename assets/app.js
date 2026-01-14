@@ -38,7 +38,7 @@ const SECTIONS = [
     },
     {
         id: 'spb',
-        title: 'ŚPB',
+        title: 'ŚPB - Środki Przymusu Bezpośredniego',
         isCustomView: true,
         columns: []
     },
@@ -11496,7 +11496,7 @@ const SPBManager = createBaseTableManager({
         mainContent.innerHTML = `
             <div class="section-view">
                 <div class="section-header">
-                    <h1 class="section-title">Środki Przymusu Bezpośredniego (ŚPB)</h1>
+                    <h1 class="section-title">ŚPB - Środki Przymusu Bezpośredniego</h1>
                 </div>
 
                 <div class="spb-toolbar">
