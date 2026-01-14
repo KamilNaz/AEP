@@ -2,7 +2,27 @@
 // PDF EXPORTER - Generowanie raportów PDF
 // ============================================
 
+/**
+ * @typedef {import('./report-engine.js').AggregatedData} AggregatedData
+ * @typedef {import('./report-engine.js').Insight} Insight
+ * @typedef {import('./report-engine.js').Recommendation} Recommendation
+ */
+
+/**
+ * @typedef {Object} DateRange
+ * @property {string|null} from - Data początkowa
+ * @property {string|null} to - Data końcowa
+ */
+
 const PDFExporter = {
+    /**
+     * Generuje Executive Summary w formacie PDF
+     * @param {AggregatedData} aggregatedData - Zagregowane dane statystyczne
+     * @param {Insight[]} insights - Lista insights
+     * @param {Recommendation[]} recommendations - Lista rekomendacji
+     * @param {DateRange} dateRange - Zakres dat raportu
+     * @returns {Promise<Object>} Promise z obiektem jsPDF
+     */
     async generateExecutiveSummary(aggregatedData, insights, recommendations, dateRange) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -175,6 +195,14 @@ const PDFExporter = {
         return doc;
     },
 
+    /**
+     * Generuje pełny raport operacyjny w formacie PDF
+     * @param {AggregatedData} aggregatedData - Zagregowane dane statystyczne
+     * @param {Insight[]} insights - Lista insights
+     * @param {Recommendation[]} recommendations - Lista rekomendacji
+     * @param {DateRange} dateRange - Zakres dat raportu
+     * @returns {Promise<Object>} Promise z obiektem jsPDF
+     */
     async generateOperationalReport(aggregatedData, insights, recommendations, dateRange) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -389,7 +417,20 @@ const PDFExporter = {
     }
 };
 
+/**
+ * @typedef {Object} ReportOptions
+ * @property {string|null} dateFrom - Data początkowa (format YYYY-MM-DD)
+ * @property {string|null} dateTo - Data końcowa (format YYYY-MM-DD)
+ */
+
 const ReportGenerator = {
+    /**
+     * Generuje raport PDF wybranego typu
+     * @param {'executive'|'operational'} reportType - Typ raportu do wygenerowania
+     * @param {ReportOptions} options - Opcje generowania raportu
+     * @returns {Promise<Object>} Promise z obiektem jsPDF
+     * @throws {Error} Jeśli typ raportu jest nieznany
+     */
     async generate(reportType, options) {
         try {
             console.log(`Generating ${reportType} report...`);

@@ -4,11 +4,70 @@
 // ============================================
 
 /**
+ * @typedef {Object} RawDataRow
+ * @property {string} [data] - Data w formacie DD.MM.YYYY
+ * @property {string} [jzw] - Jednostka Żandarmerii Wojskowej
+ * @property {string} [podstawa_prawna] - Podstawa prawna wykroczenia
+ */
+
+/**
+ * @typedef {Object} RawData
+ * @property {RawDataRow[]} patrole - Lista patroli
+ * @property {RawDataRow[]} wykroczenia - Lista wykroczeń
+ * @property {RawDataRow[]} wkrd - Lista kontroli WKRD
+ * @property {RawDataRow[]} sankcje - Lista sankcji/mandatów
+ * @property {RawDataRow[]} konwoje - Lista konwojów
+ * @property {RawDataRow[]} spb - Lista użyć środków przymusu
+ * @property {RawDataRow[]} pilotaze - Lista pilotaży
+ * @property {RawDataRow[]} zdarzenia - Lista zdarzeń drogowych
+ */
+
+/**
+ * @typedef {Object} AggregatedCounts
+ * @property {number} patrole - Liczba patroli
+ * @property {number} wykroczenia - Liczba wykroczeń
+ * @property {number} wkrd - Liczba kontroli WKRD
+ * @property {number} mandaty - Liczba mandatów
+ * @property {number} konwoje - Liczba konwojów
+ * @property {number} spb - Liczba użyć środków przymusu
+ * @property {number} pilotaze - Liczba pilotaży
+ * @property {number} zdarzenia - Liczba zdarzeń
+ */
+
+/**
+ * @typedef {Object} KPIs
+ * @property {string} wykroczeniaPerPatrol - Wykroczenia na patrol
+ * @property {number} mandatyPerPatrol - Średnia wartość mandatów na patrol
+ * @property {string} detectionEfficiency - Procent efektywności wykrywania
+ * @property {number} avgMandat - Średnia wartość mandatu
+ * @property {string} activityRate - Wskaźnik aktywności
+ * @property {string} wkrdPer100 - WKRD na 100 patroli
+ */
+
+/**
+ * @typedef {Object} TopItem
+ * @property {string} name - Nazwa elementu
+ * @property {number} count - Liczba wystąpień
+ */
+
+/**
+ * @typedef {Object} AggregatedData
+ * @property {AggregatedCounts} counts - Zliczone dane
+ * @property {number} sumaMandatow - Suma wszystkich mandatów
+ * @property {KPIs} kpis - Wskaźniki wydajności
+ * @property {TopItem[]} topJZW - Top 5 JŻW
+ * @property {TopItem[]} topPodstawy - Top 5 podstaw prawnych
+ * @property {RawData} filtered - Przefiltrowane dane
+ * @property {{from: string|null, to: string|null}} dateRange - Zakres dat
+ */
+
+/**
  * DataProcessor - Agregacja i przetwarzanie danych
  */
 const DataProcessor = {
     /**
      * Pobiera wszystkie dane z localStorage
+     * @returns {RawData} Wszystkie dane z localStorage
      */
     getAllData() {
         return {
@@ -25,6 +84,10 @@ const DataProcessor = {
 
     /**
      * Filtruje dane według zakresu dat
+     * @param {RawDataRow[]} data - Dane do przefiltrowania
+     * @param {string|null} dateFrom - Data początkowa (format YYYY-MM-DD)
+     * @param {string|null} dateTo - Data końcowa (format YYYY-MM-DD)
+     * @returns {RawDataRow[]} Przefiltrowane dane
      */
     filterByDateRange(data, dateFrom, dateTo) {
         if (!dateFrom && !dateTo) return data;
@@ -49,6 +112,11 @@ const DataProcessor = {
         });
     },
 
+    /**
+     * Parsuje datę w formacie polskim DD.MM.YYYY
+     * @param {string} dateStr - Data w formacie DD.MM.YYYY
+     * @returns {Date|null} Obiekt Date lub null jeśli nieprawidłowy format
+     */
     parsePolishDate(dateStr) {
         if (!dateStr) return null;
         const parts = dateStr.split('.');
@@ -63,6 +131,10 @@ const DataProcessor = {
 
     /**
      * Agreguje dane do postaci przydatnej dla raportów
+     * @param {RawData} rawData - Surowe dane z localStorage
+     * @param {string|null} dateFrom - Data początkowa (format YYYY-MM-DD)
+     * @param {string|null} dateTo - Data końcowa (format YYYY-MM-DD)
+     * @returns {AggregatedData} Zagregowane dane z KPI i analizami
      */
     aggregateData(rawData, dateFrom, dateTo) {
         const filtered = {
@@ -153,11 +225,31 @@ const DataProcessor = {
 };
 
 /**
+ * @typedef {Object} Insight
+ * @property {string} type - Typ insightu (positive, negative, warning, info, danger)
+ * @property {string} icon - Klasa ikony FontAwesome
+ * @property {string} text - Treść insightu
+ * @property {string} priority - Priorytet (high, medium, low, critical)
+ */
+
+/**
+ * @typedef {Object} Recommendation
+ * @property {string} icon - Klasa ikony FontAwesome
+ * @property {string} title - Tytuł rekomendacji
+ * @property {string} description - Opis aktualnego stanu
+ * @property {string} action - Zalecana akcja do podjęcia
+ * @property {string} priority - Priorytet (high, medium, low)
+ */
+
+/**
  * AnalyticsEngine - Automatyczne generowanie insights i rekomendacji
  */
 const AnalyticsEngine = {
     /**
      * Generuje insights na podstawie zagregowanych danych
+     * @param {AggregatedData} aggregatedData - Zagregowane dane
+     * @param {AggregatedData|null} [previousPeriodData=null] - Dane z poprzedniego okresu (opcjonalne)
+     * @returns {Insight[]} Lista insights (max 5)
      */
     generateInsights(aggregatedData, previousPeriodData = null) {
         const insights = [];
@@ -179,6 +271,12 @@ const AnalyticsEngine = {
         return insights.slice(0, 5); // Max 5 najważniejszych
     },
 
+    /**
+     * Generuje insights porównawcze między okresami
+     * @param {AggregatedData} current - Dane z bieżącego okresu
+     * @param {AggregatedData} previous - Dane z poprzedniego okresu
+     * @returns {Insight[]} Lista insights porównawczych
+     */
     generateComparisonInsights(current, previous) {
         const insights = [];
         const { counts: curr } = current;
@@ -213,6 +311,11 @@ const AnalyticsEngine = {
         return insights;
     },
 
+    /**
+     * Generuje insights o efektywności działań
+     * @param {AggregatedData} aggregatedData - Zagregowane dane
+     * @returns {Insight[]} Lista insights o efektywności
+     */
     generateEfficiencyInsights(aggregatedData) {
         const insights = [];
         const { kpis, counts } = aggregatedData;
@@ -256,6 +359,11 @@ const AnalyticsEngine = {
         return insights;
     },
 
+    /**
+     * Generuje insights o najlepszych wykonawcach
+     * @param {AggregatedData} aggregatedData - Zagregowane dane
+     * @returns {Insight[]} Lista insights o top JŻW
+     */
     generateTopPerformerInsights(aggregatedData) {
         const insights = [];
         const { topJZW, counts } = aggregatedData;
@@ -275,6 +383,11 @@ const AnalyticsEngine = {
         return insights;
     },
 
+    /**
+     * Generuje ostrzeżenia o problemach wymagających uwagi
+     * @param {AggregatedData} aggregatedData - Zagregowane dane
+     * @returns {Insight[]} Lista ostrzeżeń (red flags)
+     */
     generateRedFlags(aggregatedData) {
         const insights = [];
         const { counts, kpis } = aggregatedData;
@@ -305,6 +418,8 @@ const AnalyticsEngine = {
 
     /**
      * Generuje rekomendacje actionable
+     * @param {AggregatedData} aggregatedData - Zagregowane dane
+     * @returns {Recommendation[]} Lista rekomendacji (max 4)
      */
     generateRecommendations(aggregatedData) {
         const recommendations = [];

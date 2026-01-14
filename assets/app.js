@@ -38,7 +38,7 @@ const SECTIONS = [
     },
     {
         id: 'spb',
-        title: 'ŚPB',
+        title: 'ŚPB - Środki Przymusu Bezpośredniego',
         isCustomView: true,
         columns: []
     },
@@ -82,6 +82,44 @@ const SECTIONS = [
         columns: ['Timestamp', 'Użytkownik', 'Akcja', 'Moduł', 'Rekord ID', 'Przed zmianą', 'Po zmianie', 'IP', 'Status', 'Szczegóły']
     }
 ];
+
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
+
+/**
+ * @typedef {Object} DataRow
+ * @property {number} id - Unique row identifier
+ * @property {string} [data] - Date in DD.MM.YYYY format
+ * @property {string} [nr_jw] - Unit number
+ * @property {string} [nazwa_jw] - Unit name
+ * @property {string} [miejsce] - Location
+ * @property {boolean} [isMainRow] - Whether this is a main row
+ * @property {number} [groupId] - Group identifier
+ * @property {number} [parentId] - Parent row identifier
+ */
+
+/**
+ * @typedef {Object} ValidationResult
+ * @property {boolean} valid - Whether validation passed
+ * @property {string[]} errors - Array of error messages
+ */
+
+/**
+ * @typedef {Object} ValidationSummary
+ * @property {boolean} valid - Overall validation status
+ * @property {number} errorCount - Total number of errors
+ * @property {Map<number, string[]>} rowErrors - Map of row IDs to their errors
+ */
+
+/**
+ * @typedef {Object} ColumnConfig
+ * @property {string} key - Column key/identifier
+ * @property {string} label - Display label
+ * @property {boolean} [visible] - Whether column is visible
+ * @property {number} [width] - Column width
+ * @property {string} [type] - Data type (text, number, date, etc.)
+ */
 
 // ============================================
 // STATE MANAGEMENT
@@ -577,8 +615,8 @@ const ValidationEngine = {
     /**
      * Waliduje pojedynczy wiersz według reguł modułu
      * @param {string} module - Nazwa modułu (np. 'wykroczenia', 'sankcje')
-     * @param {object} row - Wiersz danych do walidacji
-     * @returns {object} { valid: boolean, errors: Array }
+     * @param {DataRow} row - Wiersz danych do walidacji
+     * @returns {ValidationResult} Wynik walidacji z listą błędów
      */
     validateRow(module, row) {
         const rules = VALIDATION_RULES[module];
@@ -639,8 +677,8 @@ const ValidationEngine = {
     /**
      * Waliduje wszystkie wiersze w tablicy danych
      * @param {string} module - Nazwa modułu
-     * @param {Array} data - Tablica danych do walidacji
-     * @returns {object} { valid: boolean, errorCount: number, rowErrors: Map }
+     * @param {DataRow[]} data - Tablica danych do walidacji
+     * @returns {ValidationSummary} Podsumowanie walidacji wszystkich wierszy
      */
     validateAll(module, data) {
         const rowErrors = new Map();
@@ -3916,6 +3954,11 @@ const WykroczeniaManager = {
         this.exportJSON(fileName);
     },
 
+    /**
+     * Eksportuje dane do pliku JSON
+     * @param {string} customFileName - Nazwa pliku (bez rozszerzenia)
+     * @returns {void}
+     */
     exportJSON(customFileName) {
         // Filtruj wiersze według miesiąca (główne) + ich podwiersze
         const currentMonth = new Date().getMonth() + 1;
@@ -3962,10 +4005,17 @@ const WykroczeniaManager = {
     },
 
 
+    /**
+     * Importuje dane z pliku JSON
+     * @returns {void}
+     */
     importJSON() {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.json';
+        /**
+         * @param {Event} e - Change event
+         */
         input.onchange = (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -11446,7 +11496,7 @@ const SPBManager = createBaseTableManager({
         mainContent.innerHTML = `
             <div class="section-view">
                 <div class="section-header">
-                    <h1 class="section-title">Środki Przymusu Bezpośredniego (ŚPB)</h1>
+                    <h1 class="section-title">ŚPB - Środki Przymusu Bezpośredniego</h1>
                 </div>
 
                 <div class="spb-toolbar">

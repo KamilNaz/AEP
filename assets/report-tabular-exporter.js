@@ -6,9 +6,28 @@
  * @version 2.0.0
  */
 
+/**
+ * @typedef {Object} HeaderConfig
+ * @property {string} label - Etykieta nagłówka
+ * @property {number} [colspan] - Liczba kolumn do połączenia
+ * @property {number} [rowspan] - Liczba wierszy do połączenia
+ */
+
+/**
+ * @typedef {Object} TableStructure
+ * @property {HeaderConfig[]} headers - Nagłówki pierwszego poziomu
+ * @property {string[]} subheaders - Nagłówki drugiego poziomu
+ * @property {string[]} fields - Nazwy pól danych
+ */
+
+/**
+ * @typedef {'patrole'|'wykroczenia'|'wkrd'|'sankcje'|'konwoje'|'spb'|'pilotaze'|'zdarzenia'} ModuleName
+ */
+
 const TabularExporter = {
     /**
      * Module display names in Polish
+     * @type {Record<ModuleName, string>}
      */
     moduleNames: {
         patrole: 'Patrole',
@@ -27,6 +46,7 @@ const TabularExporter = {
      * - headers: array of {label, colspan, rowspan} for level 1
      * - subheaders: array of labels for level 2 (only for colspan > 1)
      * - fields: array of field names matching data structure
+     * @type {Record<ModuleName, TableStructure>}
      */
     tableStructures: {
         patrole: {
@@ -229,6 +249,8 @@ const TabularExporter = {
 
     /**
      * Loads data from localStorage for selected modules
+     * @param {ModuleName[]} modules - Lista nazw modułów do załadowania
+     * @returns {Record<ModuleName, any[]>} Załadowane dane dla każdego modułu
      */
     loadData(modules) {
         const data = {};
@@ -241,6 +263,10 @@ const TabularExporter = {
 
     /**
      * Filters data by date range
+     * @param {any[]} data - Dane do przefiltrowania
+     * @param {string|null} dateFrom - Data początkowa (format YYYY-MM-DD)
+     * @param {string|null} dateTo - Data końcowa (format YYYY-MM-DD)
+     * @returns {any[]} Przefiltrowane dane
      */
     filterByDateRange(data, dateFrom, dateTo) {
         if (!dateFrom && !dateTo) {
@@ -266,6 +292,8 @@ const TabularExporter = {
 
     /**
      * Parses various date formats to Date object
+     * @param {string} dateStr - Data w różnych formatach
+     * @returns {Date|null} Obiekt Date lub null jeśli nieprawidłowy format
      */
     parseDate(dateStr) {
         if (!dateStr) return null;
@@ -285,6 +313,10 @@ const TabularExporter = {
 
     /**
      * Exports data to XLSX format
+     * @param {ModuleName[]} modules - Lista modułów do wyeksportowania
+     * @param {string|null} dateFrom - Data początkowa (format YYYY-MM-DD)
+     * @param {string|null} dateTo - Data końcowa (format YYYY-MM-DD)
+     * @returns {void}
      */
     exportToXLSX(modules, dateFrom, dateTo) {
         console.log('📊 Eksport do XLSX:', modules);
@@ -460,6 +492,10 @@ const TabularExporter = {
 
     /**
      * Exports data to PDF format with two-level headers
+     * @param {ModuleName[]} modules - Lista modułów do wyeksportowania
+     * @param {string|null} dateFrom - Data początkowa (format YYYY-MM-DD)
+     * @param {string|null} dateTo - Data końcowa (format YYYY-MM-DD)
+     * @returns {Promise<void>}
      */
     async exportToPDF(modules, dateFrom, dateTo) {
         console.log('📄 Eksport do PDF:', modules);
