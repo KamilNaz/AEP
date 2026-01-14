@@ -911,10 +911,1138 @@ const MapManager = {
      */
     attachEventListeners() {
         document.getElementById('mapAddEventBtn')?.addEventListener('click', () => this.showAddEventModal());
-        document.getElementById('mapFilterType')?.addEventListener('change', () => this.renderEventsList());
-        document.getElementById('mapFilterStatus')?.addEventListener('change', () => this.renderEventsList());
-        document.getElementById('mapFilterDateFrom')?.addEventListener('change', () => this.renderEventsList());
-        document.getElementById('mapFilterDateTo')?.addEventListener('change', () => this.renderEventsList());
+        document.getElementById('mapImportDataBtn')?.addEventListener('click', () => this.showImportDataModal());
+        document.getElementById('mapLayersBtn')?.addEventListener('click', () => this.showLayersModal());
+        document.getElementById('mapToolsBtn')?.addEventListener('click', () => this.showToolsModal());
+        document.getElementById('mapGeocodingBtn')?.addEventListener('click', () => this.showGeocodingModal());
+        document.getElementById('mapMeasureBtn')?.addEventListener('click', () => this.toggleMeasurementMode());
+        document.getElementById('mapLiveModeBtn')?.addEventListener('click', () => this.toggleLiveMode());
+        document.getElementById('mapExportBtn')?.addEventListener('click', () => this.showExportModal());
+        document.getElementById('mapFullscreenBtn')?.addEventListener('click', () => this.toggleFullscreen());
+        document.getElementById('toggleSidebarBtn')?.addEventListener('click', () => this.toggleSidebar());
+        document.getElementById('mapFilterType')?.addEventListener('change', () => this.applyFiltersAndRender());
+        document.getElementById('mapFilterStatus')?.addEventListener('change', () => this.applyFiltersAndRender());
+        document.getElementById('mapFilterDateFrom')?.addEventListener('change', () => this.applyFiltersAndRender());
+        document.getElementById('mapFilterDateTo')?.addEventListener('change', () => this.applyFiltersAndRender());
+    },
+
+    // ============================================
+    // PHASE 2: ADVANCED FEATURES
+    // ============================================
+
+    /**
+     * Zastosuj filtry i odśwież renderowanie
+     */
+    applyFiltersAndRender() {
+        this.clearMarkers();
+        this.renderAllLayers();
+        this.renderEventsList();
+        this.updateStats();
+    },
+
+    /**
+     * Toggle sidebar
+     */
+    toggleSidebar() {
+        const sidebar = document.getElementById('mapSidebar');
+        const btn = document.getElementById('toggleSidebarBtn');
+        const icon = btn?.querySelector('i');
+
+        sidebar?.classList.toggle('collapsed');
+
+        if (sidebar?.classList.contains('collapsed')) {
+            icon?.classList.replace('fa-chevron-left', 'fa-chevron-right');
+        } else {
+            icon?.classList.replace('fa-chevron-right', 'fa-chevron-left');
+        }
+    },
+
+    /**
+     * Toggle fullscreen
+     */
+    toggleFullscreen() {
+        const container = document.querySelector('.map-view');
+
+        if (!document.fullscreenElement) {
+            container.requestFullscreen().catch(err => {
+                console.error('Błąd fullscreen:', err);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    },
+
+    // ============================================
+    // GEOCODING - ADDRESS SEARCH
+    // ============================================
+
+    /**
+     * Pokaż modal wyszukiwania adresu
+     */
+    showGeocodingModal() {
+        Modal.show('Wyszukaj adres na mapie', `
+            <div class="geocoding-modal">
+                <p class="form-info">
+                    <i class="fas fa-search-location"></i>
+                    Wpisz adres, miasto lub współrzędne GPS
+                </p>
+
+                <div class="form-group">
+                    <label>Wyszukaj lokalizację</label>
+                    <div class="search-input-group">
+                        <input type="text" id="geocodingSearch" placeholder="np. Aleje Jerozolimskie, Warszawa" />
+                        <button class="btn-primary" id="geocodingSearchBtn">
+                            <i class="fas fa-search"></i> Szukaj
+                        </button>
+                    </div>
+                </div>
+
+                <div id="geocodingResults" class="geocoding-results" style="display: none;">
+                    <!-- Wyniki wyszukiwania -->
+                </div>
+
+                <div class="geocoding-examples">
+                    <p><strong>Przykłady:</strong></p>
+                    <ul>
+                        <li>Plac Zamkowy, Warszawa</li>
+                        <li>Kraków, Rynek Główny</li>
+                        <li>52.2297, 21.0122 (współrzędne)</li>
+                        <li>Żandarmeria Wojskowa, Warszawa</li>
+                    </ul>
+                </div>
+            </div>
+        `);
+
+        // Event listeners
+        const searchBtn = document.getElementById('geocodingSearchBtn');
+        const searchInput = document.getElementById('geocodingSearch');
+
+        searchBtn?.addEventListener('click', () => this.performGeocoding());
+        searchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.performGeocoding();
+        });
+    },
+
+    /**
+     * Wykonaj geocoding (wyszukiwanie adresu)
+     */
+    async performGeocoding() {
+        const query = document.getElementById('geocodingSearch')?.value;
+        if (!query) return;
+
+        const resultsDiv = document.getElementById('geocodingResults');
+        resultsDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Szukam...</div>';
+        resultsDiv.style.display = 'block';
+
+        try {
+            // Użyj Nominatim (OpenStreetMap geocoding - darmowy)
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=pl`
+            );
+            const data = await response.json();
+
+            if (data.length === 0) {
+                resultsDiv.innerHTML = '<div class="no-results"><i class="fas fa-exclamation-circle"></i> Nie znaleziono wyników</div>';
+                return;
+            }
+
+            // Wyświetl wyniki
+            resultsDiv.innerHTML = data.map(result => `
+                <div class="geocoding-result-item" onclick="MapManager.selectGeocodingResult(${result.lat}, ${result.lon}, '${result.display_name.replace(/'/g, "\\'")}')">
+                    <div class="result-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="result-details">
+                        <div class="result-name">${result.display_name}</div>
+                        <div class="result-coords">${parseFloat(result.lat).toFixed(5)}, ${parseFloat(result.lon).toFixed(5)}</div>
+                    </div>
+                    <div class="result-action">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            console.error('Błąd geocodingu:', error);
+            resultsDiv.innerHTML = '<div class="error"><i class="fas fa-exclamation-triangle"></i> Błąd wyszukiwania</div>';
+        }
+    },
+
+    /**
+     * Wybierz wynik geocodingu
+     */
+    selectGeocodingResult(lat, lon, name) {
+        // Zamknij modal
+        Modal.hide();
+
+        // Przesuń mapę do wyniku
+        this.map.setView([lat, lon], 15);
+
+        // Dodaj tymczasowy marker
+        const marker = L.marker([lat, lon], {
+            icon: L.divIcon({
+                html: '<div style="background-color: #ef4444; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); animation: pulse 2s infinite;"><i class="fas fa-location-dot" style="color: white; font-size: 20px;"></i></div>',
+                className: 'geocoding-marker',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            })
+        }).addTo(this.map);
+
+        marker.bindPopup(`
+            <div class="map-popup">
+                <div class="popup-header">
+                    <h4>Znaleziono lokalizację</h4>
+                </div>
+                <div class="popup-body">
+                    <p><i class="fas fa-location-dot"></i> ${name}</p>
+                    <p><i class="fas fa-map-pin"></i> ${lat.toFixed(5)}, ${lon.toFixed(5)}</p>
+                </div>
+                <div class="popup-actions">
+                    <button onclick="MapManager.createEventAtLocation(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}', this)" class="btn-sm">
+                        <i class="fas fa-plus"></i> Dodaj wydarzenie tutaj
+                    </button>
+                </div>
+            </div>
+        `).openPopup();
+
+        this.showToast('Znaleziono lokalizację');
+    },
+
+    /**
+     * Utwórz wydarzenie w znalezionej lokalizacji
+     */
+    createEventAtLocation(lat, lon, location, buttonElement) {
+        // Zamknij popup
+        this.map.closePopup();
+
+        // Otwórz modal dodawania z wypełnionymi współrzędnymi
+        this.showAddEventModal();
+
+        // Wypełnij pola
+        setTimeout(() => {
+            document.getElementById('mapEventLat').value = lat.toFixed(5);
+            document.getElementById('mapEventLng').value = lon.toFixed(5);
+            document.getElementById('mapEventLocation').value = location;
+        }, 100);
+    },
+
+    // ============================================
+    // HEAT MAP - DENSITY VISUALIZATION
+    // ============================================
+
+    /**
+     * Toggle heat mapa
+     */
+    toggleHeatMap() {
+        this.activeLayers.heat = !this.activeLayers.heat;
+
+        if (this.activeLayers.heat) {
+            this.renderHeatMap();
+        } else {
+            if (this.heatLayer) {
+                this.map.removeLayer(this.heatLayer);
+                this.heatLayer = null;
+            }
+        }
+    },
+
+    /**
+     * Renderuj heat mapę
+     */
+    renderHeatMap() {
+        if (this.heatLayer) {
+            this.map.removeLayer(this.heatLayer);
+        }
+
+        // Przygotuj dane dla heat mapy (lat, lng, intensity)
+        const heatData = this.events.map(event => [event.lat, event.lng, 0.8]);
+
+        if (heatData.length === 0) {
+            this.showToast('Brak danych do wyświetlenia heat mapy');
+            this.activeLayers.heat = false;
+            return;
+        }
+
+        // Utwórz heat layer
+        this.heatLayer = L.heatLayer(heatData, {
+            radius: 25,
+            blur: 35,
+            maxZoom: 17,
+            max: 1.0,
+            gradient: {
+                0.0: '#0000ff',
+                0.5: '#00ff00',
+                0.7: '#ffff00',
+                1.0: '#ff0000'
+            }
+        }).addTo(this.map);
+
+        this.showToast('Heat mapa włączona');
+    },
+
+    // ============================================
+    // MEASUREMENT TOOL
+    // ============================================
+
+    /**
+     * Toggle tryb pomiaru odległości
+     */
+    toggleMeasurementMode() {
+        this.measurementMode = !this.measurementMode;
+        const btn = document.getElementById('mapMeasureBtn');
+
+        if (this.measurementMode) {
+            btn?.classList.add('active');
+            this.map.getContainer().style.cursor = 'crosshair';
+            this.showToast('Kliknij na mapie aby mierzyć odległość');
+            this.startMeasurement();
+        } else {
+            btn?.classList.remove('active');
+            this.map.getContainer().style.cursor = '';
+            this.stopMeasurement();
+        }
+    },
+
+    /**
+     * Rozpocznij pomiar
+     */
+    startMeasurement() {
+        this.measurementPoints = [];
+        this.measurementMarkers = [];
+        this.measurementLines = [];
+
+        this.map.on('click', this.handleMeasurementClick.bind(this));
+    },
+
+    /**
+     * Zatrzymaj pomiar
+     */
+    stopMeasurement() {
+        this.map.off('click', this.handleMeasurementClick);
+
+        // Usuń markery i linie pomiaru
+        if (this.measurementMarkers) {
+            this.measurementMarkers.forEach(marker => this.map.removeLayer(marker));
+        }
+        if (this.measurementLines) {
+            this.measurementLines.forEach(line => this.map.removeLayer(line));
+        }
+
+        this.measurementPoints = [];
+        this.measurementMarkers = [];
+        this.measurementLines = [];
+    },
+
+    /**
+     * Obsługa kliknięcia w trybie pomiaru
+     */
+    handleMeasurementClick(e) {
+        const { lat, lng } = e.latlng;
+        this.measurementPoints.push([lat, lng]);
+
+        // Dodaj marker
+        const marker = L.circleMarker([lat, lng], {
+            radius: 5,
+            color: '#3b82f6',
+            fillColor: '#3b82f6',
+            fillOpacity: 1
+        }).addTo(this.map);
+        this.measurementMarkers.push(marker);
+
+        // Jeśli to nie pierwszy punkt, narysuj linię
+        if (this.measurementPoints.length > 1) {
+            const line = L.polyline(this.measurementPoints, {
+                color: '#3b82f6',
+                weight: 3,
+                dashArray: '10, 10'
+            }).addTo(this.map);
+            this.measurementLines.push(line);
+
+            // Oblicz odległość
+            const distance = this.calculateDistance(
+                this.measurementPoints[this.measurementPoints.length - 2],
+                this.measurementPoints[this.measurementPoints.length - 1]
+            );
+
+            const totalDistance = this.calculateTotalDistance();
+
+            // Pokaż popup z odległością
+            marker.bindPopup(`
+                <div style="text-align: center;">
+                    <strong>Odcinek:</strong> ${distance.toFixed(2)} km<br>
+                    <strong>Suma:</strong> ${totalDistance.toFixed(2)} km<br>
+                    <button onclick="MapManager.toggleMeasurementMode()" style="margin-top: 8px; padding: 4px 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        <i class="fas fa-times"></i> Zakończ pomiar
+                    </button>
+                </div>
+            `).openPopup();
+        } else {
+            marker.bindPopup('Punkt początkowy pomiaru').openPopup();
+        }
+    },
+
+    /**
+     * Oblicz odległość między dwoma punktami (w km)
+     */
+    calculateDistance(point1, point2) {
+        const R = 6371; // Promień Ziemi w km
+        const dLat = this.toRad(point2[0] - point1[0]);
+        const dLon = this.toRad(point2[1] - point1[1]);
+        const lat1 = this.toRad(point1[0]);
+        const lat2 = this.toRad(point2[0]);
+
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    },
+
+    /**
+     * Oblicz całkowitą odległość
+     */
+    calculateTotalDistance() {
+        let total = 0;
+        for (let i = 1; i < this.measurementPoints.length; i++) {
+            total += this.calculateDistance(this.measurementPoints[i - 1], this.measurementPoints[i]);
+        }
+        return total;
+    },
+
+    /**
+     * Konwertuj stopnie na radiany
+     */
+    toRad(degrees) {
+        return degrees * Math.PI / 180;
+    },
+
+    // ============================================
+    // LIVE MODE - REAL-TIME UPDATES
+    // ============================================
+
+    /**
+     * Toggle tryb LIVE
+     */
+    toggleLiveMode() {
+        this.liveMode = !this.liveMode;
+        const btn = document.getElementById('mapLiveModeBtn');
+
+        if (this.liveMode) {
+            btn?.classList.add('active');
+            btn.innerHTML = '<i class="fas fa-broadcast-tower"></i> <span class="live-indicator">LIVE</span>';
+            this.startLiveMode();
+            this.showToast('Tryb LIVE włączony - odświeżanie co 10s');
+        } else {
+            btn?.classList.remove('active');
+            btn.innerHTML = '<i class="fas fa-broadcast-tower"></i> Tryb LIVE';
+            this.stopLiveMode();
+            this.showToast('Tryb LIVE wyłączony');
+        }
+    },
+
+    /**
+     * Rozpocznij tryb LIVE
+     */
+    startLiveMode() {
+        // Odświeżaj co 10 sekund
+        this.liveUpdateInterval = setInterval(() => {
+            this.refreshLiveData();
+        }, 10000);
+
+        // Pierwsze odświeżenie natychmiast
+        this.refreshLiveData();
+    },
+
+    /**
+     * Zatrzymaj tryb LIVE
+     */
+    stopLiveMode() {
+        if (this.liveUpdateInterval) {
+            clearInterval(this.liveUpdateInterval);
+            this.liveUpdateInterval = null;
+        }
+    },
+
+    /**
+     * Odśwież dane w trybie LIVE
+     */
+    refreshLiveData() {
+        // Załaduj najnowsze dane
+        this.loadEvents();
+        this.loadPatrols();
+
+        // Odśwież mapę
+        this.clearMarkers();
+        this.renderAllLayers();
+        this.renderEventsList();
+        this.updateStats();
+
+        // Animacja odświeżenia
+        const btn = document.getElementById('mapLiveModeBtn');
+        btn?.classList.add('refreshing');
+        setTimeout(() => btn?.classList.remove('refreshing'), 500);
+    },
+
+    // ============================================
+    // LAYERS MANAGEMENT
+    // ============================================
+
+    /**
+     * Pokaż modal zarządzania warstwami
+     */
+    showLayersModal() {
+        Modal.show('Zarządzanie warstwami', `
+            <div class="layers-modal">
+                <p class="form-info">
+                    <i class="fas fa-layer-group"></i>
+                    Włącz lub wyłącz poszczególne warstwy na mapie
+                </p>
+
+                <div class="layer-toggles">
+                    <div class="layer-toggle-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="layerEvents" ${this.activeLayers.events ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <div class="toggle-label">
+                            <i class="fas fa-map-pin"></i>
+                            <span>Wydarzenia</span>
+                        </div>
+                    </div>
+
+                    <div class="layer-toggle-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="layerPatrols" ${this.activeLayers.patrols ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <div class="toggle-label">
+                            <i class="fas fa-car-side"></i>
+                            <span>Patrole</span>
+                        </div>
+                    </div>
+
+                    <div class="layer-toggle-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="layerMilitary" ${this.activeLayers.military ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <div class="toggle-label">
+                            <i class="fas fa-building-shield"></i>
+                            <span>Obiekty wojskowe</span>
+                        </div>
+                    </div>
+
+                    <div class="layer-toggle-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="layerZones" ${this.activeLayers.zones ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <div class="toggle-label">
+                            <i class="fas fa-circle"></i>
+                            <span>Strefy zasięgu</span>
+                        </div>
+                    </div>
+
+                    <div class="layer-toggle-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="layerHeat" ${this.activeLayers.heat ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <div class="toggle-label">
+                            <i class="fas fa-fire"></i>
+                            <span>Mapa ciepła (heat map)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-primary" onclick="MapManager.applyLayerChanges()">
+                        <i class="fas fa-check"></i> Zastosuj
+                    </button>
+                    <button class="btn-secondary" onclick="Modal.hide()">
+                        Anuluj
+                    </button>
+                </div>
+            </div>
+        `);
+    },
+
+    /**
+     * Zastosuj zmiany w warstwach
+     */
+    applyLayerChanges() {
+        this.activeLayers.events = document.getElementById('layerEvents')?.checked || false;
+        this.activeLayers.patrols = document.getElementById('layerPatrols')?.checked || false;
+        this.activeLayers.military = document.getElementById('layerMilitary')?.checked || false;
+        this.activeLayers.zones = document.getElementById('layerZones')?.checked || false;
+        this.activeLayers.heat = document.getElementById('layerHeat')?.checked || false;
+
+        Modal.hide();
+
+        // Odśwież mapę
+        this.clearMarkers();
+        this.renderAllLayers();
+
+        this.showToast('Warstwy zaktualizowane');
+    },
+
+    // ============================================
+    // TOOLS MODAL
+    // ============================================
+
+    /**
+     * Pokaż modal narzędzi
+     */
+    showToolsModal() {
+        Modal.show('Narzędzia mapy', `
+            <div class="tools-modal">
+                <div class="tool-grid">
+                    <div class="tool-item" onclick="MapManager.toggleMeasurementMode(); Modal.hide();">
+                        <div class="tool-icon"><i class="fas fa-ruler"></i></div>
+                        <div class="tool-name">Pomiar odległości</div>
+                        <div class="tool-desc">Mierz odległości między punktami</div>
+                    </div>
+
+                    <div class="tool-item" onclick="MapManager.showGeocodingModal();">
+                        <div class="tool-icon"><i class="fas fa-search-location"></i></div>
+                        <div class="tool-name">Wyszukaj adres</div>
+                        <div class="tool-desc">Znajdź lokalizację po adresie</div>
+                    </div>
+
+                    <div class="tool-item" onclick="MapManager.toggleHeatMap(); Modal.hide();">
+                        <div class="tool-icon"><i class="fas fa-fire"></i></div>
+                        <div class="tool-name">Heat mapa</div>
+                        <div class="tool-desc">Wizualizacja koncentracji zdarzeń</div>
+                    </div>
+
+                    <div class="tool-item" onclick="MapManager.centerOnPoland(); Modal.hide();">
+                        <div class="tool-icon"><i class="fas fa-globe"></i></div>
+                        <div class="tool-name">Wyśrodkuj mapę</div>
+                        <div class="tool-desc">Pokaż całą Polskę</div>
+                    </div>
+
+                    <div class="tool-item" onclick="MapManager.clearAllDrawings(); Modal.hide();">
+                        <div class="tool-icon"><i class="fas fa-eraser"></i></div>
+                        <div class="tool-name">Wyczyść rysunki</div>
+                        <div class="tool-desc">Usuń wszystkie narysowane obiekty</div>
+                    </div>
+
+                    <div class="tool-item" onclick="MapManager.showStatisticsModal();">
+                        <div class="tool-icon"><i class="fas fa-chart-bar"></i></div>
+                        <div class="tool-name">Statystyki</div>
+                        <div class="tool-desc">Pokaż statystyki zdarzeń</div>
+                    </div>
+                </div>
+            </div>
+        `);
+    },
+
+    /**
+     * Wyśrodkuj mapę na Polsce
+     */
+    centerOnPoland() {
+        this.map.setView([52.0693, 19.4803], 7);
+        this.showToast('Mapa wyśrodkowana');
+    },
+
+    /**
+     * Wyczyść wszystkie rysunki
+     */
+    clearAllDrawings() {
+        if (confirm('Czy na pewno chcesz usunąć wszystkie rysunki?')) {
+            this.drawnItems.clearLayers();
+            this.showToast('Rysunki usunięte');
+        }
+    },
+
+    // ============================================
+    // DATA IMPORT FROM MODULES
+    // ============================================
+
+    /**
+     * Pokaż modal importu danych
+     */
+    showImportDataModal() {
+        Modal.show('Import danych z modułów', `
+            <div class="import-modal">
+                <p class="form-info">
+                    <i class="fas fa-download"></i>
+                    Automatycznie nanoś zdarzenia z innych modułów na mapę
+                </p>
+
+                <div class="import-options">
+                    <div class="import-option">
+                        <div class="import-header">
+                            <i class="fas fa-car-side"></i>
+                            <h4>Patrole</h4>
+                        </div>
+                        <p>Import danych patroli z modułu Patrole</p>
+                        <button class="btn-secondary btn-full" onclick="MapManager.importPatrolsData()">
+                            <i class="fas fa-download"></i> Importuj patrole
+                        </button>
+                    </div>
+
+                    <div class="import-option">
+                        <div class="import-header">
+                            <i class="fas fa-scale-balanced"></i>
+                            <h4>Wykroczenia</h4>
+                        </div>
+                        <p>Import wykroczeń z modułu Wykroczenia</p>
+                        <button class="btn-secondary btn-full" onclick="MapManager.importWykroczeniaData()">
+                            <i class="fas fa-download"></i> Importuj wykroczenia
+                        </button>
+                    </div>
+
+                    <div class="import-option">
+                        <div class="import-header">
+                            <i class="fas fa-shield-halved"></i>
+                            <h4>WKRD</h4>
+                        </div>
+                        <p>Import kontroli z modułu WKRD</p>
+                        <button class="btn-secondary btn-full" onclick="MapManager.importWKRDData()">
+                            <i class="fas fa-download"></i> Importuj WKRD
+                        </button>
+                    </div>
+
+                    <div class="import-option">
+                        <div class="import-header">
+                            <i class="fas fa-car-burst"></i>
+                            <h4>Zdarzenia drogowe</h4>
+                        </div>
+                        <p>Import zdarzeń z modułu Zdarzenia</p>
+                        <button class="btn-secondary btn-full" onclick="MapManager.importZdarzeniaData()">
+                            <i class="fas fa-download"></i> Importuj zdarzenia
+                        </button>
+                    </div>
+                </div>
+
+                <div class="import-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Uwaga: Import wymaga aby dane w modułach zawierały informacje o lokalizacji (współrzędne GPS lub adres)</p>
+                </div>
+            </div>
+        `);
+    },
+
+    /**
+     * Import danych patroli
+     */
+    importPatrolsData() {
+        const patrolData = Utils.loadFromLocalStorage('aep_data_patrole') || [];
+        let imported = 0;
+
+        patrolData.forEach(patrol => {
+            // Sprawdź czy patrol ma współrzędne (można je dodać w przyszłości do formularza patroli)
+            if (patrol.lat && patrol.lng) {
+                const event = {
+                    id: Date.now() + Math.random(),
+                    type: 'patrol',
+                    status: 'aktywny',
+                    name: `Patrol ${patrol.oddzialZW || ''} - ${patrol.date || ''}`,
+                    lat: parseFloat(patrol.lat),
+                    lng: parseFloat(patrol.lng),
+                    date: patrol.date,
+                    unit: patrol.oddzialZW,
+                    description: `Patrol z dnia ${patrol.date}`,
+                    createdAt: new Date().toISOString()
+                };
+
+                this.events.push(event);
+                imported++;
+            }
+        });
+
+        this.saveEvents();
+        Modal.hide();
+        this.applyFiltersAndRender();
+        this.showToast(`Zaimportowano ${imported} patroli`);
+    },
+
+    /**
+     * Import wykroczeń (placeholder - wymaga dodania współrzędnych do modułu)
+     */
+    importWykroczeniaData() {
+        this.showToast('Funkcja dostępna po dodaniu współrzędnych do modułu Wykroczenia');
+        // TODO: Implementacja po dodaniu pól GPS do formularza wykroczeń
+    },
+
+    /**
+     * Import WKRD (placeholder)
+     */
+    importWKRDData() {
+        this.showToast('Funkcja dostępna po dodaniu współrzędnych do modułu WKRD');
+        // TODO: Implementacja po dodaniu pół GPS
+    },
+
+    /**
+     * Import zdarzeń drogowych (placeholder)
+     */
+    importZdarzeniaData() {
+        this.showToast('Funkcja dostępna po dodaniu współrzędnych do modułu Zdarzenia');
+        // TODO: Implementacja
+    },
+
+    // ============================================
+    // EXPORT FUNCTIONALITY
+    // ============================================
+
+    /**
+     * Pokaż modal eksportu
+     */
+    showExportModal() {
+        Modal.show('Eksport danych mapy', `
+            <div class="export-modal">
+                <p class="form-info">
+                    <i class="fas fa-file-export"></i>
+                    Wyeksportuj dane mapy w wybranym formacie
+                </p>
+
+                <div class="export-options">
+                    <button class="btn-primary btn-full" onclick="MapManager.exportToGPX()">
+                        <i class="fas fa-map-location-dot"></i> Eksport do GPX
+                        <small>Format dla urządzeń GPS</small>
+                    </button>
+
+                    <button class="btn-primary btn-full" onclick="MapManager.exportToKML()">
+                        <i class="fas fa-earth-americas"></i> Eksport do KML
+                        <small>Format dla Google Earth</small>
+                    </button>
+
+                    <button class="btn-primary btn-full" onclick="MapManager.exportMapToPDF()">
+                        <i class="fas fa-file-pdf"></i> Eksport do PDF
+                        <small>Raport z mapą i listą zdarzeń</small>
+                    </button>
+
+                    <button class="btn-primary btn-full" onclick="MapManager.exportToCSV()">
+                        <i class="fas fa-file-csv"></i> Eksport do CSV
+                        <small>Lista zdarzeń z współrzędnymi</small>
+                    </button>
+
+                    <button class="btn-primary btn-full" onclick="MapManager.exportToGeoJSON()">
+                        <i class="fas fa-code"></i> Eksport do GeoJSON
+                        <small>Format dla aplikacji GIS</small>
+                    </button>
+                </div>
+            </div>
+        `);
+    },
+
+    /**
+     * Eksport do GPX
+     */
+    exportToGPX() {
+        const gpx = this.generateGPX();
+        this.downloadFile(gpx, `mapa_zdarzen_${new Date().toISOString().split('T')[0]}.gpx`, 'application/gpx+xml');
+        Modal.hide();
+        this.showToast('Wyeksportowano do GPX');
+    },
+
+    /**
+     * Generuj GPX
+     */
+    generateGPX() {
+        let gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="AEP Tactical Map" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Mapa Zdarzeń AEP</name>
+    <time>${new Date().toISOString()}</time>
+  </metadata>
+`;
+
+        this.events.forEach(event => {
+            gpx += `  <wpt lat="${event.lat}" lon="${event.lng}">
+    <name>${this.escapeXml(event.name)}</name>
+    <desc>${this.escapeXml(event.description || '')}</desc>
+    <type>${event.type}</type>
+  </wpt>
+`;
+        });
+
+        gpx += '</gpx>';
+        return gpx;
+    },
+
+    /**
+     * Eksport do KML
+     */
+    exportToKML() {
+        const kml = this.generateKML();
+        this.downloadFile(kml, `mapa_zdarzen_${new Date().toISOString().split('T')[0]}.kml`, 'application/vnd.google-earth.kml+xml');
+        Modal.hide();
+        this.showToast('Wyeksportowano do KML');
+    },
+
+    /**
+     * Generuj KML
+     */
+    generateKML() {
+        let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Mapa Zdarzeń AEP</name>
+    <description>Eksport z dnia ${new Date().toLocaleString('pl-PL')}</description>
+`;
+
+        this.events.forEach(event => {
+            kml += `    <Placemark>
+      <name>${this.escapeXml(event.name)}</name>
+      <description>${this.escapeXml(event.description || '')}</description>
+      <Point>
+        <coordinates>${event.lng},${event.lat},0</coordinates>
+      </Point>
+    </Placemark>
+`;
+        });
+
+        kml += `  </Document>
+</kml>`;
+        return kml;
+    },
+
+    /**
+     * Eksport do CSV
+     */
+    exportToCSV() {
+        let csv = 'Nazwa;Typ;Status;Data;Jednostka;Szerokość;Długość;Lokalizacja;Opis\n';
+
+        this.events.forEach(event => {
+            csv += [
+                `"${event.name}"`,
+                `"${this.getTypeLabel(event.type)}"`,
+                `"${event.status}"`,
+                event.date || '',
+                event.unit || '',
+                event.lat,
+                event.lng,
+                `"${event.location || ''}"`,
+                `"${event.description || ''}"`
+            ].join(';') + '\n';
+        });
+
+        this.downloadFile(csv, `mapa_zdarzen_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8;');
+        Modal.hide();
+        this.showToast('Wyeksportowano do CSV');
+    },
+
+    /**
+     * Eksport do GeoJSON
+     */
+    exportToGeoJSON() {
+        const geojson = {
+            type: 'FeatureCollection',
+            features: this.events.map(event => ({
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: [event.lng, event.lat]
+                },
+                properties: {
+                    name: event.name,
+                    type: event.type,
+                    status: event.status,
+                    date: event.date,
+                    unit: event.unit,
+                    location: event.location,
+                    description: event.description
+                }
+            }))
+        };
+
+        this.downloadFile(
+            JSON.stringify(geojson, null, 2),
+            `mapa_zdarzen_${new Date().toISOString().split('T')[0]}.geojson`,
+            'application/json'
+        );
+        Modal.hide();
+        this.showToast('Wyeksportowano do GeoJSON');
+    },
+
+    /**
+     * Eksport mapy do PDF
+     */
+    async exportMapToPDF() {
+        const { jsPDF } = window.jspdf;
+        if (!jsPDF) {
+            alert('Biblioteka jsPDF nie jest załadowana');
+            return;
+        }
+
+        Modal.hide();
+        this.showToast('Generowanie PDF...');
+
+        const doc = new jsPDF();
+
+        // Dodaj czcionkę Roboto
+        if (window.pdfMake && window.pdfMake.vfs) {
+            try {
+                const robotoFont = window.pdfMake.vfs['Roboto-Regular.ttf'];
+                if (robotoFont) {
+                    doc.addFileToVFS('Roboto-Regular.ttf', robotoFont);
+                    doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+                    doc.setFont('Roboto');
+                }
+            } catch (error) {
+                console.error('Error loading Roboto font:', error);
+            }
+        }
+
+        // Tytuł
+        doc.setFontSize(18);
+        doc.setFont('Roboto', 'normal');
+        doc.text('Mapa Taktyczna Zdarzeń AEP', 15, 20);
+
+        doc.setFontSize(10);
+        doc.text(`Wygenerowano: ${new Date().toLocaleString('pl-PL')}`, 15, 28);
+        doc.text(`Liczba zdarzeń: ${this.events.length}`, 15, 34);
+
+        // Tabela z wydarzeniami
+        const tableData = this.events.map(e => [
+            e.name,
+            this.getTypeLabel(e.type),
+            e.status,
+            e.date || '-',
+            e.unit || '-',
+            `${e.lat.toFixed(5)}, ${e.lng.toFixed(5)}`
+        ]);
+
+        doc.autoTable({
+            startY: 40,
+            head: [['Wydarzenie', 'Typ', 'Status', 'Data', 'JŻW', 'Współrzędne']],
+            body: tableData,
+            styles: {
+                font: 'Roboto',
+                fontSize: 8
+            },
+            headStyles: {
+                font: 'Roboto',
+                fillColor: [75, 85, 99],
+                fontStyle: 'normal'
+            }
+        });
+
+        doc.save(`mapa_taktyczna_${new Date().toISOString().split('T')[0]}.pdf`);
+        this.showToast('PDF wygenerowany');
+    },
+
+    /**
+     * Escape XML
+     */
+    escapeXml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe.replace(/[<>&'"]/g, c => {
+            switch (c) {
+                case '<': return '&lt;';
+                case '>': return '&gt;';
+                case '&': return '&amp;';
+                case '\'': return '&apos;';
+                case '"': return '&quot;';
+            }
+        });
+    },
+
+    /**
+     * Download file
+     */
+    downloadFile(content, filename, mimeType) {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    },
+
+    // ============================================
+    // STATISTICS
+    // ============================================
+
+    /**
+     * Pokaż modal statystyk
+     */
+    showStatisticsModal() {
+        const stats = this.calculateStatistics();
+
+        Modal.show('Statystyki mapy', `
+            <div class="statistics-modal">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-map-pin"></i></div>
+                        <div class="stat-value">${stats.totalEvents}</div>
+                        <div class="stat-label">Wszystkie wydarzenia</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-car-side"></i></div>
+                        <div class="stat-value">${stats.activePatrols}</div>
+                        <div class="stat-label">Aktywne patrole</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-calendar"></i></div>
+                        <div class="stat-value">${stats.todayEvents}</div>
+                        <div class="stat-label">Wydarzenia dzisiaj</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="stat-value">${stats.weekEvents}</div>
+                        <div class="stat-label">Ten tydzień</div>
+                    </div>
+                </div>
+
+                <div class="stats-breakdown">
+                    <h4>Podział według typu:</h4>
+                    ${Object.entries(stats.byType).map(([type, count]) => `
+                        <div class="stat-row">
+                            <span>${this.getTypeLabel(type)}</span>
+                            <span class="stat-bar">
+                                <span class="stat-bar-fill" style="width: ${(count / stats.totalEvents * 100)}%; background: ${this.getColorForType(type)}"></span>
+                            </span>
+                            <span class="stat-count">${count}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `);
+    },
+
+    /**
+     * Oblicz statystyki
+     */
+    calculateStatistics() {
+        const today = new Date().toISOString().split('T')[0];
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        const stats = {
+            totalEvents: this.events.length,
+            activePatrols: this.patrols.filter(p => p.status === 'aktywny').length,
+            todayEvents: this.events.filter(e => e.date === today).length,
+            weekEvents: this.events.filter(e => e.date >= weekAgo).length,
+            byType: {}
+        };
+
+        // Zlicz po typach
+        this.events.forEach(event => {
+            stats.byType[event.type] = (stats.byType[event.type] || 0) + 1;
+        });
+
+        return stats;
+    },
+
+    /**
+     * Pobierz kolor dla typu
+     */
+    getColorForType(type) {
+        const colors = {
+            'wykroczenie': '#ef4444',
+            'patrol': '#3b82f6',
+            'kontrola': '#f59e0b',
+            'zdarzenie': '#8b5cf6',
+            'konwoj': '#10b981',
+            'spb': '#ec4899',
+            'pilotaz': '#06b6d4'
+        };
+        return colors[type] || '#6b7280';
     },
 
     /**
