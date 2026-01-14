@@ -12894,10 +12894,11 @@ const CalendarManager = {
 
     getTypeLabel(type) {
         const labels = {
-            'zabezpieczenie': 'Zabezpieczenie',
-            'patrol': 'Patrol',
-            'kontrola': 'Kontrola WKRD',
-            'konwój': 'Konwój',
+            'zabezpieczenie': 'Zabezpieczenie prewencyjno-ochronne',
+            'zabezpieczenie_prewencyjne': 'Zabezpieczenie prewencyjne',
+            'pilotaz_vip': 'Pilotaż VIP',
+            'czynnosci_piro': 'Czynności PIRO',
+            'realizacja_mczp': 'Realizacja MczP',
             'inne': 'Inne'
         };
         return labels[type] || type;
@@ -12916,9 +12917,10 @@ const CalendarManager = {
     getTypeColor(type) {
         const colors = {
             'zabezpieczenie': '#3b82f6',
-            'patrol': '#10b981',
-            'kontrola': '#f59e0b',
-            'konwój': '#ef4444',
+            'zabezpieczenie_prewencyjne': '#06b6d4',
+            'pilotaz_vip': '#10b981',
+            'czynnosci_piro': '#f59e0b',
+            'realizacja_mczp': '#ef4444',
             'inne': '#8b5cf6'
         };
         return colors[type] || '#6b7280';
@@ -12932,9 +12934,10 @@ const CalendarManager = {
                         <label>Typ wydarzenia *</label>
                         <select id="eventType" required>
                             <option value="zabezpieczenie">Zabezpieczenie prewencyjno-ochronne</option>
-                            <option value="patrol">Patrol</option>
-                            <option value="kontrola">Kontrola WKRD</option>
-                            <option value="konwój">Konwój</option>
+                            <option value="zabezpieczenie_prewencyjne">Zabezpieczenie prewencyjne</option>
+                            <option value="pilotaz_vip">Pilotaż VIP</option>
+                            <option value="czynnosci_piro">Czynności PIRO</option>
+                            <option value="realizacja_mczp">Realizacja MczP</option>
                             <option value="inne">Inne</option>
                         </select>
                     </div>
@@ -12972,7 +12975,19 @@ const CalendarManager = {
                 <div class="form-row">
                     <div class="form-group">
                         <label>Jednostka (OŻW)</label>
-                        <input type="text" id="eventJzw" placeholder="np. OŻW Elbląg" />
+                        <select id="eventJzw">
+                            <option value="">-- Wybierz jednostkę --</option>
+                            <option value="KG ŻW">KG ŻW</option>
+                            <option value="OSŻW Mińsk Mazowiecki">OSŻW Mińsk Mazowiecki</option>
+                            <option value="OSŻW Warszawa">OSŻW Warszawa</option>
+                            <option value="OŻW Bydgoszcz">OŻW Bydgoszcz</option>
+                            <option value="OŻW Elbląg">OŻW Elbląg</option>
+                            <option value="OŻW Kraków">OŻW Kraków</option>
+                            <option value="OŻW Lublin">OŻW Lublin</option>
+                            <option value="OŻW Łódź">OŻW Łódź</option>
+                            <option value="OŻW Szczecin">OŻW Szczecin</option>
+                            <option value="OŻW Żagań">OŻW Żagań</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Lokalizacja</label>
@@ -13166,12 +13181,36 @@ const CalendarManager = {
         }
 
         const doc = new jsPDF();
+
+        // Add Roboto font for full Polish character support
+        if (window.pdfMake && window.pdfMake.vfs) {
+            try {
+                const robotoFont = window.pdfMake.vfs['Roboto-Regular.ttf'];
+                if (robotoFont) {
+                    doc.addFileToVFS('Roboto-Regular.ttf', robotoFont);
+                    doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+                    doc.setFont('Roboto');
+                } else {
+                    console.warn('Roboto font not found, falling back to helvetica');
+                    doc.setFont('helvetica');
+                }
+            } catch (error) {
+                console.error('Error loading Roboto font:', error);
+                doc.setFont('helvetica');
+            }
+        } else {
+            console.warn('vfs_fonts not loaded, falling back to helvetica');
+            doc.setFont('helvetica');
+        }
+
         const filteredEvents = this.getFilteredEvents();
 
         doc.setFontSize(16);
+        doc.setFont('Roboto', 'normal');
         doc.text('Kalendarz Operacyjny AEP', 15, 15);
 
         doc.setFontSize(10);
+        doc.setFont('Roboto', 'normal');
         doc.text(`Wygenerowano: ${new Date().toLocaleString('pl-PL')}`, 15, 22);
         doc.text(`Liczba wydarzeń: ${filteredEvents.length}`, 15, 28);
 
@@ -13189,8 +13228,15 @@ const CalendarManager = {
             startY: 35,
             head: [['Data', 'Czas', 'Wydarzenie', 'Typ', 'JŻW', 'Lokalizacja', 'Status']],
             body: tableData,
-            styles: { fontSize: 8 },
-            headStyles: { fillColor: [75, 85, 99] }
+            styles: {
+                font: 'Roboto',
+                fontSize: 8
+            },
+            headStyles: {
+                font: 'Roboto',
+                fillColor: [75, 85, 99],
+                fontStyle: 'normal'
+            }
         });
 
         const filename = `Kalendarz_AEP_${new Date().toISOString().split('T')[0]}.pdf`;
