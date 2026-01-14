@@ -548,7 +548,7 @@ const TabularExporter = {
 
         // Title
         doc.setFontSize(16);
-        doc.setFont('Roboto', 'bold');
+        doc.setFont('Roboto', 'normal');
         doc.text('Raport Tabelaryczny - AEP', marginLeft, yPos);
 
         yPos += 6;
@@ -570,7 +570,7 @@ const TabularExporter = {
 
             if (!data || data.length === 0) {
                 doc.setFontSize(12);
-                doc.setFont('Roboto', 'bold');
+                doc.setFont('Roboto', 'normal');
                 doc.text(this.moduleNames[module], marginLeft, yPos);
                 yPos += 6;
                 doc.setFontSize(9);
@@ -583,7 +583,7 @@ const TabularExporter = {
             const filteredData = this.filterByDateRange(data, dateFrom, dateTo);
             if (filteredData.length === 0) {
                 doc.setFontSize(12);
-                doc.setFont('Roboto', 'bold');
+                doc.setFont('Roboto', 'normal');
                 doc.text(this.moduleNames[module], marginLeft, yPos);
                 yPos += 6;
                 doc.setFontSize(9);
@@ -595,7 +595,7 @@ const TabularExporter = {
 
             // Module header
             doc.setFontSize(12);
-            doc.setFont('Roboto', 'bold');
+            doc.setFont('Roboto', 'normal');
             doc.text(this.moduleNames[module], marginLeft, yPos);
             yPos += 5;
             doc.setFontSize(8);
@@ -616,19 +616,19 @@ const TabularExporter = {
                     headerRow1.push({
                         content: header.label,
                         rowSpan: 2,
-                        styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 5.5 }
+                        styles: { halign: 'center', valign: 'middle', fontStyle: 'normal', fontSize: 5.5 }
                     });
                 } else if (header.colspan) {
                     headerRow1.push({
                         content: header.label,
                         colSpan: header.colspan,
-                        styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 5.5 }
+                        styles: { halign: 'center', valign: 'middle', fontStyle: 'normal', fontSize: 5.5 }
                     });
                     // Add subheaders for row 2
                     for (let j = 0; j < header.colspan; j++) {
                         headerRow2.push({
                             content: structure.subheaders[subHeaderIndex++],
-                            styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 5 }
+                            styles: { halign: 'center', valign: 'middle', fontStyle: 'normal', fontSize: 5 }
                         });
                     }
                 }
@@ -669,7 +669,7 @@ const TabularExporter = {
                     font: 'Roboto',
                     fillColor: [75, 85, 99],
                     textColor: [255, 255, 255],
-                    fontStyle: 'bold',
+                    fontStyle: 'normal',
                     halign: 'center',
                     fontSize: 5
                 },
