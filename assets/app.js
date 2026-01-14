@@ -2015,6 +2015,8 @@ const Router = {
             DashboardHub.render();
         } else if (section.id === 'kalendarz') {
             CalendarManager.render();
+        } else if (section.id === 'mapa') {
+            MapManager.render();
         } else {
             const savedData = Utils.loadFromLocalStorage(`aep_data_${section.id}`);
             AppState.currentData = savedData || Utils.generateTestData(section.columns, 25);
