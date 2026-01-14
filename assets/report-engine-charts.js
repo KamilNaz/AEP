@@ -3,7 +3,21 @@
 // Renderuje wykresy jako base64 images dla PDF
 // ============================================
 
+/**
+ * @typedef {Object} ChartConfig
+ * @property {string} type - Typ wykresu (line, bar, pie, etc.)
+ * @property {Object} data - Dane dla wykresu
+ * @property {Object} [options] - Opcje konfiguracyjne wykresu
+ */
+
 const ChartRenderer = {
+    /**
+     * Renderuje wykres do formatu base64 PNG
+     * @param {ChartConfig} config - Konfiguracja wykresu Chart.js
+     * @param {number} [width=600] - Szerokość wykresu w pikselach
+     * @param {number} [height=400] - Wysokość wykresu w pikselach
+     * @returns {Promise<string>} Promise z obrazem w formacie base64
+     */
     async renderChartToBase64(config, width = 600, height = 400) {
         return new Promise((resolve) => {
             const canvas = document.createElement('canvas');
@@ -22,6 +36,12 @@ const ChartRenderer = {
         });
     },
 
+    /**
+     * Generuje wykres trendów w czasie
+     * @param {Array<{data: string}>} data - Tablica obiektów z polem data (DD.MM.YYYY)
+     * @param {string} label - Etykieta dla zestawu danych
+     * @returns {Promise<string>} Promise z obrazem wykresu w formacie base64
+     */
     async generateTrendChart(data, label) {
         const dateMap = {};
         data.forEach(item => {
@@ -77,6 +97,13 @@ const ChartRenderer = {
         return await this.renderChartToBase64(config, 800, 300);
     },
 
+    /**
+     * Generuje wykres słupkowy
+     * @param {string[]} labels - Etykiety dla słupków
+     * @param {number[]} values - Wartości dla słupków
+     * @param {string} title - Tytuł wykresu
+     * @returns {Promise<string>} Promise z obrazem wykresu w formacie base64
+     */
     async generateBarChart(labels, values, title) {
         const config = {
             type: 'bar',
