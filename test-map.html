@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mapy AEP</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+
+    <!-- AEP Styles -->
+    <link rel="stylesheet" href="assets/styles-phase1.css">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1d29;
+            color: #e6e6e6;
+        }
+
+        #mainContent {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .test-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #10b981;
+            color: white;
+            padding: 0.5rem;
+            text-align: center;
+            font-weight: bold;
+            z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-banner">
+        🧪 TEST MAPY - Plik testowy do weryfikacji CSS i funkcjonalności
+    </div>
+
+    <div id="mainContent"></div>
+
+    <!-- Leaflet.js -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+    <!-- Map Manager -->
+    <script src="assets/map-manager.js"></script>
+
+    <script>
+        // Symulacja AppState dla testu
+        window.AppState = {
+            currentSection: { id: 'mapa', title: 'Mapa zdarzeń' }
+        };
+
+        // Renderuj mapę
+        console.log('🗺️ Inicjalizacja mapy testowej...');
+        MapManager.render();
+        console.log('✅ Mapa zainicjalizowana');
+    </script>
+</body>
+</html>
