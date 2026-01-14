@@ -12517,15 +12517,16 @@ const CalendarManager = {
                     </div>
                 </div>
 
-                <div class="calendar-filters" id="calendarFilters" style="display: none;">
+                <div class="calendar-filters" id="calendarFilters" style="display: flex;">
                     <div class="filter-group">
                         <label>Typ wydarzenia:</label>
                         <select id="filterType">
                             <option value="all">Wszystkie</option>
-                            <option value="zabezpieczenie">Zabezpieczenie</option>
-                            <option value="patrol">Patrol</option>
-                            <option value="kontrola">Kontrola WKRD</option>
-                            <option value="konwój">Konwój</option>
+                            <option value="zabezpieczenie">Zabezpieczenie prewencyjno-ochronne</option>
+                            <option value="zabezpieczenie_prewencyjne">Zabezpieczenie prewencyjne</option>
+                            <option value="pilotaz_vip">Pilotaż VIP</option>
+                            <option value="czynnosci_piro">Czynności PIRO</option>
+                            <option value="realizacja_mczp">Realizacja MczP</option>
                             <option value="inne">Inne</option>
                         </select>
                     </div>
@@ -12546,10 +12547,11 @@ const CalendarManager = {
                 </div>
 
                 <div class="calendar-legend">
-                    <span class="legend-item"><span class="legend-color" style="background: #3b82f6"></span> Zabezpieczenie</span>
-                    <span class="legend-item"><span class="legend-color" style="background: #10b981"></span> Patrol</span>
-                    <span class="legend-item"><span class="legend-color" style="background: #f59e0b"></span> Kontrola</span>
-                    <span class="legend-item"><span class="legend-color" style="background: #ef4444"></span> Konwój</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #3b82f6"></span> Zabezpieczenie prewencyjno-ochronne</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #06b6d4"></span> Zabezpieczenie prewencyjne</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #10b981"></span> Pilotaż VIP</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #f59e0b"></span> Czynności PIRO</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #ef4444"></span> Realizacja MczP</span>
                     <span class="legend-item"><span class="legend-color" style="background: #8b5cf6"></span> Inne</span>
                 </div>
 
