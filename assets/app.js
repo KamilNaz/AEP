@@ -2013,6 +2013,8 @@ const Router = {
             RaportyManager.render();
         } else if (section.id === 'dashboardy') {
             DashboardHub.render();
+        } else if (section.id === 'kalendarz') {
+            CalendarManager.render();
         } else {
             const savedData = Utils.loadFromLocalStorage(`aep_data_${section.id}`);
             AppState.currentData = savedData || Utils.generateTestData(section.columns, 25);
@@ -12417,6 +12419,860 @@ const Sidebar = {
         });
 
         console.log('✅ Sidebar initialized');
+    }
+};
+
+// ============================================
+// CALENDAR MANAGER
+// ============================================
+/**
+ * @typedef {Object} CalendarEvent
+ * @property {number} id - Unique event ID
+ * @property {string} title - Event title
+ * @property {string} type - Event type (zabezpieczenie, patrol, kontrola, konwój, inne)
+ * @property {string} date - Event date (YYYY-MM-DD)
+ * @property {string} [timeStart] - Start time (HH:MM)
+ * @property {string} [timeEnd] - End time (HH:MM)
+ * @property {string} [location] - Event location
+ * @property {string} [jzw] - Unit name (OŻW)
+ * @property {string} [description] - Event description
+ * @property {string} [priority] - Priority (niski, średni, wysoki, krytyczny)
+ * @property {string} [status] - Status (zaplanowane, w_trakcie, zakończone, odwołane)
+ * @property {string} color - Event color for display
+ */
+
+const CalendarManager = {
+    currentView: 'month', // month, week, day, list
+    currentDate: new Date(),
+    events: [],
+    filters: {
+        type: 'all',
+        jzw: 'all',
+        status: 'all',
+        search: ''
+    },
+
+    init() {
+        this.loadEvents();
+    },
+
+    loadEvents() {
+        this.events = Utils.loadFromLocalStorage('aep_calendar_events') || [];
+    },
+
+    saveEvents() {
+        Utils.saveToLocalStorage('aep_calendar_events', this.events);
+    },
+
+    render() {
+        const mainContent = document.getElementById('mainContent');
+        mainContent.innerHTML = `
+            <div class="calendar-view">
+                <div class="calendar-header">
+                    <h1 class="section-title">
+                        <i class="fas fa-calendar-alt"></i> Kalendarz Operacyjny
+                    </h1>
+                    <p class="section-subtitle">Planowanie i zarządzanie wydarzeniami operacyjnymi</p>
+                </div>
+
+                <div class="calendar-toolbar">
+                    <div class="calendar-navigation">
+                        <button class="btn-icon" id="calPrevBtn" title="Poprzedni">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="btn-secondary" id="calTodayBtn">
+                            <i class="fas fa-calendar-day"></i> Dzisiaj
+                        </button>
+                        <button class="btn-icon" id="calNextBtn" title="Następny">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <h2 id="calCurrentDate" class="calendar-current-date"></h2>
+                    </div>
+
+                    <div class="calendar-view-switcher">
+                        <button class="btn-view ${this.currentView === 'month' ? 'active' : ''}" data-view="month">
+                            <i class="fas fa-calendar"></i> Miesiąc
+                        </button>
+                        <button class="btn-view ${this.currentView === 'week' ? 'active' : ''}" data-view="week">
+                            <i class="fas fa-calendar-week"></i> Tydzień
+                        </button>
+                        <button class="btn-view ${this.currentView === 'day' ? 'active' : ''}" data-view="day">
+                            <i class="fas fa-calendar-day"></i> Dzień
+                        </button>
+                        <button class="btn-view ${this.currentView === 'list' ? 'active' : ''}" data-view="list">
+                            <i class="fas fa-list"></i> Lista
+                        </button>
+                    </div>
+
+                    <div class="calendar-actions">
+                        <button class="btn-primary" id="calAddEventBtn">
+                            <i class="fas fa-plus"></i> Dodaj wydarzenie
+                        </button>
+                        <button class="btn-secondary" id="calFilterBtn">
+                            <i class="fas fa-filter"></i> Filtry
+                        </button>
+                        <button class="btn-secondary" id="calExportBtn">
+                            <i class="fas fa-file-export"></i> Eksport
+                        </button>
+                    </div>
+                </div>
+
+                <div class="calendar-filters" id="calendarFilters" style="display: none;">
+                    <div class="filter-group">
+                        <label>Typ wydarzenia:</label>
+                        <select id="filterType">
+                            <option value="all">Wszystkie</option>
+                            <option value="zabezpieczenie">Zabezpieczenie</option>
+                            <option value="patrol">Patrol</option>
+                            <option value="kontrola">Kontrola WKRD</option>
+                            <option value="konwój">Konwój</option>
+                            <option value="inne">Inne</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Status:</label>
+                        <select id="filterStatus">
+                            <option value="all">Wszystkie</option>
+                            <option value="zaplanowane">Zaplanowane</option>
+                            <option value="w_trakcie">W trakcie</option>
+                            <option value="zakończone">Zakończone</option>
+                            <option value="odwołane">Odwołane</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Wyszukaj:</label>
+                        <input type="text" id="filterSearch" placeholder="Szukaj wydarzeń..." />
+                    </div>
+                </div>
+
+                <div class="calendar-legend">
+                    <span class="legend-item"><span class="legend-color" style="background: #3b82f6"></span> Zabezpieczenie</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #10b981"></span> Patrol</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #f59e0b"></span> Kontrola</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #ef4444"></span> Konwój</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #8b5cf6"></span> Inne</span>
+                </div>
+
+                <div id="calendarContent" class="calendar-content">
+                    <!-- Dynamic content will be rendered here -->
+                </div>
+            </div>
+        `;
+
+        this.updateCurrentDateDisplay();
+        this.renderCalendarContent();
+        this.attachEventListeners();
+    },
+
+    attachEventListeners() {
+        // Navigation
+        document.getElementById('calPrevBtn')?.addEventListener('click', () => this.navigatePrevious());
+        document.getElementById('calNextBtn')?.addEventListener('click', () => this.navigateNext());
+        document.getElementById('calTodayBtn')?.addEventListener('click', () => this.navigateToday());
+
+        // View switcher
+        document.querySelectorAll('.btn-view').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.currentView = e.currentTarget.dataset.view;
+                this.render();
+            });
+        });
+
+        // Actions
+        document.getElementById('calAddEventBtn')?.addEventListener('click', () => this.showAddEventModal());
+        document.getElementById('calFilterBtn')?.addEventListener('click', () => this.toggleFilters());
+        document.getElementById('calExportBtn')?.addEventListener('click', () => this.showExportModal());
+
+        // Filters
+        document.getElementById('filterType')?.addEventListener('change', (e) => {
+            this.filters.type = e.target.value;
+            this.renderCalendarContent();
+        });
+        document.getElementById('filterStatus')?.addEventListener('change', (e) => {
+            this.filters.status = e.target.value;
+            this.renderCalendarContent();
+        });
+        document.getElementById('filterSearch')?.addEventListener('input', (e) => {
+            this.filters.search = e.target.value.toLowerCase();
+            this.renderCalendarContent();
+        });
+    },
+
+    toggleFilters() {
+        const filtersDiv = document.getElementById('calendarFilters');
+        filtersDiv.style.display = filtersDiv.style.display === 'none' ? 'flex' : 'none';
+    },
+
+    updateCurrentDateDisplay() {
+        const dateDisplay = document.getElementById('calCurrentDate');
+        if (!dateDisplay) return;
+
+        const months = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
+                        'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
+
+        if (this.currentView === 'month') {
+            dateDisplay.textContent = `${months[this.currentDate.getMonth()]} ${this.currentDate.getFullYear()}`;
+        } else if (this.currentView === 'week') {
+            const weekStart = this.getWeekStart(this.currentDate);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            dateDisplay.textContent = `${weekStart.getDate()} ${months[weekStart.getMonth()]} - ${weekEnd.getDate()} ${months[weekEnd.getMonth()]} ${weekStart.getFullYear()}`;
+        } else if (this.currentView === 'day') {
+            const days = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+            dateDisplay.textContent = `${days[this.currentDate.getDay()]}, ${this.currentDate.getDate()} ${months[this.currentDate.getMonth()]} ${this.currentDate.getFullYear()}`;
+        } else {
+            dateDisplay.textContent = 'Lista wydarzeń';
+        }
+    },
+
+    navigatePrevious() {
+        if (this.currentView === 'month') {
+            this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+        } else if (this.currentView === 'week') {
+            this.currentDate.setDate(this.currentDate.getDate() - 7);
+        } else if (this.currentView === 'day') {
+            this.currentDate.setDate(this.currentDate.getDate() - 1);
+        }
+        this.updateCurrentDateDisplay();
+        this.renderCalendarContent();
+    },
+
+    navigateNext() {
+        if (this.currentView === 'month') {
+            this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+        } else if (this.currentView === 'week') {
+            this.currentDate.setDate(this.currentDate.getDate() + 7);
+        } else if (this.currentView === 'day') {
+            this.currentDate.setDate(this.currentDate.getDate() + 1);
+        }
+        this.updateCurrentDateDisplay();
+        this.renderCalendarContent();
+    },
+
+    navigateToday() {
+        this.currentDate = new Date();
+        this.updateCurrentDateDisplay();
+        this.renderCalendarContent();
+    },
+
+    getWeekStart(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Start from Monday
+        return new Date(d.setDate(diff));
+    },
+
+    getFilteredEvents() {
+        return this.events.filter(event => {
+            if (this.filters.type !== 'all' && event.type !== this.filters.type) return false;
+            if (this.filters.status !== 'all' && event.status !== this.filters.status) return false;
+            if (this.filters.search && !event.title.toLowerCase().includes(this.filters.search) &&
+                !event.location?.toLowerCase().includes(this.filters.search) &&
+                !event.jzw?.toLowerCase().includes(this.filters.search)) return false;
+            return true;
+        });
+    },
+
+    renderCalendarContent() {
+        const content = document.getElementById('calendarContent');
+        if (!content) return;
+
+        if (this.currentView === 'month') {
+            content.innerHTML = this.renderMonthView();
+        } else if (this.currentView === 'week') {
+            content.innerHTML = this.renderWeekView();
+        } else if (this.currentView === 'day') {
+            content.innerHTML = this.renderDayView();
+        } else if (this.currentView === 'list') {
+            content.innerHTML = this.renderListView();
+        }
+
+        // Attach event item listeners
+        document.querySelectorAll('.event-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const eventId = parseInt(e.currentTarget.dataset.eventId);
+                this.showEventDetails(eventId);
+            });
+        });
+    },
+
+    renderMonthView() {
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startDay = firstDay.getDay() || 7; // 1-7 (Monday-Sunday)
+        const daysInMonth = lastDay.getDate();
+
+        const filteredEvents = this.getFilteredEvents();
+
+        let html = '<div class="calendar-month-view"><table class="month-table">';
+        html += '<thead><tr>';
+        const dayNames = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
+        dayNames.forEach(day => {
+            html += `<th>${day}</th>`;
+        });
+        html += '</tr></thead><tbody><tr>';
+
+        // Empty cells before first day
+        for (let i = 1; i < startDay; i++) {
+            html += '<td class="day-cell empty"></td>';
+        }
+
+        // Days of month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day);
+            const dateStr = date.toISOString().split('T')[0];
+            const dayEvents = filteredEvents.filter(e => e.date === dateStr);
+            const isToday = this.isToday(date);
+
+            html += `<td class="day-cell ${isToday ? 'today' : ''}">`;
+            html += `<div class="day-number">${day}</div>`;
+
+            if (dayEvents.length > 0) {
+                html += '<div class="day-events">';
+                dayEvents.slice(0, 3).forEach(event => {
+                    html += `<div class="event-item mini" data-event-id="${event.id}" style="background: ${event.color}">
+                        ${event.timeStart ? event.timeStart + ' ' : ''}${event.title}
+                    </div>`;
+                });
+                if (dayEvents.length > 3) {
+                    html += `<div class="event-more">+${dayEvents.length - 3} więcej</div>`;
+                }
+                html += '</div>';
+            }
+
+            html += '</td>';
+
+            if ((day + startDay - 1) % 7 === 0 && day < daysInMonth) {
+                html += '</tr><tr>';
+            }
+        }
+
+        // Empty cells after last day
+        const lastDayOfWeek = (startDay + daysInMonth - 1) % 7;
+        if (lastDayOfWeek !== 0) {
+            for (let i = lastDayOfWeek; i < 7; i++) {
+                html += '<td class="day-cell empty"></td>';
+            }
+        }
+
+        html += '</tr></tbody></table></div>';
+        return html;
+    },
+
+    renderWeekView() {
+        const weekStart = this.getWeekStart(this.currentDate);
+        const filteredEvents = this.getFilteredEvents();
+
+        let html = '<div class="calendar-week-view"><table class="week-table"><thead><tr><th class="time-col">Czas</th>';
+
+        // Week days headers
+        const dayNames = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(weekStart);
+            date.setDate(date.getDate() + i);
+            const isToday = this.isToday(date);
+            html += `<th class="${isToday ? 'today' : ''}">${dayNames[i]} ${date.getDate()}</th>`;
+        }
+        html += '</tr></thead><tbody>';
+
+        // Time slots
+        for (let hour = 0; hour < 24; hour++) {
+            html += '<tr>';
+            html += `<td class="time-col">${String(hour).padStart(2, '0')}:00</td>`;
+
+            for (let day = 0; day < 7; day++) {
+                const date = new Date(weekStart);
+                date.setDate(date.getDate() + day);
+                const dateStr = date.toISOString().split('T')[0];
+                const timeStr = `${String(hour).padStart(2, '0')}:00`;
+
+                const events = filteredEvents.filter(e =>
+                    e.date === dateStr &&
+                    e.timeStart &&
+                    e.timeStart.startsWith(String(hour).padStart(2, '0'))
+                );
+
+                html += '<td class="hour-cell">';
+                events.forEach(event => {
+                    html += `<div class="event-item" data-event-id="${event.id}" style="background: ${event.color}">
+                        ${event.timeStart} ${event.title}
+                    </div>`;
+                });
+                html += '</td>';
+            }
+            html += '</tr>';
+        }
+
+        html += '</tbody></table></div>';
+        return html;
+    },
+
+    renderDayView() {
+        const dateStr = this.currentDate.toISOString().split('T')[0];
+        const filteredEvents = this.getFilteredEvents().filter(e => e.date === dateStr);
+
+        let html = '<div class="calendar-day-view"><div class="day-timeline">';
+
+        for (let hour = 0; hour < 24; hour++) {
+            const timeStr = `${String(hour).padStart(2, '0')}:00`;
+            const events = filteredEvents.filter(e => e.timeStart && e.timeStart.startsWith(String(hour).padStart(2, '0')));
+
+            html += `<div class="time-slot">`;
+            html += `<div class="time-label">${timeStr}</div>`;
+            html += `<div class="time-content">`;
+
+            events.forEach(event => {
+                html += `<div class="event-item full" data-event-id="${event.id}" style="border-left: 4px solid ${event.color}">
+                    <div class="event-time">${event.timeStart}${event.timeEnd ? ' - ' + event.timeEnd : ''}</div>
+                    <div class="event-title">${event.title}</div>
+                    <div class="event-meta">${event.jzw || ''} ${event.location || ''}</div>
+                </div>`;
+            });
+
+            html += `</div></div>`;
+        }
+
+        html += '</div></div>';
+        return html;
+    },
+
+    renderListView() {
+        const filteredEvents = this.getFilteredEvents().sort((a, b) => {
+            if (a.date !== b.date) return a.date.localeCompare(b.date);
+            return (a.timeStart || '').localeCompare(b.timeStart || '');
+        });
+
+        if (filteredEvents.length === 0) {
+            return '<div class="empty-state"><i class="fas fa-calendar-times fa-3x"></i><p>Brak wydarzeń do wyświetlenia</p></div>';
+        }
+
+        let html = '<div class="calendar-list-view"><table class="list-table"><thead><tr>';
+        html += '<th>Data</th><th>Czas</th><th>Wydarzenie</th><th>Typ</th><th>JŻW</th><th>Lokalizacja</th><th>Status</th><th>Akcje</th>';
+        html += '</tr></thead><tbody>';
+
+        filteredEvents.forEach(event => {
+            const statusClass = event.status === 'zakończone' ? 'success' : event.status === 'odwołane' ? 'danger' : '';
+            html += '<tr>';
+            html += `<td>${this.formatDate(event.date)}</td>`;
+            html += `<td>${event.timeStart || '-'}${event.timeEnd ? ' - ' + event.timeEnd : ''}</td>`;
+            html += `<td><span class="event-indicator" style="background: ${event.color}"></span> ${event.title}</td>`;
+            html += `<td>${this.getTypeLabel(event.type)}</td>`;
+            html += `<td>${event.jzw || '-'}</td>`;
+            html += `<td>${event.location || '-'}</td>`;
+            html += `<td><span class="status-badge ${statusClass}">${this.getStatusLabel(event.status)}</span></td>`;
+            html += `<td>
+                <button class="btn-icon-small" onclick="CalendarManager.showEventDetails(${event.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn-icon-small" onclick="CalendarManager.editEvent(${event.id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-icon-small" onclick="CalendarManager.deleteEvent(${event.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>`;
+            html += '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+        return html;
+    },
+
+    isToday(date) {
+        const today = new Date();
+        return date.getDate() === today.getDate() &&
+               date.getMonth() === today.getMonth() &&
+               date.getFullYear() === today.getFullYear();
+    },
+
+    formatDate(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('pl-PL');
+    },
+
+    getTypeLabel(type) {
+        const labels = {
+            'zabezpieczenie': 'Zabezpieczenie',
+            'patrol': 'Patrol',
+            'kontrola': 'Kontrola WKRD',
+            'konwój': 'Konwój',
+            'inne': 'Inne'
+        };
+        return labels[type] || type;
+    },
+
+    getStatusLabel(status) {
+        const labels = {
+            'zaplanowane': 'Zaplanowane',
+            'w_trakcie': 'W trakcie',
+            'zakończone': 'Zakończone',
+            'odwołane': 'Odwołane'
+        };
+        return labels[status] || status;
+    },
+
+    getTypeColor(type) {
+        const colors = {
+            'zabezpieczenie': '#3b82f6',
+            'patrol': '#10b981',
+            'kontrola': '#f59e0b',
+            'konwój': '#ef4444',
+            'inne': '#8b5cf6'
+        };
+        return colors[type] || '#6b7280';
+    },
+
+    showAddEventModal() {
+        Modal.show('Dodaj wydarzenie', `
+            <form id="addEventForm" class="calendar-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Typ wydarzenia *</label>
+                        <select id="eventType" required>
+                            <option value="zabezpieczenie">Zabezpieczenie prewencyjno-ochronne</option>
+                            <option value="patrol">Patrol</option>
+                            <option value="kontrola">Kontrola WKRD</option>
+                            <option value="konwój">Konwój</option>
+                            <option value="inne">Inne</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Status *</label>
+                        <select id="eventStatus" required>
+                            <option value="zaplanowane">Zaplanowane</option>
+                            <option value="w_trakcie">W trakcie</option>
+                            <option value="zakończone">Zakończone</option>
+                            <option value="odwołane">Odwołane</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Nazwa wydarzenia *</label>
+                    <input type="text" id="eventTitle" required placeholder="np. Zabezpieczenie marszu niepodległości" />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data *</label>
+                        <input type="date" id="eventDate" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Godzina rozpoczęcia</label>
+                        <input type="time" id="eventTimeStart" />
+                    </div>
+                    <div class="form-group">
+                        <label>Godzina zakończenia</label>
+                        <input type="time" id="eventTimeEnd" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Jednostka (OŻW)</label>
+                        <input type="text" id="eventJzw" placeholder="np. OŻW Elbląg" />
+                    </div>
+                    <div class="form-group">
+                        <label>Lokalizacja</label>
+                        <input type="text" id="eventLocation" placeholder="np. Centrum miasta" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Priorytet</label>
+                    <select id="eventPriority">
+                        <option value="niski">Niski</option>
+                        <option value="średni" selected>Średni</option>
+                        <option value="wysoki">Wysoki</option>
+                        <option value="krytyczny">Krytyczny</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Opis</label>
+                    <textarea id="eventDescription" rows="3" placeholder="Dodatkowe informacje..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Zapisz
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="Modal.hide()">
+                        Anuluj
+                    </button>
+                </div>
+            </form>
+        `);
+
+        // Set default date to today
+        document.getElementById('eventDate').value = new Date().toISOString().split('T')[0];
+
+        document.getElementById('addEventForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveNewEvent();
+        });
+    },
+
+    saveNewEvent() {
+        const type = document.getElementById('eventType').value;
+        const event = {
+            id: Date.now(),
+            type: type,
+            title: document.getElementById('eventTitle').value,
+            date: document.getElementById('eventDate').value,
+            timeStart: document.getElementById('eventTimeStart').value || null,
+            timeEnd: document.getElementById('eventTimeEnd').value || null,
+            jzw: document.getElementById('eventJzw').value || null,
+            location: document.getElementById('eventLocation').value || null,
+            priority: document.getElementById('eventPriority').value,
+            status: document.getElementById('eventStatus').value,
+            description: document.getElementById('eventDescription').value || null,
+            color: this.getTypeColor(type),
+            createdAt: new Date().toISOString()
+        };
+
+        this.events.push(event);
+        this.saveEvents();
+        Modal.hide();
+        this.renderCalendarContent();
+        this.showToast('Wydarzenie dodane pomyślnie');
+    },
+
+    showEventDetails(eventId) {
+        const event = this.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        Modal.show('Szczegóły wydarzenia', `
+            <div class="event-details">
+                <div class="event-detail-header" style="border-left: 4px solid ${event.color}">
+                    <h3>${event.title}</h3>
+                    <span class="type-badge" style="background: ${event.color}">${this.getTypeLabel(event.type)}</span>
+                </div>
+
+                <div class="event-detail-grid">
+                    <div class="detail-item">
+                        <i class="fas fa-calendar"></i>
+                        <div>
+                            <div class="detail-label">Data</div>
+                            <div class="detail-value">${this.formatDate(event.date)}</div>
+                        </div>
+                    </div>
+
+                    ${event.timeStart ? `
+                    <div class="detail-item">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <div class="detail-label">Czas</div>
+                            <div class="detail-value">${event.timeStart}${event.timeEnd ? ' - ' + event.timeEnd : ''}</div>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${event.jzw ? `
+                    <div class="detail-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <div>
+                            <div class="detail-label">Jednostka</div>
+                            <div class="detail-value">${event.jzw}</div>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${event.location ? `
+                    <div class="detail-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <div class="detail-label">Lokalizacja</div>
+                            <div class="detail-value">${event.location}</div>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="detail-item">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <div>
+                            <div class="detail-label">Priorytet</div>
+                            <div class="detail-value">${event.priority}</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <div class="detail-label">Status</div>
+                            <div class="detail-value">${this.getStatusLabel(event.status)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                ${event.description ? `
+                <div class="detail-description">
+                    <div class="detail-label">Opis</div>
+                    <div class="detail-value">${event.description}</div>
+                </div>
+                ` : ''}
+
+                <div class="detail-actions">
+                    <button class="btn-primary" onclick="CalendarManager.editEvent(${event.id})">
+                        <i class="fas fa-edit"></i> Edytuj
+                    </button>
+                    <button class="btn-danger" onclick="CalendarManager.deleteEvent(${event.id})">
+                        <i class="fas fa-trash"></i> Usuń
+                    </button>
+                </div>
+            </div>
+        `);
+    },
+
+    editEvent(eventId) {
+        // To be implemented
+        this.showToast('Funkcja edycji w przygotowaniu');
+    },
+
+    deleteEvent(eventId) {
+        if (!confirm('Czy na pewno chcesz usunąć to wydarzenie?')) return;
+
+        this.events = this.events.filter(e => e.id !== eventId);
+        this.saveEvents();
+        Modal.hide();
+        this.renderCalendarContent();
+        this.showToast('Wydarzenie usunięte');
+    },
+
+    showExportModal() {
+        Modal.show('Eksport kalendarza', `
+            <div class="export-options">
+                <p>Wybierz format eksportu:</p>
+                <button class="btn-primary btn-full" onclick="CalendarManager.exportToPDF()">
+                    <i class="fas fa-file-pdf"></i> Eksportuj do PDF
+                </button>
+                <button class="btn-secondary btn-full" onclick="CalendarManager.exportToCSV()">
+                    <i class="fas fa-file-csv"></i> Eksportuj do CSV
+                </button>
+                <button class="btn-secondary btn-full" onclick="CalendarManager.exportToICS()">
+                    <i class="fas fa-calendar-plus"></i> Eksportuj do .ics (Google Calendar/Outlook)
+                </button>
+            </div>
+        `);
+    },
+
+    exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        if (!jsPDF) {
+            alert('Biblioteka jsPDF nie jest załadowana');
+            return;
+        }
+
+        const doc = new jsPDF();
+        const filteredEvents = this.getFilteredEvents();
+
+        doc.setFontSize(16);
+        doc.text('Kalendarz Operacyjny AEP', 15, 15);
+
+        doc.setFontSize(10);
+        doc.text(`Wygenerowano: ${new Date().toLocaleString('pl-PL')}`, 15, 22);
+        doc.text(`Liczba wydarzeń: ${filteredEvents.length}`, 15, 28);
+
+        const tableData = filteredEvents.map(e => [
+            this.formatDate(e.date),
+            e.timeStart || '-',
+            e.title,
+            this.getTypeLabel(e.type),
+            e.jzw || '-',
+            e.location || '-',
+            this.getStatusLabel(e.status)
+        ]);
+
+        doc.autoTable({
+            startY: 35,
+            head: [['Data', 'Czas', 'Wydarzenie', 'Typ', 'JŻW', 'Lokalizacja', 'Status']],
+            body: tableData,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [75, 85, 99] }
+        });
+
+        const filename = `Kalendarz_AEP_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(filename);
+
+        Modal.hide();
+        this.showToast('Kalendarz wyeksportowany do PDF');
+    },
+
+    exportToCSV() {
+        const filteredEvents = this.getFilteredEvents();
+        const headers = ['Data', 'Czas rozpoczęcia', 'Czas zakończenia', 'Wydarzenie', 'Typ', 'JŻW', 'Lokalizacja', 'Priorytet', 'Status', 'Opis'];
+
+        let csv = headers.join(';') + '\n';
+        filteredEvents.forEach(e => {
+            const row = [
+                e.date,
+                e.timeStart || '',
+                e.timeEnd || '',
+                e.title,
+                this.getTypeLabel(e.type),
+                e.jzw || '',
+                e.location || '',
+                e.priority,
+                this.getStatusLabel(e.status),
+                e.description || ''
+            ].map(field => `"${field}"`).join(';');
+            csv += row + '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Kalendarz_AEP_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        Modal.hide();
+        this.showToast('Kalendarz wyeksportowany do CSV');
+    },
+
+    exportToICS() {
+        const filteredEvents = this.getFilteredEvents();
+        let ics = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//AEP System//Calendar//PL\nCALSCALE:GREGORIAN\n';
+
+        filteredEvents.forEach(e => {
+            const startDate = e.date.replace(/-/g, '');
+            const startTime = e.timeStart ? e.timeStart.replace(':', '') + '00' : '000000';
+
+            ics += 'BEGIN:VEVENT\n';
+            ics += `UID:${e.id}@aep-system\n`;
+            ics += `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z\n`;
+            ics += `DTSTART:${startDate}T${startTime}\n`;
+            ics += `SUMMARY:${e.title}\n`;
+            if (e.location) ics += `LOCATION:${e.location}\n`;
+            if (e.description) ics += `DESCRIPTION:${e.description}\n`;
+            ics += 'END:VEVENT\n';
+        });
+
+        ics += 'END:VCALENDAR';
+
+        const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Kalendarz_AEP_${new Date().toISOString().split('T')[0]}.ics`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        Modal.hide();
+        this.showToast('Kalendarz wyeksportowany do .ics');
+    },
+
+    showToast(message) {
+        // Reuse existing toast mechanism if available
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#10b981;color:white;padding:12px 24px;border-radius:8px;z-index:10000;';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
     }
 };
 
