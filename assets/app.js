@@ -12465,6 +12465,9 @@ const CalendarManager = {
     },
 
     render() {
+        // Load events from localStorage before rendering
+        this.loadEvents();
+
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
             <div class="calendar-view">
