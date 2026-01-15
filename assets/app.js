@@ -8,8 +8,8 @@
 // ============================================
 const SECTIONS = [
     {
-        id: 'patrole',
-        title: 'Patrole',
+        id: 'zespoly',
+        title: 'Zespoły',
         isCustomView: true,
         columns: []
     },
@@ -31,20 +31,8 @@ const SECTIONS = [
         columns: []
     },
     {
-        id: 'konwoje',
-        title: 'Konwoje',
-        isCustomView: true,
-        columns: []
-    },
-    {
         id: 'spb',
         title: 'ŚPB - Środki Przymusu Bezpośredniego',
-        isCustomView: true,
-        columns: []
-    },
-    {
-        id: 'pilotaze',
-        title: 'Pilotaże',
         isCustomView: true,
         columns: []
     },
@@ -75,6 +63,12 @@ const SECTIONS = [
         id: 'mapa',
         title: 'Mapa zdarzeń',
         columns: ['ID', 'Data', 'Czas', 'Typ zdarzenia', 'Lokalizacja', 'Współrzędne', 'Jednostka', 'Status', 'Priorytet', 'Notatki']
+    },
+    {
+        id: 'komunikator',
+        title: 'Komunikator',
+        isCustomView: true,
+        columns: []
     },
     {
         id: 'audyt',
@@ -1992,9 +1986,9 @@ const Router = {
 
     renderSection(section) {
         AppState.currentSection = section;
-        
-        if (section.isCustomView && section.id === 'patrole') {
-            PatroleManager.render();
+
+        if (section.id === 'zespoly') {
+            ZespolyManager.render();
         } else if (section.id === 'wykroczenia') {
             WykroczeniaManager.render();
         } else if (section.id === 'wkrd') {
@@ -2017,6 +2011,8 @@ const Router = {
             CalendarManager.render();
         } else if (section.id === 'mapa') {
             MapManager.render();
+        } else if (section.id === 'komunikator') {
+            KomunikatorManager.render();
         } else {
             const savedData = Utils.loadFromLocalStorage(`aep_data_${section.id}`);
             AppState.currentData = savedData || Utils.generateTestData(section.columns, 25);
