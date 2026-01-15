@@ -22,6 +22,10 @@ const MapManager = {
     liveUpdateInterval: null,
     measurementMode: false,
 
+    // Tryb dodawania wydarzenia przez kliknięcie na mapie
+    mapClickMode: false,
+    tempMarker: null,
+
     // TODO: Future GPS Integration
     // When mobile patrol app is ready with GPS tracking:
     // - Add 'livePatrols: []' to store real-time patrol positions
@@ -492,16 +496,134 @@ const MapManager = {
     },
 
     /**
+     * Włącz tryb wyboru lokalizacji na mapie
+     */
+    enableMapClickMode() {
+        if (this.mapClickMode) return;
+
+        this.mapClickMode = true;
+        this.map.getContainer().style.cursor = 'crosshair';
+
+        // Obsługa kliknięcia na mapie
+        this.mapClickHandler = (e) => {
+            this.placeTemporaryMarker(e.latlng);
+        };
+
+        this.map.on('click', this.mapClickHandler);
+
+        // Informacja dla użytkownika
+        this.showToast('Kliknij na mapie aby wybrać lokalizację');
+    },
+
+    /**
+     * Wyłącz tryb wyboru lokalizacji na mapie
+     */
+    disableMapClickMode() {
+        if (!this.mapClickMode) return;
+
+        this.mapClickMode = false;
+        this.map.getContainer().style.cursor = '';
+
+        if (this.mapClickHandler) {
+            this.map.off('click', this.mapClickHandler);
+            this.mapClickHandler = null;
+        }
+    },
+
+    /**
+     * Umieść tymczasowy marker na mapie
+     */
+    placeTemporaryMarker(latlng) {
+        // Usuń poprzedni tymczasowy marker jeśli istnieje
+        if (this.tempMarker) {
+            this.map.removeLayer(this.tempMarker);
+        }
+
+        // Utwórz nowy tymczasowy marker (pinezka)
+        const icon = L.divIcon({
+            html: `<div style="background-color: #ef4444; width: 40px; height: 40px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 3px 10px rgba(0,0,0,0.5);">
+                <i class="fas fa-plus" style="color: white; font-size: 18px; transform: rotate(45deg);"></i>
+            </div>`,
+            className: 'temp-marker-icon',
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+            popupAnchor: [0, -40]
+        });
+
+        this.tempMarker = L.marker(latlng, {
+            icon: icon,
+            draggable: true,
+            autoPan: true
+        }).addTo(this.map);
+
+        // Popup informacyjny
+        this.tempMarker.bindPopup(`
+            <div style="text-align: center;">
+                <strong>Wybrana lokalizacja</strong><br>
+                <small>Możesz przesunąć marker</small><br>
+                <small>${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}</small>
+            </div>
+        `).openPopup();
+
+        // Aktualizuj współrzędne w formularzu
+        this.updateCoordinatesInForm(latlng);
+
+        // Obsługa przesunięcia markera
+        this.tempMarker.on('dragend', (e) => {
+            const newLatLng = e.target.getLatLng();
+            this.updateCoordinatesInForm(newLatLng);
+
+            // Aktualizuj popup
+            e.target.setPopupContent(`
+                <div style="text-align: center;">
+                    <strong>Wybrana lokalizacja</strong><br>
+                    <small>Możesz przesunąć marker</small><br>
+                    <small>${newLatLng.lat.toFixed(5)}, ${newLatLng.lng.toFixed(5)}</small>
+                </div>
+            `);
+        });
+
+        this.showToast('Lokalizacja wybrana. Możesz przesunąć marker.');
+    },
+
+    /**
+     * Aktualizuj współrzędne w formularzu
+     */
+    updateCoordinatesInForm(latlng) {
+        const latInput = document.getElementById('mapEventLat');
+        const lngInput = document.getElementById('mapEventLng');
+
+        if (latInput && lngInput) {
+            latInput.value = latlng.lat.toFixed(5);
+            lngInput.value = latlng.lng.toFixed(5);
+
+            // Podświetl pola żeby pokazać że zostały zaktualizowane
+            latInput.style.backgroundColor = '#10b98120';
+            lngInput.style.backgroundColor = '#10b98120';
+
+            setTimeout(() => {
+                latInput.style.backgroundColor = '';
+                lngInput.style.backgroundColor = '';
+            }, 1000);
+        }
+    },
+
+    /**
+     * Usuń tymczasowy marker
+     */
+    removeTemporaryMarker() {
+        if (this.tempMarker) {
+            this.map.removeLayer(this.tempMarker);
+            this.tempMarker = null;
+        }
+    },
+
+    /**
      * Pokaż modal dodawania wydarzenia
      */
     showAddEventModal() {
         Modal.show('Dodaj wydarzenie na mapie', `
             <form id="mapAddEventForm" class="calendar-form">
-                <p class="form-info">
-                    <i class="fas fa-info-circle"></i>
-                    Kliknij na mapie aby wybrać lokalizację lub wpisz współrzędne ręcznie
-                </p>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label>Typ wydarzenia *</label>
@@ -529,14 +651,18 @@ const MapManager = {
                     <input type="text" id="mapEventName" required placeholder="np. Kontrola prędkości DK7" />
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Szerokość geograficzna *</label>
-                        <input type="number" id="mapEventLat" step="0.00001" required placeholder="52.2297" />
-                    </div>
-                    <div class="form-group">
-                        <label>Długość geograficzna *</label>
-                        <input type="number" id="mapEventLng" step="0.00001" required placeholder="21.0122" />
+                <div class="form-group">
+                    <label>Współrzędne *</label>
+                    <button type="button" class="btn-secondary btn-full" id="selectFromMapBtn" style="margin-bottom: 0.5rem;">
+                        <i class="fas fa-map-marker-alt"></i> Wybierz lokalizację z mapy
+                    </button>
+                    <div class="form-row" style="margin-top: 0.5rem;">
+                        <div class="form-group" style="margin: 0;">
+                            <input type="number" id="mapEventLat" step="0.00001" required placeholder="Szerokość (np. 52.2297)" />
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <input type="number" id="mapEventLng" step="0.00001" required placeholder="Długość (np. 21.0122)" />
+                        </div>
                     </div>
                 </div>
 
@@ -577,23 +703,32 @@ const MapManager = {
                     <button type="submit" class="btn-primary">
                         <i class="fas fa-save"></i> Zapisz
                     </button>
-                    <button type="button" class="btn-secondary" onclick="Modal.hide()">
+                    <button type="button" class="btn-secondary" onclick="MapManager.cancelAddEvent()">
                         Anuluj
                     </button>
                 </div>
             </form>
         `);
 
-        // Włącz tryb kliknięcia na mapie
-        this.map.once('click', (e) => {
-            document.getElementById('mapEventLat').value = e.latlng.lat.toFixed(5);
-            document.getElementById('mapEventLng').value = e.latlng.lng.toFixed(5);
+        // Obsługa przycisku "Wybierz z mapy"
+        document.getElementById('selectFromMapBtn')?.addEventListener('click', () => {
+            this.enableMapClickMode();
         });
 
+        // Obsługa formularza
         document.getElementById('mapAddEventForm').addEventListener('submit', (e) => {
             e.preventDefault();
             this.saveNewEvent();
         });
+    },
+
+    /**
+     * Anuluj dodawanie wydarzenia
+     */
+    cancelAddEvent() {
+        this.disableMapClickMode();
+        this.removeTemporaryMarker();
+        Modal.hide();
     },
 
     /**
@@ -616,6 +751,11 @@ const MapManager = {
 
         this.events.push(event);
         this.saveEvents();
+
+        // Wyłącz tryb kliknięcia i usuń tymczasowy marker
+        this.disableMapClickMode();
+        this.removeTemporaryMarker();
+
         Modal.hide();
 
         // Odśwież mapę
@@ -624,11 +764,11 @@ const MapManager = {
         this.renderEventsList();
         this.updateStats();
 
+        // Wyśrodkuj mapę na nowym zdarzeniu
+        this.map.setView([event.lat, event.lng], 14);
+
         // Pokaż toast
         this.showToast('Wydarzenie dodane pomyślnie');
-
-        // Zlokalizuj na mapie
-        this.locateEvent(event.id);
     },
 
     /**
