@@ -1639,12 +1639,12 @@
     flex-shrink: 0;
 }
 
-.legend-marker.wykroczenie { background: #ef4444; }
-.legend-marker.patrol { background: #3b82f6; }
-.legend-marker.kontrola { background: #f59e0b; }
+.legend-marker.zabezpieczenie { background: #10b981; }
+.legend-marker.mczp { background: #f59e0b; }
+.legend-marker.piro { background: #3b82f6; }
 .legend-marker.zdarzenie { background: #8b5cf6; }
-.legend-marker.konwoj { background: #10b981; }
-.legend-marker.military { background: #1e40af; }
+.legend-marker.wykroczenie { background: #ef4444; }
+.legend-marker.inne { background: #6b7280; }
 
 /* Map Coordinates Display */
 .map-coordinates {
