@@ -56,7 +56,6 @@ const MapManager = {
      */
     render() {
         this.loadEvents();
-        this.loadPatrols();
 
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
@@ -1200,7 +1199,6 @@ const MapManager = {
     refreshLiveData() {
         // Załaduj najnowsze dane
         this.loadEvents();
-        this.loadPatrols();
 
         // Odśwież mapę
         this.clearMarkers();
