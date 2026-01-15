@@ -8,10 +8,9 @@
 // ============================================
 const SECTIONS = [
     {
-        id: 'zespoly',
-        title: 'Zespoły',
-        isCustomView: true,
-        columns: []
+        id: 'patrole',
+        title: 'Patrole',
+        columns: ['Data', 'Godz. wyjazdu', 'Godz. powrotu', 'Nr patrolu', 'Skład', 'Dowódca', 'Pojazd', 'Nr rej.', 'Trasa', 'Obszar', 'Interwencje', 'Przebieg służby', 'Notatki', 'Status']
     },
     {
         id: 'wykroczenia',
@@ -31,10 +30,20 @@ const SECTIONS = [
         columns: []
     },
     {
+        id: 'konwoje',
+        title: 'Konwoje',
+        columns: ['Data', 'Godz. rozpoczęcia', 'Godz. zakończenia', 'Oznaczenie', 'Trasa', 'Pojazdy', 'Eskortowani', 'Cel konwoju', 'Dowódca', 'Skład', 'Uwagi', 'Status']
+    },
+    {
         id: 'spb',
         title: 'ŚPB - Środki Przymusu Bezpośredniego',
         isCustomView: true,
         columns: []
+    },
+    {
+        id: 'pilotaze',
+        title: 'Pilotaże',
+        columns: ['Data', 'Godz. rozpoczęcia', 'Godz. zakończenia', 'Oznaczenie', 'Trasa', 'Pojazd pilotowany', 'Nr rej.', 'Kierowca', 'Cel podróży', 'Funkcjonariusze', 'Uwagi', 'Status']
     },
     {
         id: 'zdarzenia',
@@ -63,12 +72,6 @@ const SECTIONS = [
         id: 'mapa',
         title: 'Mapa zdarzeń',
         columns: ['ID', 'Data', 'Czas', 'Typ zdarzenia', 'Lokalizacja', 'Współrzędne', 'Jednostka', 'Status', 'Priorytet', 'Notatki']
-    },
-    {
-        id: 'komunikator',
-        title: 'Komunikator',
-        isCustomView: true,
-        columns: []
     },
     {
         id: 'audyt',
@@ -1987,9 +1990,7 @@ const Router = {
     renderSection(section) {
         AppState.currentSection = section;
 
-        if (section.id === 'zespoly') {
-            ZespolyManager.render();
-        } else if (section.id === 'wykroczenia') {
+        if (section.id === 'wykroczenia') {
             WykroczeniaManager.render();
         } else if (section.id === 'wkrd') {
             WKRDManager.render();
@@ -2011,8 +2012,6 @@ const Router = {
             CalendarManager.render();
         } else if (section.id === 'mapa') {
             MapManager.render();
-        } else if (section.id === 'komunikator') {
-            KomunikatorManager.render();
         } else {
             const savedData = Utils.loadFromLocalStorage(`aep_data_${section.id}`);
             AppState.currentData = savedData || Utils.generateTestData(section.columns, 25);
