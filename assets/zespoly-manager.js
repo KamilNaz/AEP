@@ -105,7 +105,7 @@ const ZespolyManager = {
             <div class="teams-view">
                 <div class="teams-header">
                     <h1 class="section-title">
-                        <i class="fas fa-users"></i> Zespoły Operacyjne
+                        <i class="fas fa-users"></i> Zespoły
                     </h1>
                     <div class="header-actions">
                         <button class="btn-primary" id="addTeamBtn">

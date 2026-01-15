@@ -85,6 +85,12 @@ const MapManager = {
                         <button class="btn-secondary" id="mapToolsBtn" title="Narzędzia">
                             <i class="fas fa-tools"></i> Narzędzia
                         </button>
+                        <button class="btn-secondary" id="mapTeamsBtn" title="Zespoły">
+                            <i class="fas fa-users"></i> Zespoły
+                        </button>
+                        <button class="btn-secondary" id="mapCommunicatorBtn" title="Komunikator">
+                            <i class="fas fa-comments"></i> Komunikator
+                        </button>
                     </div>
 
                     <div class="toolbar-section">
@@ -885,6 +891,8 @@ const MapManager = {
         document.getElementById('mapImportDataBtn')?.addEventListener('click', () => this.showImportDataModal());
         document.getElementById('mapLayersBtn')?.addEventListener('click', () => this.showLayersModal());
         document.getElementById('mapToolsBtn')?.addEventListener('click', () => this.showToolsModal());
+        document.getElementById('mapTeamsBtn')?.addEventListener('click', () => this.showTeamsPanel());
+        document.getElementById('mapCommunicatorBtn')?.addEventListener('click', () => this.showCommunicatorPanel());
         document.getElementById('mapGeocodingBtn')?.addEventListener('click', () => this.showGeocodingModal());
         document.getElementById('mapMeasureBtn')?.addEventListener('click', () => this.toggleMeasurementMode());
         document.getElementById('mapLiveModeBtn')?.addEventListener('click', () => this.toggleLiveMode());
@@ -1938,5 +1946,45 @@ const MapManager = {
         toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#10b981;color:white;padding:12px 24px;border-radius:8px;z-index:10000;';
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
+    },
+
+    /**
+     * Pokaż panel zespołów
+     */
+    showTeamsPanel() {
+        if (typeof ZespolyManager === 'undefined') {
+            this.showToast('Moduł Zespoły nie jest załadowany');
+            return;
+        }
+
+        const mainContent = document.getElementById('mainContent');
+        mainContent.innerHTML = '<div id="teamsInMapContainer"></div>';
+
+        // Renderuj Zespoły w kontenerze
+        const container = document.getElementById('teamsInMapContainer');
+        if (container) {
+            // Render teams view inside map context
+            ZespolyManager.render();
+        }
+    },
+
+    /**
+     * Pokaż panel komunikatora
+     */
+    showCommunicatorPanel() {
+        if (typeof KomunikatorManager === 'undefined') {
+            this.showToast('Moduł Komunikator nie jest załadowany');
+            return;
+        }
+
+        const mainContent = document.getElementById('mainContent');
+        mainContent.innerHTML = '<div id="communicatorInMapContainer"></div>';
+
+        // Renderuj Komunikator w kontenerze
+        const container = document.getElementById('communicatorInMapContainer');
+        if (container) {
+            // Render communicator view inside map context
+            KomunikatorManager.render();
+        }
     }
 };
