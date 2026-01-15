@@ -10,7 +10,8 @@ const SECTIONS = [
     {
         id: 'patrole',
         title: 'Patrole',
-        columns: ['Data', 'Godz. wyjazdu', 'Godz. powrotu', 'Nr patrolu', 'Skład', 'Dowódca', 'Pojazd', 'Nr rej.', 'Trasa', 'Obszar', 'Interwencje', 'Przebieg służby', 'Notatki', 'Status']
+        isCustomView: true,
+        columns: []
     },
     {
         id: 'wykroczenia',
@@ -1990,7 +1991,9 @@ const Router = {
     renderSection(section) {
         AppState.currentSection = section;
 
-        if (section.id === 'wykroczenia') {
+        if (section.id === 'patrole') {
+            PatroleManager.render();
+        } else if (section.id === 'wykroczenia') {
             WykroczeniaManager.render();
         } else if (section.id === 'wkrd') {
             WKRDManager.render();
