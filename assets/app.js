@@ -8,8 +8,8 @@
 // ============================================
 const SECTIONS = [
     {
-        id: 'patrole',
-        title: 'Patrole',
+        id: 'zespoly',
+        title: 'Zespoły',
         isCustomView: true,
         columns: []
     },
@@ -31,20 +31,8 @@ const SECTIONS = [
         columns: []
     },
     {
-        id: 'konwoje',
-        title: 'Konwoje',
-        isCustomView: true,
-        columns: []
-    },
-    {
         id: 'spb',
         title: 'ŚPB - Środki Przymusu Bezpośredniego',
-        isCustomView: true,
-        columns: []
-    },
-    {
-        id: 'pilotaze',
-        title: 'Pilotaże',
         isCustomView: true,
         columns: []
     },
@@ -1992,9 +1980,9 @@ const Router = {
 
     renderSection(section) {
         AppState.currentSection = section;
-        
-        if (section.isCustomView && section.id === 'patrole') {
-            PatroleManager.render();
+
+        if (section.id === 'zespoly') {
+            ZespolyManager.render();
         } else if (section.id === 'wykroczenia') {
             WykroczeniaManager.render();
         } else if (section.id === 'wkrd') {
