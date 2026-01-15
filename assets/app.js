@@ -65,6 +65,12 @@ const SECTIONS = [
         columns: ['ID', 'Data', 'Czas', 'Typ zdarzenia', 'Lokalizacja', 'Współrzędne', 'Jednostka', 'Status', 'Priorytet', 'Notatki']
     },
     {
+        id: 'komunikator',
+        title: 'Komunikator',
+        isCustomView: true,
+        columns: []
+    },
+    {
         id: 'audyt',
         title: 'Log zmian / Audyt',
         columns: ['Timestamp', 'Użytkownik', 'Akcja', 'Moduł', 'Rekord ID', 'Przed zmianą', 'Po zmianie', 'IP', 'Status', 'Szczegóły']
@@ -2005,6 +2011,8 @@ const Router = {
             CalendarManager.render();
         } else if (section.id === 'mapa') {
             MapManager.render();
+        } else if (section.id === 'komunikator') {
+            KomunikatorManager.render();
         } else {
             const savedData = Utils.loadFromLocalStorage(`aep_data_${section.id}`);
             AppState.currentData = savedData || Utils.generateTestData(section.columns, 25);
