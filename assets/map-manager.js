@@ -13,9 +13,11 @@ const MapManager = {
     markerClusterGroup: null,
     drawnItems: null,
     currentBaseLayer: 'osm',
+    currentBasemap: 'standard',
     activeLayers: {
         events: true,
-        heat: false,
+        water: false,
+        traffic: false,
         zones: true
     },
     liveMode: false,
@@ -76,14 +78,17 @@ const MapManager = {
                         <button class="btn-primary" id="mapAddEventBtn" title="Dodaj zdarzenie">
                             <i class="fas fa-map-pin"></i> Dodaj zdarzenie
                         </button>
-                        <button class="btn-secondary" id="mapImportDataBtn" title="Import danych z modułów">
-                            <i class="fas fa-download"></i> Import danych
+                        <button class="btn-secondary" id="mapEventsBtn" title="Wydarzenia">
+                            <i class="fas fa-list"></i> Wydarzenia
                         </button>
-                        <button class="btn-secondary" id="mapLayersBtn" title="Warstwy">
+                        <button class="btn-secondary" id="mapLayersBtn" title="Warstwy mapy">
                             <i class="fas fa-layer-group"></i> Warstwy
                         </button>
                         <button class="btn-secondary" id="mapToolsBtn" title="Narzędzia">
                             <i class="fas fa-tools"></i> Narzędzia
+                        </button>
+                        <button class="btn-secondary" id="mapUnitsBtn" title="Jednostki">
+                            <i class="fas fa-building-shield"></i> Jednostki
                         </button>
                         <button class="btn-secondary" id="mapTeamsBtn" title="Zespoły">
                             <i class="fas fa-users"></i> Zespoły
@@ -100,15 +105,6 @@ const MapManager = {
                         <button class="btn-secondary" id="mapMeasureBtn" title="Pomiar odległości">
                             <i class="fas fa-ruler"></i> Pomiar
                         </button>
-                        <button class="btn-secondary toggle-btn" id="mapLiveModeBtn" title="Tryb czasu rzeczywistego">
-                            <i class="fas fa-broadcast-tower"></i> Tryb LIVE
-                        </button>
-                    </div>
-
-                    <div class="toolbar-section">
-                        <button class="btn-secondary" id="mapExportBtn" title="Eksport">
-                            <i class="fas fa-file-export"></i> Eksport
-                        </button>
                         <button class="btn-secondary" id="mapFullscreenBtn" title="Pełny ekran">
                             <i class="fas fa-expand"></i>
                         </button>
@@ -116,8 +112,8 @@ const MapManager = {
                 </div>
 
                 <div class="map-container-wrapper">
-                    <!-- Sidebar z listą zdarzeń -->
-                    <div class="map-sidebar" id="mapSidebar">
+                    <!-- Sidebar z listą zdarzeń - HIDDEN (używany przez modal) -->
+                    <div class="map-sidebar" id="mapSidebar" style="display: none;">
                         <div class="map-sidebar-header">
                             <h3><i class="fas fa-list"></i> Wydarzenia</h3>
                             <button class="btn-icon-small" id="toggleSidebarBtn" title="Zwiń">
@@ -888,21 +884,15 @@ const MapManager = {
      */
     attachEventListeners() {
         document.getElementById('mapAddEventBtn')?.addEventListener('click', () => this.showAddEventModal());
-        document.getElementById('mapImportDataBtn')?.addEventListener('click', () => this.showImportDataModal());
+        document.getElementById('mapEventsBtn')?.addEventListener('click', () => this.showEventsModal());
         document.getElementById('mapLayersBtn')?.addEventListener('click', () => this.showLayersModal());
         document.getElementById('mapToolsBtn')?.addEventListener('click', () => this.showToolsModal());
+        document.getElementById('mapUnitsBtn')?.addEventListener('click', () => this.showUnitsModal());
         document.getElementById('mapTeamsBtn')?.addEventListener('click', () => this.showTeamsPanel());
         document.getElementById('mapCommunicatorBtn')?.addEventListener('click', () => this.showCommunicatorPanel());
         document.getElementById('mapGeocodingBtn')?.addEventListener('click', () => this.showGeocodingModal());
         document.getElementById('mapMeasureBtn')?.addEventListener('click', () => this.toggleMeasurementMode());
-        document.getElementById('mapLiveModeBtn')?.addEventListener('click', () => this.toggleLiveMode());
-        document.getElementById('mapExportBtn')?.addEventListener('click', () => this.showExportModal());
         document.getElementById('mapFullscreenBtn')?.addEventListener('click', () => this.toggleFullscreen());
-        document.getElementById('toggleSidebarBtn')?.addEventListener('click', () => this.toggleSidebar());
-        document.getElementById('mapFilterType')?.addEventListener('change', () => this.applyFiltersAndRender());
-        document.getElementById('mapFilterStatus')?.addEventListener('change', () => this.applyFiltersAndRender());
-        document.getElementById('mapFilterDateFrom')?.addEventListener('change', () => this.applyFiltersAndRender());
-        document.getElementById('mapFilterDateTo')?.addEventListener('change', () => this.applyFiltersAndRender());
     },
 
     // ============================================
@@ -1368,44 +1358,85 @@ const MapManager = {
      * Pokaż modal zarządzania warstwami
      */
     showLayersModal() {
-        Modal.show('Zarządzanie warstwami', `
+        Modal.show('Warstwy mapy', `
             <div class="layers-modal">
                 <p class="form-info">
                     <i class="fas fa-layer-group"></i>
-                    Włącz lub wyłącz poszczególne warstwy na mapie
+                    Wybierz podkład mapy oraz dodatkowe warstwy
                 </p>
 
-                <div class="layer-toggles">
-                    <div class="layer-toggle-item">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="layerEvents" ${this.activeLayers.events ? 'checked' : ''}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <div class="toggle-label">
-                            <i class="fas fa-map-pin"></i>
-                            <span>Wydarzenia</span>
+                <div class="layer-section">
+                    <h4>Podkład mapy:</h4>
+                    <div class="layer-toggles">
+                        <div class="layer-toggle-item">
+                            <label class="toggle-switch">
+                                <input type="radio" name="basemap" value="standard" ${this.currentBasemap === 'standard' ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div class="toggle-label">
+                                <i class="fas fa-map"></i>
+                                <span>Standard</span>
+                            </div>
+                        </div>
+
+                        <div class="layer-toggle-item">
+                            <label class="toggle-switch">
+                                <input type="radio" name="basemap" value="satellite" ${this.currentBasemap === 'satellite' ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div class="toggle-label">
+                                <i class="fas fa-satellite"></i>
+                                <span>Satelita</span>
+                            </div>
+                        </div>
+
+                        <div class="layer-toggle-item">
+                            <label class="toggle-switch">
+                                <input type="radio" name="basemap" value="terrain" ${this.currentBasemap === 'terrain' ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div class="toggle-label">
+                                <i class="fas fa-mountain"></i>
+                                <span>Teren</span>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="layer-toggle-item">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="layerZones" ${this.activeLayers.zones ? 'checked' : ''}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <div class="toggle-label">
-                            <i class="fas fa-circle"></i>
-                            <span>Strefy zasięgu</span>
+                <div class="layer-section">
+                    <h4>Dodatkowe warstwy:</h4>
+                    <div class="layer-toggles">
+                        <div class="layer-toggle-item">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="layerWater" ${this.activeLayers.water ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div class="toggle-label">
+                                <i class="fas fa-water"></i>
+                                <span>Cieki wodne</span>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="layer-toggle-item">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="layerHeat" ${this.activeLayers.heat ? 'checked' : ''}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <div class="toggle-label">
-                            <i class="fas fa-fire"></i>
-                            <span>Mapa ciepła (heat map)</span>
+                        <div class="layer-toggle-item">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="layerTraffic" ${this.activeLayers.traffic ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div class="toggle-label">
+                                <i class="fas fa-car"></i>
+                                <span>Natężenie ruchu</span>
+                            </div>
+                        </div>
+
+                        <div class="layer-toggle-item">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="layerZones" ${this.activeLayers.zones ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div class="toggle-label">
+                                <i class="fas fa-circle"></i>
+                                <span>Strefy zasięgu</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1426,9 +1457,19 @@ const MapManager = {
      * Zastosuj zmiany w warstwach
      */
     applyLayerChanges() {
-        this.activeLayers.events = document.getElementById('layerEvents')?.checked || false;
+        // Pobierz wybrany podkład
+        const selectedBasemap = document.querySelector('input[name="basemap"]:checked')?.value || 'standard';
+
+        // Pobierz warstwy
+        this.activeLayers.water = document.getElementById('layerWater')?.checked || false;
+        this.activeLayers.traffic = document.getElementById('layerTraffic')?.checked || false;
         this.activeLayers.zones = document.getElementById('layerZones')?.checked || false;
-        this.activeLayers.heat = document.getElementById('layerHeat')?.checked || false;
+
+        // Zmień podkład jeśli inny
+        if (selectedBasemap !== this.currentBasemap) {
+            this.currentBasemap = selectedBasemap;
+            this.changeBasemap(selectedBasemap);
+        }
 
         Modal.hide();
 
@@ -1437,6 +1478,36 @@ const MapManager = {
         this.renderAllLayers();
 
         this.showToast('Warstwy zaktualizowane');
+    },
+
+    /**
+     * Zmień podkład mapy
+     */
+    changeBasemap(type) {
+        // Usuń obecny layer
+        this.map.eachLayer((layer) => {
+            if (layer._url) {
+                this.map.removeLayer(layer);
+            }
+        });
+
+        // Dodaj nowy layer
+        let tileUrl;
+        switch (type) {
+            case 'satellite':
+                tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+                break;
+            case 'terrain':
+                tileUrl = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
+                break;
+            case 'standard':
+            default:
+                tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        }
+
+        L.tileLayer(tileUrl, {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(this.map);
     },
 
     // ============================================
@@ -1456,16 +1527,22 @@ const MapManager = {
                         <div class="tool-desc">Mierz odległości między punktami</div>
                     </div>
 
-                    <div class="tool-item" onclick="MapManager.showGeocodingModal();">
-                        <div class="tool-icon"><i class="fas fa-search-location"></i></div>
-                        <div class="tool-name">Wyszukaj adres</div>
-                        <div class="tool-desc">Znajdź lokalizację po adresie</div>
+                    <div class="tool-item" onclick="MapManager.toggleDrawingMode(); Modal.hide();">
+                        <div class="tool-icon"><i class="fas fa-draw-polygon"></i></div>
+                        <div class="tool-name">Rysowanie obszarów</div>
+                        <div class="tool-desc">Zaznacz obszar na mapie</div>
                     </div>
 
-                    <div class="tool-item" onclick="MapManager.toggleHeatMap(); Modal.hide();">
-                        <div class="tool-icon"><i class="fas fa-fire"></i></div>
-                        <div class="tool-name">Heat mapa</div>
-                        <div class="tool-desc">Wizualizacja koncentracji zdarzeń</div>
+                    <div class="tool-item" onclick="MapManager.addCustomMarker(); Modal.hide();">
+                        <div class="tool-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="tool-name">Dodaj znacznik</div>
+                        <div class="tool-desc">Dodaj niestandardowy znacznik</div>
+                    </div>
+
+                    <div class="tool-item" onclick="MapManager.showNotesPanel(); Modal.hide();">
+                        <div class="tool-icon"><i class="fas fa-sticky-note"></i></div>
+                        <div class="tool-name">Notatki</div>
+                        <div class="tool-desc">Dodaj notatki do mapy</div>
                     </div>
 
                     <div class="tool-item" onclick="MapManager.centerOnPoland(); Modal.hide();">
@@ -1478,12 +1555,6 @@ const MapManager = {
                         <div class="tool-icon"><i class="fas fa-eraser"></i></div>
                         <div class="tool-name">Wyczyść rysunki</div>
                         <div class="tool-desc">Usuń wszystkie narysowane obiekty</div>
-                    </div>
-
-                    <div class="tool-item" onclick="MapManager.showStatisticsModal();">
-                        <div class="tool-icon"><i class="fas fa-chart-bar"></i></div>
-                        <div class="tool-name">Statystyki</div>
-                        <div class="tool-desc">Pokaż statystyki zdarzeń</div>
                     </div>
                 </div>
             </div>
@@ -1958,7 +2029,14 @@ const MapManager = {
         }
 
         const mainContent = document.getElementById('mainContent');
-        mainContent.innerHTML = '<div id="teamsInMapContainer"></div>';
+        mainContent.innerHTML = `
+            <div class="back-to-map-container">
+                <button class="btn-secondary" onclick="MapManager.render()">
+                    <i class="fas fa-arrow-left"></i> Powrót do mapy
+                </button>
+            </div>
+            <div id="teamsInMapContainer"></div>
+        `;
 
         // Renderuj Zespoły w kontenerze
         const container = document.getElementById('teamsInMapContainer');
@@ -1978,7 +2056,14 @@ const MapManager = {
         }
 
         const mainContent = document.getElementById('mainContent');
-        mainContent.innerHTML = '<div id="communicatorInMapContainer"></div>';
+        mainContent.innerHTML = `
+            <div class="back-to-map-container">
+                <button class="btn-secondary" onclick="MapManager.render()">
+                    <i class="fas fa-arrow-left"></i> Powrót do mapy
+                </button>
+            </div>
+            <div id="communicatorInMapContainer"></div>
+        `;
 
         // Renderuj Komunikator w kontenerze
         const container = document.getElementById('communicatorInMapContainer');
@@ -1986,5 +2071,211 @@ const MapManager = {
             // Render communicator view inside map context
             KomunikatorManager.render();
         }
+    },
+
+    /**
+     * Pokaż modal wydarzeń
+     */
+    showEventsModal() {
+        Modal.show('Wydarzenia na mapie', `
+            <div class="events-modal">
+                <div class="map-filters">
+                    <div class="filter-group">
+                        <label>Typ:</label>
+                        <select id="modalFilterType" onchange="MapManager.applyEventFilters()">
+                            <option value="all">Wszystkie</option>
+                            <option value="zabezpieczenie">Zabezpieczenie prewencyjno-ochronne</option>
+                            <option value="mczp">MczP</option>
+                            <option value="piro">PIRO</option>
+                            <option value="zdarzenie">Zdarzenie drogowe</option>
+                            <option value="wykroczenie">Wykroczenie</option>
+                            <option value="inne">Inne</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Status:</label>
+                        <select id="modalFilterStatus" onchange="MapManager.applyEventFilters()">
+                            <option value="all">Wszystkie</option>
+                            <option value="aktywny">Aktywny</option>
+                            <option value="zakończony">Zakończony</option>
+                            <option value="w_trakcie">W trakcie</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="events-list-modal" id="modalEventsList">
+                    <!-- Dynamically generated -->
+                </div>
+
+                <div class="modal-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Wszystkich zdarzeń:</span>
+                        <span class="stat-value" id="modalTotalEvents">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Aktywnych:</span>
+                        <span class="stat-value" id="modalActiveEvents">0</span>
+                    </div>
+                </div>
+            </div>
+        `);
+        this.renderModalEventsList();
+    },
+
+    /**
+     * Renderuj listę wydarzeń w modalu
+     */
+    renderModalEventsList() {
+        const container = document.getElementById('modalEventsList');
+        if (!container) return;
+
+        const typeFilter = document.getElementById('modalFilterType')?.value || 'all';
+        const statusFilter = document.getElementById('modalFilterStatus')?.value || 'all';
+
+        let filtered = this.events;
+        if (typeFilter !== 'all') filtered = filtered.filter(e => e.type === typeFilter);
+        if (statusFilter !== 'all') filtered = filtered.filter(e => e.status === statusFilter);
+
+        container.innerHTML = filtered.length > 0 ? filtered.map(event => `
+            <div class="event-item-modal" onclick="MapManager.focusOnEvent(${event.id}); Modal.hide();">
+                <div class="event-icon" style="background: ${this.getColorForType(event.type)}">
+                    <i class="fas ${this.getIconForType(event.type)}"></i>
+                </div>
+                <div class="event-info">
+                    <div class="event-title">${event.location}</div>
+                    <div class="event-meta">${event.date} • ${event.status}</div>
+                </div>
+            </div>
+        `).join('') : '<p class="no-events">Brak wydarzeń</p>';
+
+        document.getElementById('modalTotalEvents').textContent = filtered.length;
+        document.getElementById('modalActiveEvents').textContent = filtered.filter(e => e.status === 'aktywny').length;
+    },
+
+    /**
+     * Zastosuj filtry wydarzeń
+     */
+    applyEventFilters() {
+        this.renderModalEventsList();
+    },
+
+    /**
+     * Fokus na wydarzeniu
+     */
+    focusOnEvent(eventId) {
+        const event = this.events.find(e => e.id === eventId);
+        if (event && event.coords) {
+            this.map.setView(event.coords, 15);
+            // Find and open popup for this event
+            this.markers.forEach(marker => {
+                if (marker.event && marker.event.id === eventId) {
+                    marker.openPopup();
+                }
+            });
+        }
+    },
+
+    /**
+     * Pokaż modal jednostek
+     */
+    showUnitsModal() {
+        const units = [
+            { id: 'kpp_warszawa', name: 'KPP Warszawa', lat: 52.2297, lng: 21.0122 },
+            { id: 'kpp_krakow', name: 'KPP Kraków', lat: 50.0647, lng: 19.9450 },
+            { id: 'kpp_gdansk', name: 'KPP Gdańsk', lat: 54.3520, lng: 18.6466 },
+            { id: 'kpp_wroclaw', name: 'KPP Wrocław', lat: 51.1079, lng: 17.0385 },
+            { id: 'kpp_poznan', name: 'KPP Poznań', lat: 52.4064, lng: 16.9252 }
+        ];
+
+        Modal.show('Jednostki policji', `
+            <div class="units-modal">
+                <p class="form-info">
+                    <i class="fas fa-building-shield"></i>
+                    Wybierz jednostki do wyświetlenia na mapie
+                </p>
+
+                <div class="units-list">
+                    ${units.map(unit => `
+                        <div class="unit-item">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="unit_${unit.id}" data-lat="${unit.lat}" data-lng="${unit.lng}">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div class="unit-label">
+                                <i class="fas fa-building-shield"></i>
+                                <span>${unit.name}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-primary" onclick="MapManager.applyUnitsSelection()">
+                        <i class="fas fa-check"></i> Zastosuj
+                    </button>
+                    <button class="btn-secondary" onclick="Modal.hide()">
+                        Anuluj
+                    </button>
+                </div>
+            </div>
+        `);
+    },
+
+    /**
+     * Zastosuj wybór jednostek
+     */
+    applyUnitsSelection() {
+        // Clear existing unit markers
+        this.markers.forEach(marker => {
+            if (marker.isUnit) {
+                this.map.removeLayer(marker);
+            }
+        });
+
+        // Add selected units
+        document.querySelectorAll('.units-modal input[type="checkbox"]:checked').forEach(checkbox => {
+            const lat = parseFloat(checkbox.dataset.lat);
+            const lng = parseFloat(checkbox.dataset.lng);
+            const name = checkbox.parentElement.nextElementSibling.querySelector('span').textContent;
+
+            const icon = L.divIcon({
+                html: `<div style="background: #3b82f6; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                    <i class="fas fa-building-shield" style="color: white; font-size: 14px;"></i>
+                </div>`,
+                className: 'unit-marker-icon',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            const marker = L.marker([lat, lng], { icon }).addTo(this.map);
+            marker.isUnit = true;
+            marker.bindPopup(`<b>${name}</b>`);
+            this.markers.push(marker);
+        });
+
+        Modal.hide();
+        this.showToast('Jednostki zaktualizowane');
+    },
+
+    /**
+     * Placeholder - tryb rysowania
+     */
+    toggleDrawingMode() {
+        this.showToast('Funkcja rysowania zostanie wkrótce dodana');
+    },
+
+    /**
+     * Placeholder - dodaj znacznik
+     */
+    addCustomMarker() {
+        this.showToast('Kliknij na mapie aby dodać znacznik');
+    },
+
+    /**
+     * Placeholder - panel notatek
+     */
+    showNotesPanel() {
+        this.showToast('Panel notatek będzie wkrótce dostępny');
     }
 };

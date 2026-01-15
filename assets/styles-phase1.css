@@ -3586,3 +3586,211 @@ input:checked + .toggle-slider:before {
         right: 1rem;
     }
 }
+
+/* ============================================
+   MAP INTERFACE ENHANCEMENTS
+   ============================================ */
+
+/* Przycisk powrotu do mapy */
+.back-to-map-container {
+    padding: 1rem 2rem;
+    background: #242837;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Modal wydarzeń */
+.events-modal {
+    max-height: 600px;
+    display: flex;
+    flex-direction: column;
+}
+
+.events-list-modal {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 400px;
+    margin: 1rem 0;
+}
+
+.event-item-modal {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.event-item-modal:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateX(4px);
+}
+
+.event-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.125rem;
+}
+
+.event-info {
+    flex: 1;
+}
+
+.event-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #e6e6e6;
+    margin-bottom: 0.25rem;
+}
+
+.event-meta {
+    font-size: 0.8125rem;
+    color: #9aa3b2;
+}
+
+.no-events {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.modal-stats {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.modal-stats .stat-item {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-stats .stat-label {
+    font-size: 0.875rem;
+    color: #9aa3b2;
+}
+
+.modal-stats .stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #3b82f6;
+}
+
+/* Modal jednostek */
+.units-modal {}
+
+.units-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.unit-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.unit-item:hover {
+    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.unit-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.unit-label i {
+    color: #3b82f6;
+    font-size: 1.125rem;
+}
+
+.unit-label span {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #e6e6e6;
+}
+
+/* Warstwy - sekcje */
+.layer-section {
+    margin-bottom: 1.5rem;
+}
+
+.layer-section h4 {
+    margin: 0 0 1rem 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9aa3b2;
+}
+
+.layer-section .layer-toggles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Radio buttons dla basemap */
+.toggle-switch input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.toggle-switch input[type="radio"] + .toggle-slider {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    background-color: #4b5563;
+    border-radius: 12px;
+    transition: background-color 0.3s;
+    cursor: pointer;
+}
+
+.toggle-switch input[type="radio"] + .toggle-slider:before {
+    content: "";
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.toggle-switch input[type="radio"]:checked + .toggle-slider {
+    background-color: #3b82f6;
+}
+
+.toggle-switch input[type="radio"]:checked + .toggle-slider:before {
+    transform: translateX(20px);
+}
