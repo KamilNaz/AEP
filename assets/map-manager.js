@@ -9,30 +9,31 @@ const MapManager = {
     map: null,
     markers: [],
     events: [],
-    patrols: [],
-    militaryObjects: [],
     heatLayer: null,
     markerClusterGroup: null,
     drawnItems: null,
     currentBaseLayer: 'osm',
     activeLayers: {
         events: true,
-        patrols: true,
         heat: false,
-        military: true,
         zones: true
     },
     liveMode: false,
     liveUpdateInterval: null,
     measurementMode: false,
 
+    // TODO: Future GPS Integration
+    // When mobile patrol app is ready with GPS tracking:
+    // - Add 'livePatrols: []' to store real-time patrol positions
+    // - Add 'activeLayers.livePatrols: true' for toggling
+    // - Implement WebSocket/API polling for live updates
+    // - Add patrol tracking visualization (trails, speed, direction)
+
     /**
      * Inicjalizacja managera mapy
      */
     init() {
         this.loadEvents();
-        this.loadPatrols();
-        this.loadMilitaryObjects();
     },
 
     /**
@@ -49,49 +50,6 @@ const MapManager = {
         Utils.saveToLocalStorage('aep_map_events', this.events);
     },
 
-    /**
-     * Ładowanie patroli z modułu Patrole
-     */
-    loadPatrols() {
-        const patrolData = Utils.loadFromLocalStorage('aep_data_patrole') || [];
-        // Konwersja danych patroli na format mapy (potrzebne współrzędne)
-        this.patrols = patrolData.filter(p => p.lat && p.lng).map(p => ({
-            id: p.id,
-            type: 'patrol',
-            name: `Patrol ${p.oddzialZW || ''}`,
-            lat: p.lat,
-            lng: p.lng,
-            status: p.status || 'aktywny',
-            date: p.date,
-            unit: p.oddzialZW,
-            details: p
-        }));
-    },
-
-    /**
-     * Ładowanie obiektów wojskowych
-     */
-    loadMilitaryObjects() {
-        // Wczytaj zapisane obiekty lub użyj domyślnych
-        const saved = Utils.loadFromLocalStorage('aep_military_objects');
-        if (saved) {
-            this.militaryObjects = saved;
-        } else {
-            // Domyślne obiekty wojskowe (przykładowe współrzędne dla głównych miast)
-            this.militaryObjects = [
-                { id: 1, name: 'KG ŻW', type: 'headquarters', lat: 52.2297, lng: 21.0122, city: 'Warszawa' },
-                { id: 2, name: 'OSŻW Warszawa', type: 'unit', lat: 52.2500, lng: 21.0000, city: 'Warszawa' },
-                { id: 3, name: 'OSŻW Mińsk Mazowiecki', type: 'unit', lat: 52.1793, lng: 21.5721, city: 'Mińsk Mazowiecki' },
-                { id: 4, name: 'OŻW Elbląg', type: 'unit', lat: 54.1522, lng: 19.4044, city: 'Elbląg' },
-                { id: 5, name: 'OŻW Szczecin', type: 'unit', lat: 53.4285, lng: 14.5528, city: 'Szczecin' },
-                { id: 6, name: 'OŻW Bydgoszcz', type: 'unit', lat: 53.1235, lng: 18.0084, city: 'Bydgoszcz' },
-                { id: 7, name: 'OŻW Żagań', type: 'unit', lat: 51.6177, lng: 15.3159, city: 'Żagań' },
-                { id: 8, name: 'OŻW Kraków', type: 'unit', lat: 50.0647, lng: 19.9450, city: 'Kraków' },
-                { id: 9, name: 'OŻW Lublin', type: 'unit', lat: 51.2465, lng: 22.5684, city: 'Lublin' },
-                { id: 10, name: 'OŻW Łódź', type: 'unit', lat: 51.7592, lng: 19.4560, city: 'Łódź' }
-            ];
-        }
-    },
 
     /**
      * Główna funkcja renderująca widok mapy
@@ -163,13 +121,12 @@ const MapManager = {
                                 <label>Typ:</label>
                                 <select id="mapFilterType">
                                     <option value="all">Wszystkie</option>
-                                    <option value="wykroczenie">Wykroczenie</option>
-                                    <option value="patrol">Patrol</option>
-                                    <option value="kontrola">Kontrola WKRD</option>
+                                    <option value="zabezpieczenie">Zabezpieczenie prewencyjno-ochronne</option>
+                                    <option value="mczp">MczP</option>
+                                    <option value="piro">PIRO</option>
                                     <option value="zdarzenie">Zdarzenie drogowe</option>
-                                    <option value="konwoj">Konwój</option>
-                                    <option value="spb">ŚPB</option>
-                                    <option value="pilotaz">Pilotaż</option>
+                                    <option value="wykroczenie">Wykroczenie</option>
+                                    <option value="inne">Inne</option>
                                 </select>
                             </div>
 
@@ -201,8 +158,8 @@ const MapManager = {
                                 <span class="stat-value" id="totalEvents">0</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-label">Aktywnych patroli:</span>
-                                <span class="stat-value" id="activePatrols">0</span>
+                                <span class="stat-label">Aktywnych zabezpieczeń:</span>
+                                <span class="stat-value" id="activeSecurities">0</span>
                             </div>
                         </div>
                     </div>
@@ -215,12 +172,12 @@ const MapManager = {
                         <div class="map-legend">
                             <div class="legend-title">Legenda</div>
                             <div class="legend-items">
+                                <div class="legend-item"><span class="legend-marker zabezpieczenie"></span> Zabezpieczenie</div>
+                                <div class="legend-item"><span class="legend-marker mczp"></span> MczP</div>
+                                <div class="legend-item"><span class="legend-marker piro"></span> PIRO</div>
+                                <div class="legend-item"><span class="legend-marker zdarzenie"></span> Zdarzenie drogowe</div>
                                 <div class="legend-item"><span class="legend-marker wykroczenie"></span> Wykroczenie</div>
-                                <div class="legend-item"><span class="legend-marker patrol"></span> Patrol</div>
-                                <div class="legend-item"><span class="legend-marker kontrola"></span> Kontrola WKRD</div>
-                                <div class="legend-item"><span class="legend-marker zdarzenie"></span> Zdarzenie</div>
-                                <div class="legend-item"><span class="legend-marker konwoj"></span> Konwój</div>
-                                <div class="legend-item"><span class="legend-marker military"></span> Obiekt wojskowy</div>
+                                <div class="legend-item"><span class="legend-marker inne"></span> Inne</div>
                             </div>
                         </div>
 
@@ -350,8 +307,6 @@ const MapManager = {
      */
     renderAllLayers() {
         this.renderEvents();
-        this.renderPatrols();
-        this.renderMilitaryObjects();
     },
 
     /**
@@ -406,108 +361,27 @@ const MapManager = {
         return marker;
     },
 
-    /**
-     * Renderowanie patroli na mapie
-     */
-    renderPatrols() {
-        if (!this.activeLayers.patrols) return;
-
-        this.patrols.forEach(patrol => {
-            const marker = this.createPatrolMarker(patrol);
-            this.markerClusterGroup.addLayer(marker);
-            this.markers.push(marker);
-        });
-    },
-
-    /**
-     * Tworzenie markera dla patrolu
-     */
-    createPatrolMarker(patrol) {
-        const icon = this.getPatrolIcon(patrol.status);
-
-        const marker = L.marker([patrol.lat, patrol.lng], {
-            icon: icon,
-            title: patrol.name
-        });
-
-        // Dodaj zasięg komunikacji jeśli patrol aktywny
-        if (patrol.status === 'aktywny' && this.activeLayers.zones) {
-            const circle = L.circle([patrol.lat, patrol.lng], {
-                color: '#3b82f6',
-                fillColor: '#3b82f6',
-                fillOpacity: 0.1,
-                radius: 5000 // 5km
-            }).addTo(this.map);
-            circle.bindPopup(`Zasięg komunikacji: ${patrol.name}`);
-        }
-
-        const popupContent = `
-            <div class="map-popup">
-                <div class="popup-header">
-                    <h4>${patrol.name}</h4>
-                    <span class="popup-status ${patrol.status}">${patrol.status}</span>
-                </div>
-                <div class="popup-body">
-                    ${patrol.date ? `<p><i class="fas fa-calendar"></i> ${patrol.date}</p>` : ''}
-                    ${patrol.unit ? `<p><i class="fas fa-building"></i> ${patrol.unit}</p>` : ''}
-                </div>
-            </div>
-        `;
-
-        marker.bindPopup(popupContent);
-        return marker;
-    },
-
-    /**
-     * Renderowanie obiektów wojskowych
-     */
-    renderMilitaryObjects() {
-        if (!this.activeLayers.military) return;
-
-        this.militaryObjects.forEach(obj => {
-            const icon = this.getMilitaryIcon(obj.type);
-
-            const marker = L.marker([obj.lat, obj.lng], {
-                icon: icon,
-                title: obj.name
-            }).addTo(this.map);
-
-            marker.bindPopup(`
-                <div class="map-popup">
-                    <div class="popup-header">
-                        <h4>${obj.name}</h4>
-                        <span class="popup-type military">${obj.type === 'headquarters' ? 'Komenda Główna' : 'Jednostka'}</span>
-                    </div>
-                    <div class="popup-body">
-                        <p><i class="fas fa-location-dot"></i> ${obj.city}</p>
-                    </div>
-                </div>
-            `);
-        });
-    },
 
     /**
      * Pobierz ikonę dla typu wydarzenia
      */
     getIconForType(type) {
         const icons = {
-            'wykroczenie': 'fa-scale-balanced',
-            'patrol': 'fa-car-side',
-            'kontrola': 'fa-shield-halved',
+            'zabezpieczenie': 'fa-shield-halved',
+            'mczp': 'fa-location-crosshairs',
+            'piro': 'fa-traffic-light',
             'zdarzenie': 'fa-car-burst',
-            'konwoj': 'fa-arrow-right-arrow-left',
-            'spb': 'fa-hand-fist',
-            'pilotaz': 'fa-road'
+            'wykroczenie': 'fa-scale-balanced',
+            'inne': 'fa-map-pin'
         };
 
         const colors = {
-            'wykroczenie': '#ef4444',
-            'patrol': '#3b82f6',
-            'kontrola': '#f59e0b',
+            'zabezpieczenie': '#10b981',
+            'mczp': '#f59e0b',
+            'piro': '#3b82f6',
             'zdarzenie': '#8b5cf6',
-            'konwoj': '#10b981',
-            'spb': '#ec4899',
-            'pilotaz': '#06b6d4'
+            'wykroczenie': '#ef4444',
+            'inne': '#6b7280'
         };
 
         const iconClass = icons[type] || 'fa-map-pin';
@@ -524,59 +398,18 @@ const MapManager = {
         });
     },
 
-    /**
-     * Pobierz ikonę dla patrolu
-     */
-    getPatrolIcon(status) {
-        const colors = {
-            'aktywny': '#10b981',
-            'zakończony': '#6b7280',
-            'w_trakcie': '#f59e0b'
-        };
-
-        const color = colors[status] || '#3b82f6';
-
-        return L.divIcon({
-            html: `<div style="background-color: ${color}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.4);">
-                <i class="fas fa-car-side" style="color: white; font-size: 16px;"></i>
-            </div>`,
-            className: 'custom-div-icon patrol-icon',
-            iconSize: [36, 36],
-            iconAnchor: [18, 18],
-            popupAnchor: [0, -18]
-        });
-    },
-
-    /**
-     * Pobierz ikonę dla obiektu wojskowego
-     */
-    getMilitaryIcon(type) {
-        const color = type === 'headquarters' ? '#dc2626' : '#1e40af';
-        const icon = type === 'headquarters' ? 'fa-building-flag' : 'fa-building-shield';
-
-        return L.divIcon({
-            html: `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                <i class="fas ${icon}" style="color: white; font-size: 14px;"></i>
-            </div>`,
-            className: 'custom-div-icon military-icon',
-            iconSize: [32, 32],
-            iconAnchor: [16, 16],
-            popupAnchor: [0, -16]
-        });
-    },
 
     /**
      * Pobierz etykietę typu
      */
     getTypeLabel(type) {
         const labels = {
-            'wykroczenie': 'Wykroczenie',
-            'patrol': 'Patrol',
-            'kontrola': 'Kontrola WKRD',
+            'zabezpieczenie': 'Zabezpieczenie prewencyjno-ochronne',
+            'mczp': 'MczP',
+            'piro': 'PIRO',
             'zdarzenie': 'Zdarzenie drogowe',
-            'konwoj': 'Konwój',
-            'spb': 'ŚPB',
-            'pilotaz': 'Pilotaż'
+            'wykroczenie': 'Wykroczenie',
+            'inne': 'Inne'
         };
         return labels[type] || type;
     },
@@ -638,8 +471,8 @@ const MapManager = {
      */
     updateStats() {
         document.getElementById('totalEvents').textContent = this.events.length;
-        document.getElementById('activePatrols').textContent =
-            this.patrols.filter(p => p.status === 'aktywny').length;
+        document.getElementById('activeSecurities').textContent =
+            this.events.filter(e => e.type === 'zabezpieczenie' && e.status === 'aktywny').length;
     },
 
     /**
@@ -674,13 +507,12 @@ const MapManager = {
                     <div class="form-group">
                         <label>Typ wydarzenia *</label>
                         <select id="mapEventType" required>
-                            <option value="wykroczenie">Wykroczenie</option>
-                            <option value="patrol">Patrol</option>
-                            <option value="kontrola">Kontrola WKRD</option>
+                            <option value="zabezpieczenie">Zabezpieczenie prewencyjno-ochronne</option>
+                            <option value="mczp">MczP</option>
+                            <option value="piro">PIRO</option>
                             <option value="zdarzenie">Zdarzenie drogowe</option>
-                            <option value="konwoj">Konwój</option>
-                            <option value="spb">ŚPB</option>
-                            <option value="pilotaz">Pilotaż</option>
+                            <option value="wykroczenie">Wykroczenie</option>
+                            <option value="inne">Inne</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -1411,28 +1243,6 @@ const MapManager = {
 
                     <div class="layer-toggle-item">
                         <label class="toggle-switch">
-                            <input type="checkbox" id="layerPatrols" ${this.activeLayers.patrols ? 'checked' : ''}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <div class="toggle-label">
-                            <i class="fas fa-car-side"></i>
-                            <span>Patrole</span>
-                        </div>
-                    </div>
-
-                    <div class="layer-toggle-item">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="layerMilitary" ${this.activeLayers.military ? 'checked' : ''}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <div class="toggle-label">
-                            <i class="fas fa-building-shield"></i>
-                            <span>Obiekty wojskowe</span>
-                        </div>
-                    </div>
-
-                    <div class="layer-toggle-item">
-                        <label class="toggle-switch">
                             <input type="checkbox" id="layerZones" ${this.activeLayers.zones ? 'checked' : ''}>
                             <span class="toggle-slider"></span>
                         </label>
@@ -1471,8 +1281,6 @@ const MapManager = {
      */
     applyLayerChanges() {
         this.activeLayers.events = document.getElementById('layerEvents')?.checked || false;
-        this.activeLayers.patrols = document.getElementById('layerPatrols')?.checked || false;
-        this.activeLayers.military = document.getElementById('layerMilitary')?.checked || false;
         this.activeLayers.zones = document.getElementById('layerZones')?.checked || false;
         this.activeLayers.heat = document.getElementById('layerHeat')?.checked || false;
 
@@ -1572,34 +1380,12 @@ const MapManager = {
                 <div class="import-options">
                     <div class="import-option">
                         <div class="import-header">
-                            <i class="fas fa-car-side"></i>
-                            <h4>Patrole</h4>
-                        </div>
-                        <p>Import danych patroli z modułu Patrole</p>
-                        <button class="btn-secondary btn-full" onclick="MapManager.importPatrolsData()">
-                            <i class="fas fa-download"></i> Importuj patrole
-                        </button>
-                    </div>
-
-                    <div class="import-option">
-                        <div class="import-header">
                             <i class="fas fa-scale-balanced"></i>
                             <h4>Wykroczenia</h4>
                         </div>
                         <p>Import wykroczeń z modułu Wykroczenia</p>
                         <button class="btn-secondary btn-full" onclick="MapManager.importWykroczeniaData()">
                             <i class="fas fa-download"></i> Importuj wykroczenia
-                        </button>
-                    </div>
-
-                    <div class="import-option">
-                        <div class="import-header">
-                            <i class="fas fa-shield-halved"></i>
-                            <h4>WKRD</h4>
-                        </div>
-                        <p>Import kontroli z modułu WKRD</p>
-                        <button class="btn-secondary btn-full" onclick="MapManager.importWKRDData()">
-                            <i class="fas fa-download"></i> Importuj WKRD
                         </button>
                     </div>
 
@@ -1623,39 +1409,6 @@ const MapManager = {
         `);
     },
 
-    /**
-     * Import danych patroli
-     */
-    importPatrolsData() {
-        const patrolData = Utils.loadFromLocalStorage('aep_data_patrole') || [];
-        let imported = 0;
-
-        patrolData.forEach(patrol => {
-            // Sprawdź czy patrol ma współrzędne (można je dodać w przyszłości do formularza patroli)
-            if (patrol.lat && patrol.lng) {
-                const event = {
-                    id: Date.now() + Math.random(),
-                    type: 'patrol',
-                    status: 'aktywny',
-                    name: `Patrol ${patrol.oddzialZW || ''} - ${patrol.date || ''}`,
-                    lat: parseFloat(patrol.lat),
-                    lng: parseFloat(patrol.lng),
-                    date: patrol.date,
-                    unit: patrol.oddzialZW,
-                    description: `Patrol z dnia ${patrol.date}`,
-                    createdAt: new Date().toISOString()
-                };
-
-                this.events.push(event);
-                imported++;
-            }
-        });
-
-        this.saveEvents();
-        Modal.hide();
-        this.applyFiltersAndRender();
-        this.showToast(`Zaimportowano ${imported} patroli`);
-    },
 
     /**
      * Import wykroczeń (placeholder - wymaga dodania współrzędnych do modułu)
@@ -1665,13 +1418,6 @@ const MapManager = {
         // TODO: Implementacja po dodaniu pól GPS do formularza wykroczeń
     },
 
-    /**
-     * Import WKRD (placeholder)
-     */
-    importWKRDData() {
-        this.showToast('Funkcja dostępna po dodaniu współrzędnych do modułu WKRD');
-        // TODO: Implementacja po dodaniu pół GPS
-    },
 
     /**
      * Import zdarzeń drogowych (placeholder)
@@ -1972,9 +1718,9 @@ const MapManager = {
                     </div>
 
                     <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-car-side"></i></div>
-                        <div class="stat-value">${stats.activePatrols}</div>
-                        <div class="stat-label">Aktywne patrole</div>
+                        <div class="stat-icon"><i class="fas fa-shield-halved"></i></div>
+                        <div class="stat-value">${stats.activeSecurities}</div>
+                        <div class="stat-label">Aktywne zabezpieczenia</div>
                     </div>
 
                     <div class="stat-card">
@@ -2015,7 +1761,7 @@ const MapManager = {
 
         const stats = {
             totalEvents: this.events.length,
-            activePatrols: this.patrols.filter(p => p.status === 'aktywny').length,
+            activeSecurities: this.events.filter(e => e.type === 'zabezpieczenie' && e.status === 'aktywny').length,
             todayEvents: this.events.filter(e => e.date === today).length,
             weekEvents: this.events.filter(e => e.date >= weekAgo).length,
             byType: {}
@@ -2034,13 +1780,12 @@ const MapManager = {
      */
     getColorForType(type) {
         const colors = {
-            'wykroczenie': '#ef4444',
-            'patrol': '#3b82f6',
-            'kontrola': '#f59e0b',
+            'zabezpieczenie': '#10b981',
+            'mczp': '#f59e0b',
+            'piro': '#3b82f6',
             'zdarzenie': '#8b5cf6',
-            'konwoj': '#10b981',
-            'spb': '#ec4899',
-            'pilotaz': '#06b6d4'
+            'wykroczenie': '#ef4444',
+            'inne': '#6b7280'
         };
         return colors[type] || '#6b7280';
     },
