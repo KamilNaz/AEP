@@ -1,384 +1,428 @@
 /**
  * Dashboard Hub - Advanced Analytics Dashboard
- * Kompleksowy system analizy danych z wieloma źródłami danych
+ * Dynamiczny system analizy danych z multi-source filtering
  */
 
 const DashboardHub = {
-    // Stan dashboardu
+    // Stan aplikacji
     state: {
-        // Aktywne filtry dla każdego typu danych
-        activeFilters: {
-            patrole: {},
-            wykroczenia: {},
-            wkrd: {},
-            sankcje: {},
-            konwoje: {},
-            spb: {},
-            pilotaze: {},
-            zdarzenia: {}
-        },
+        // Aktywne sekcje
+        activeSections: [],
 
-        // Wybrane źródła danych do analizy
-        selectedDataSources: ['patrole'],
+        // Globalny zakres dat
+        dateFrom: null,
+        dateTo: null,
 
-        // Ustawienia wykresu
-        chartConfig: {
-            type: 'line', // line, bar, pie, area
+        // Aktywne filtry per sekcja
+        // Format: { sekcja: [{ field, operator, value }, ...] }
+        filters: {},
+
+        // Ustawienia wykresu głównego
+        mainChart: {
+            type: 'line', // line, bar, area, pie
             aggregation: 'day', // day, week, month
-            dateFrom: null,
-            dateTo: null
+            xAxis: 'Data',
+            yAxis: 'Liczba zdarzeń',
+            series: 'Sekcja', // co kolorować
+            chartInstance: null
         },
+
+        // Ustawienia wykresów pomocniczych
+        helperCharts: [
+            { id: 'helper1', type: 'bar', title: 'Struktura kategorii', enabled: true },
+            { id: 'helper2', type: 'line', title: 'Heatmapa dni tygodnia', enabled: true },
+            { id: 'helper3', type: 'bar', title: 'Top N podkategorii', enabled: false },
+            { id: 'helper4', type: 'line', title: 'Porównanie okresów', enabled: false }
+        ],
 
         // Przełączniki widoczności
         showKPI: true,
-        showDataTable: false,
+        showTable: false,
 
         // Dane
-        chartData: null,
+        rawData: {},
         filteredData: {},
+        aggregatedData: null,
 
-        // Wykres ApexCharts
-        chart: null
+        // UI state
+        filterPanelExpanded: true
     },
 
-    // Konfiguracja dostępnych źródeł danych
-    dataSources: {
+    // Definicje sekcji i ich kolumn
+    sections: {
         patrole: {
             name: 'Patrole',
-            icon: 'fa-car-side',
             color: '#3b82f6',
             storageKey: 'aep_data_patrole',
-            columns: ['Data', 'Godz. rozpoczęcia', 'Godz. zakończenia', 'Oznaczenie', 'Obszar', 'Pojazd', 'Nr rej.', 'Dowódca', 'Skład', 'Przebieg (km)', 'Uwagi', 'Status']
+            fields: {
+                'Data': { type: 'date', operators: ['=', '≥', '≤', 'zakres'] },
+                'Godz. rozpoczęcia': { type: 'time', operators: ['=', '≥', '≤'] },
+                'Godz. zakończenia': { type: 'time', operators: ['=', '≥', '≤'] },
+                'Oznaczenie': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Obszar': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Pojazd': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Nr rej.': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Dowódca': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Skład': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Przebieg (km)': { type: 'number', operators: ['=', '≥', '≤', '>', '<'] },
+                'Status': { type: 'select', operators: ['=', '≠'], options: ['Zakończona', 'W trakcie', 'Planowana'] }
+            }
         },
         wykroczenia: {
             name: 'Wykroczenia',
-            icon: 'fa-scale-balanced',
             color: '#f59e0b',
             storageKey: 'aep_data_wykroczenia',
-            columns: ['Data', 'Godzina', 'Miejsce', 'Rodzaj wykroczenia', 'Funkcjonariusz', 'Mandat', 'Pouczenie', 'Notatka służbowa', 'Status']
+            fields: {
+                'Data': { type: 'date', operators: ['=', '≥', '≤', 'zakres'] },
+                'Godzina': { type: 'time', operators: ['=', '≥', '≤'] },
+                'Miejsce': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Rodzaj wykroczenia': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Funkcjonariusz': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Mandat': { type: 'flag', operators: ['='], options: ['TAK', 'NIE'] },
+                'Pouczenie': { type: 'flag', operators: ['='], options: ['TAK', 'NIE'] },
+                'Notatka służbowa': { type: 'flag', operators: ['='], options: ['TAK', 'NIE'] },
+                'Status': { type: 'select', operators: ['=', '≠'], options: ['Zakończone', 'W trakcie'] }
+            }
         },
         wkrd: {
             name: 'WKRD',
-            icon: 'fa-shield-halved',
             color: '#8b5cf6',
             storageKey: 'aep_data_wkrd',
-            columns: ['Data', 'Godz. rozpoczęcia', 'Godz. zakończenia', 'Oznaczenie', 'Siły i środki', 'Rodzaj zabezpieczenia', 'Cel', 'Dowódca', 'Liczba funkcjonariuszy', 'Przebieg', 'Status']
+            fields: {
+                'Data': { type: 'date', operators: ['=', '≥', '≤', 'zakres'] },
+                'Godz. rozpoczęcia': { type: 'time', operators: ['=', '≥', '≤'] },
+                'Godz. zakończenia': { type: 'time', operators: ['=', '≥', '≤'] },
+                'Oznaczenie': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Rodzaj zabezpieczenia': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Cel': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Dowódca': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Liczba funkcjonariuszy': { type: 'number', operators: ['=', '≥', '≤', '>', '<'] },
+                'Status': { type: 'select', operators: ['=', '≠'], options: ['Zakończone', 'W trakcie', 'Planowane'] }
+            }
         },
         sankcje: {
             name: 'Sankcje',
-            icon: 'fa-money-bill-wave',
             color: '#22c55e',
             storageKey: 'aep_data_sankcje',
-            columns: ['Data wystawienia', 'Nr mandatu', 'Kwota (zł)', 'Wykroczenie', 'Funkcjonariusz', 'Miejsce', 'Status płatności', 'Uwagi']
+            fields: {
+                'Data wystawienia': { type: 'date', operators: ['=', '≥', '≤', 'zakres'] },
+                'Nr mandatu': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Kwota (zł)': { type: 'number', operators: ['=', '≥', '≤', '>', '<'] },
+                'Wykroczenie': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Funkcjonariusz': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Miejsce': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Status płatności': { type: 'select', operators: ['=', '≠'], options: ['Opłacony', 'Nieopłacony', 'Windykacja'] }
+            }
         },
         konwoje: {
             name: 'Konwoje',
-            icon: 'fa-arrow-right-arrow-left',
             color: '#ec4899',
             storageKey: 'aep_data_konwoje',
-            columns: ['Data', 'Godz. rozpoczęcia', 'Godz. zakończenia', 'Oznaczenie', 'Trasa', 'Pojazdy', 'Eskortowani', 'Cel konwoju', 'Dowódca', 'Skład', 'Uwagi', 'Status']
+            fields: {
+                'Data': { type: 'date', operators: ['=', '≥', '≤', 'zakres'] },
+                'Godz. rozpoczęcia': { type: 'time', operators: ['=', '≥', '≤'] },
+                'Godz. zakończenia': { type: 'time', operators: ['=', '≥', '≤'] },
+                'Oznaczenie': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Trasa': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Cel konwoju': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Dowódca': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Status': { type: 'select', operators: ['=', '≠'], options: ['Zakończony', 'W trakcie', 'Planowany'] }
+            }
         },
         spb: {
             name: 'ŚPB',
-            icon: 'fa-hand-fist',
             color: '#ef4444',
             storageKey: 'aep_data_spb',
-            columns: ['Data', 'Godz. rozpoczęcia', 'Godz. zakończenia', 'Rodzaj interwencji', 'Miejsce', 'Siły', 'Dowódca', 'Przebieg', 'Użycie przymusu', 'Raport', 'Status']
+            fields: {
+                'Data': { type: 'date', operators: ['=', '≥', '≤', 'zakres'] },
+                'Godz. rozpoczęcia': { type: 'time', operators: ['=', '≥', '≤'] },
+                'Godz. zakończenia': { type: 'time', operators: ['=', '≤'] },
+                'Rodzaj interwencji': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Miejsce': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Dowódca': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Użycie przymusu': { type: 'flag', operators: ['='], options: ['TAK', 'NIE'] },
+                'Status': { type: 'select', operators: ['=', '≠'], options: ['Zakończone', 'W trakcie'] }
+            }
         },
         pilotaze: {
             name: 'Pilotaże',
-            icon: 'fa-flag-checkered',
             color: '#06b6d4',
             storageKey: 'aep_data_pilotaze',
-            columns: ['Data', 'Godz. rozpoczęcia', 'Godz. zakończenia', 'Oznaczenie', 'Trasa', 'Pojazd pilotowany', 'Nr rej.', 'Kierowca', 'Cel podróży', 'Funkcjonariusze', 'Uwagi', 'Status']
+            fields: {
+                'Data': { type: 'date', operators: ['=', '≥', '≤', 'zakres'] },
+                'Godz. rozpoczęcia': { type: 'time', operators: ['=', '≥', '≤'] },
+                'Godz. zakończenia': { type: 'time', operators: ['=', '≥', '≤'] },
+                'Oznaczenie': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Trasa': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Cel podróży': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Nr rej.': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Status': { type: 'select', operators: ['=', '≠'], options: ['Zakończony', 'W trakcie', 'Planowany'] }
+            }
         },
         zdarzenia: {
             name: 'Zdarzenia drogowe',
-            icon: 'fa-car-burst',
             color: '#f97316',
             storageKey: 'aep_data_zdarzenia',
-            columns: ['Data', 'Godzina', 'Miejsce', 'Rodzaj', 'Pojazdy', 'Ofiary', 'Alkohol', 'Protokół', 'Funkcjonariusz', 'Status']
+            fields: {
+                'Data': { type: 'date', operators: ['=', '≥', '≤', 'zakres'] },
+                'Godzina': { type: 'time', operators: ['=', '≥', '≤'] },
+                'Miejsce': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Rodzaj': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Ofiary': { type: 'number', operators: ['=', '≥', '≤', '>'] },
+                'Alkohol': { type: 'flag', operators: ['='], options: ['TAK', 'NIE'] },
+                'Funkcjonariusz': { type: 'text', operators: ['zawiera', '=', '≠'] },
+                'Status': { type: 'select', operators: ['=', '≠'], options: ['Zakończone', 'W trakcie'] }
+            }
         }
     },
 
     /**
-     * Główna funkcja renderująca dashboard
+     * Główna funkcja renderująca
      */
     render() {
         const mainContent = document.getElementById('mainContent');
 
-        // Załaduj dane z localStorage
-        this.loadAllData();
-
         // Ustaw domyślny zakres dat (ostatnie 30 dni)
-        if (!this.state.chartConfig.dateTo) {
-            this.state.chartConfig.dateTo = new Date().toISOString().split('T')[0];
-        }
-        if (!this.state.chartConfig.dateFrom) {
+        if (!this.state.dateFrom) {
             const date = new Date();
             date.setDate(date.getDate() - 30);
-            this.state.chartConfig.dateFrom = date.toISOString().split('T')[0];
+            this.state.dateFrom = date.toISOString().split('T')[0];
+        }
+        if (!this.state.dateTo) {
+            this.state.dateTo = new Date().toISOString().split('T')[0];
         }
 
         mainContent.innerHTML = `
-            <div class="dashboard-view">
+            <div class="dashboard-analytics">
                 <!-- Header -->
                 <div class="dashboard-header">
-                    <h1 class="section-title">
-                        <i class="fas fa-chart-line"></i> Dashboard Analityczny
-                    </h1>
-                    <p class="section-subtitle">Zaawansowana analiza i wizualizacja danych operacyjnych</p>
+                    <div class="dashboard-title">
+                        <h1><i class="fas fa-chart-line"></i> Dashboard Analityczny</h1>
+                        <p>Dynamiczna analiza danych operacyjnych</p>
+                    </div>
+                    <div class="dashboard-actions">
+                        <button class="btn-secondary btn-sm" onclick="DashboardHub.exportToPNG()">
+                            <i class="fas fa-download"></i> Eksport PNG
+                        </button>
+                        <button class="btn-secondary btn-sm" onclick="DashboardHub.exportToCSV()">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                    </div>
                 </div>
 
-                <div class="dashboard-container">
-                    <!-- Filters Sidebar -->
-                    <aside class="dashboard-sidebar" id="dashboardSidebar">
-                        <div class="sidebar-header-dash">
-                            <h3><i class="fas fa-filter"></i> Filtry</h3>
-                            <button class="btn-icon-dash" onclick="DashboardHub.toggleSidebar()" title="Zwiń/Rozwiń">
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-                        </div>
+                <!-- Filters Panel (Top) -->
+                <div class="filters-panel ${this.state.filterPanelExpanded ? 'expanded' : 'collapsed'}" id="filtersPanel">
+                    ${this.renderFiltersPanel()}
+                </div>
 
-                        <div class="filters-container" id="filtersContainer">
-                            ${this.renderFiltersPanel()}
-                        </div>
+                <!-- Active Filters (Chipsy) -->
+                <div class="active-filters-bar" id="activeFiltersBar">
+                    ${this.renderActiveFilters()}
+                </div>
 
-                        <div class="sidebar-actions">
-                            <button class="btn-primary btn-block" onclick="DashboardHub.applyFilters()">
-                                <i class="fas fa-check"></i> Zastosuj
-                            </button>
-                            <button class="btn-secondary btn-block" onclick="DashboardHub.resetFilters()">
-                                <i class="fas fa-rotate-right"></i> Reset
-                            </button>
+                <!-- Main Content -->
+                <div class="dashboard-content">
+                    <!-- Main Chart -->
+                    <div class="chart-section main-chart-section">
+                        <div class="chart-header">
+                            <h3>Wykres główny</h3>
+                            <div class="chart-controls-inline">
+                                ${this.renderChartTypeButtons()}
+                                <select class="form-control-xs" onchange="DashboardHub.changeAggregation(this.value)">
+                                    <option value="day" ${this.state.mainChart.aggregation === 'day' ? 'selected' : ''}>Dzień</option>
+                                    <option value="week" ${this.state.mainChart.aggregation === 'week' ? 'selected' : ''}>Tydzień</option>
+                                    <option value="month" ${this.state.mainChart.aggregation === 'month' ? 'selected' : ''}>Miesiąc</option>
+                                </select>
+                                <button class="btn-icon-xs" onclick="DashboardHub.showChartSettings('main')" title="Ustawienia wykresu">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
                         </div>
-                    </aside>
+                        <div class="chart-container" id="mainChart"></div>
+                    </div>
 
-                    <!-- Main Chart Area -->
-                    <main class="dashboard-main">
-                        <!-- Active Filters -->
-                        <div class="active-filters" id="activeFilters">
-                            ${this.renderActiveFilters()}
-                        </div>
+                    <!-- KPI Cards -->
+                    <div class="kpi-section" id="kpiSection" style="display: ${this.state.showKPI ? 'block' : 'none'}">
+                        ${this.renderKPICards()}
+                    </div>
 
-                        <!-- Chart Controls -->
-                        <div class="chart-controls">
-                            ${this.renderChartControls()}
-                        </div>
+                    <!-- Helper Charts (2 columns) -->
+                    <div class="helper-charts-grid">
+                        ${this.renderHelperCharts()}
+                    </div>
 
-                        <!-- Main Chart -->
-                        <div class="chart-container">
-                            <div id="dashboardChart"></div>
-                        </div>
-
-                        <!-- KPI Cards (Optional) -->
-                        <div class="kpi-section" id="kpiSection" style="display: ${this.state.showKPI ? 'block' : 'none'}">
-                            ${this.renderKPICards()}
-                        </div>
-
-                        <!-- Data Table (Optional) -->
-                        <div class="data-table-section" id="dataTableSection" style="display: ${this.state.showDataTable ? 'block' : 'none'}">
-                            ${this.renderDataTable()}
-                        </div>
-                    </main>
+                    <!-- Data Table -->
+                    <div class="table-section" id="tableSection" style="display: ${this.state.showTable ? 'block' : 'none'}">
+                        ${this.renderDataTable()}
+                    </div>
                 </div>
             </div>
         `;
 
-        // Renderuj wykres
-        this.renderChart();
+        // Inicjalizuj dane i wykresy
+        this.loadAllData();
+        this.applyFilters();
+        this.renderMainChart();
     },
 
     /**
-     * Renderuj panel filtrów
+     * Renderuj panel filtrów (górny, poziomy)
      */
     renderFiltersPanel() {
-        let html = '<div class="filter-sections">';
+        return `
+            <div class="filters-header">
+                <button class="btn-expand" onclick="DashboardHub.toggleFiltersPanel()">
+                    <i class="fas fa-filter"></i>
+                    <span>Filtry</span>
+                    <i class="fas fa-chevron-${this.state.filterPanelExpanded ? 'up' : 'down'}"></i>
+                </button>
+            </div>
 
-        Object.keys(this.dataSources).forEach(sourceKey => {
-            const source = this.dataSources[sourceKey];
-            const isExpanded = this.state.selectedDataSources.includes(sourceKey);
-
-            html += `
-                <div class="filter-section ${isExpanded ? 'expanded' : ''}">
-                    <div class="filter-section-header" onclick="DashboardHub.toggleFilterSection('${sourceKey}')">
-                        <div class="filter-section-title">
-                            <input type="checkbox"
-                                id="source_${sourceKey}"
-                                ${this.state.selectedDataSources.includes(sourceKey) ? 'checked' : ''}
-                                onclick="event.stopPropagation(); DashboardHub.toggleDataSource('${sourceKey}')"
-                            />
-                            <label for="source_${sourceKey}">
-                                <i class="fas ${source.icon}" style="color: ${source.color}"></i>
-                                ${source.name}
-                            </label>
-                        </div>
-                        <i class="fas fa-chevron-down toggle-icon"></i>
-                    </div>
-
-                    <div class="filter-section-content">
-                        ${this.renderColumnFilters(sourceKey, source.columns)}
+            <div class="filters-content">
+                <!-- A) Sekcje (multi-select) -->
+                <div class="filter-row">
+                    <label class="filter-row-label">Sekcje główne:</label>
+                    <div class="sections-select">
+                        ${Object.keys(this.sections).map(key => {
+                            const section = this.sections[key];
+                            const isActive = this.state.activeSections.includes(key);
+                            return `
+                                <label class="section-checkbox">
+                                    <input type="checkbox"
+                                        ${isActive ? 'checked' : ''}
+                                        onchange="DashboardHub.toggleSection('${key}')">
+                                    <span>${section.name}</span>
+                                </label>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
-            `;
-        });
 
-        html += '</div>';
-        return html;
-    },
+                <!-- B) Zakres dat (globalny) -->
+                <div class="filter-row">
+                    <label class="filter-row-label">Zakres dat:</label>
+                    <div class="date-range-inputs">
+                        <div class="date-input-group">
+                            <label>Data od:</label>
+                            <input type="date"
+                                value="${this.state.dateFrom || ''}"
+                                onchange="DashboardHub.updateDateRange('from', this.value)"
+                                class="form-control-xs">
+                        </div>
+                        <div class="date-input-group">
+                            <label>Data do:</label>
+                            <input type="date"
+                                value="${this.state.dateTo || ''}"
+                                onchange="DashboardHub.updateDateRange('to', this.value)"
+                                class="form-control-xs">
+                        </div>
+                        <div class="date-presets">
+                            <button class="btn-preset" onclick="DashboardHub.setDatePreset(7)">7 dni</button>
+                            <button class="btn-preset" onclick="DashboardHub.setDatePreset(30)">30 dni</button>
+                            <button class="btn-preset" onclick="DashboardHub.setDatePreset(90)">Kwartał</button>
+                        </div>
+                    </div>
+                </div>
 
-    /**
-     * Renderuj filtry dla kolumn
-     */
-    renderColumnFilters(sourceKey, columns) {
-        let html = '<div class="column-filters">';
+                <!-- D) Dodawanie filtrów -->
+                <div class="filter-row">
+                    <label class="filter-row-label">Aktywne filtry:</label>
+                    <div class="add-filter-section">
+                        <button class="btn-secondary btn-sm" onclick="DashboardHub.showAddFilterDialog()">
+                            <i class="fas fa-plus"></i> Dodaj filtr
+                        </button>
+                    </div>
+                </div>
 
-        // Specjalne filtry dla dat
-        html += `
-            <div class="filter-group">
-                <label class="filter-label">Zakres dat:</label>
-                <div class="date-range-filter">
-                    <input type="date"
-                        id="filter_${sourceKey}_dateFrom"
-                        class="form-control-sm"
-                        value="${this.state.chartConfig.dateFrom || ''}"
-                        onchange="DashboardHub.updateDateFilter('${sourceKey}', 'from', this.value)"
-                    />
-                    <span>do</span>
-                    <input type="date"
-                        id="filter_${sourceKey}_dateTo"
-                        class="form-control-sm"
-                        value="${this.state.chartConfig.dateTo || ''}"
-                        onchange="DashboardHub.updateDateFilter('${sourceKey}', 'to', this.value)"
-                    />
+                <!-- E) Przyciski akcji -->
+                <div class="filter-row filter-actions">
+                    <button class="btn-primary" onclick="DashboardHub.applyFilters()">
+                        <i class="fas fa-check"></i> Zastosuj
+                    </button>
+                    <button class="btn-secondary" onclick="DashboardHub.resetFilters()">
+                        <i class="fas fa-rotate-right"></i> Reset
+                    </button>
+                    <div class="filter-toggles">
+                        <label>
+                            <input type="checkbox" ${this.state.showKPI ? 'checked' : ''}
+                                onchange="DashboardHub.toggleKPI(this.checked)">
+                            <span>KPI</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" ${this.state.showTable ? 'checked' : ''}
+                                onchange="DashboardHub.toggleTable(this.checked)">
+                            <span>Tabela</span>
+                        </label>
+                    </div>
                 </div>
             </div>
         `;
-
-        // Filtry dla pozostałych kolumn
-        columns.forEach((col, index) => {
-            if (!col.toLowerCase().includes('data') && !col.toLowerCase().includes('godz')) {
-                const filterId = `filter_${sourceKey}_${index}`;
-                html += `
-                    <div class="filter-group">
-                        <label class="filter-label" for="${filterId}">${col}:</label>
-                        <input type="text"
-                            id="${filterId}"
-                            class="form-control-sm"
-                            placeholder="Szukaj..."
-                            onchange="DashboardHub.updateColumnFilter('${sourceKey}', '${col}', this.value)"
-                        />
-                    </div>
-                `;
-            }
-        });
-
-        html += '</div>';
-        return html;
     },
 
     /**
-     * Renderuj aktywne filtry (chipsy)
+     * Renderuj aktywne filtry jako chipsy
      */
     renderActiveFilters() {
         const chips = [];
 
-        // Źródła danych
-        this.state.selectedDataSources.forEach(source => {
-            const config = this.dataSources[source];
+        // Chipsy dla aktywnych sekcji
+        this.state.activeSections.forEach(sectionKey => {
+            const section = this.sections[sectionKey];
             chips.push(`
-                <div class="filter-chip" style="border-color: ${config.color}">
-                    <i class="fas ${config.icon}" style="color: ${config.color}"></i>
-                    <span>${config.name}</span>
-                    <button onclick="DashboardHub.removeDataSource('${source}')" class="chip-remove">
+                <div class="filter-chip" style="border-color: ${section.color}">
+                    <span style="color: ${section.color}">${section.name}</span>
+                    <button onclick="DashboardHub.removeSection('${sectionKey}')" class="chip-close">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
             `);
         });
 
-        // Zakres dat
-        if (this.state.chartConfig.dateFrom || this.state.chartConfig.dateTo) {
-            chips.push(`
-                <div class="filter-chip">
-                    <i class="fas fa-calendar"></i>
-                    <span>${this.state.chartConfig.dateFrom || '...'} - ${this.state.chartConfig.dateTo || '...'}</span>
-                </div>
-            `);
-        }
+        // Chipsy dla filtrów per sekcja
+        Object.keys(this.state.filters).forEach(sectionKey => {
+            const section = this.sections[sectionKey];
+            const sectionFilters = this.state.filters[sectionKey];
+
+            sectionFilters.forEach((filter, index) => {
+                chips.push(`
+                    <div class="filter-chip filter-chip-detail" style="border-color: ${section.color}">
+                        <span class="chip-section" style="color: ${section.color}">${section.name}:</span>
+                        <span>${filter.field} ${filter.operator} ${filter.value}</span>
+                        <button onclick="DashboardHub.removeFilter('${sectionKey}', ${index})" class="chip-close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `);
+            });
+        });
 
         if (chips.length === 0) {
-            return '<p class="no-filters">Brak aktywnych filtrów</p>';
+            return '<p class="no-filters-msg">Brak aktywnych filtrów. Wybierz sekcje i ustaw zakres dat.</p>';
         }
 
-        return `
-            <div class="filters-header">
-                <span>Aktywne filtry:</span>
-            </div>
-            <div class="filter-chips">
-                ${chips.join('')}
-            </div>
-        `;
+        return `<div class="filter-chips-container">${chips.join('')}</div>`;
     },
 
     /**
-     * Renderuj kontrolki wykresu
+     * Renderuj przyciski typu wykresu
      */
-    renderChartControls() {
+    renderChartTypeButtons() {
+        const types = [
+            { value: 'line', icon: 'fa-chart-line', title: 'Liniowy' },
+            { value: 'bar', icon: 'fa-chart-bar', title: 'Słupkowy' },
+            { value: 'area', icon: 'fa-chart-area', title: 'Obszarowy' },
+            { value: 'pie', icon: 'fa-chart-pie', title: 'Kołowy' }
+        ];
+
         return `
-            <div class="controls-row">
-                <div class="control-group">
-                    <label>Typ wykresu:</label>
-                    <div class="btn-group">
-                        <button class="btn-control ${this.state.chartConfig.type === 'line' ? 'active' : ''}"
-                            onclick="DashboardHub.changeChartType('line')" title="Liniowy">
-                            <i class="fas fa-chart-line"></i>
-                        </button>
-                        <button class="btn-control ${this.state.chartConfig.type === 'bar' ? 'active' : ''}"
-                            onclick="DashboardHub.changeChartType('bar')" title="Słupkowy">
-                            <i class="fas fa-chart-bar"></i>
-                        </button>
-                        <button class="btn-control ${this.state.chartConfig.type === 'area' ? 'active' : ''}"
-                            onclick="DashboardHub.changeChartType('area')" title="Obszarowy">
-                            <i class="fas fa-chart-area"></i>
-                        </button>
-                        <button class="btn-control ${this.state.chartConfig.type === 'pie' ? 'active' : ''}"
-                            onclick="DashboardHub.changeChartType('pie')" title="Kołowy">
-                            <i class="fas fa-chart-pie"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <label>Agregacja:</label>
-                    <select class="form-control-sm" onchange="DashboardHub.changeAggregation(this.value)">
-                        <option value="day" ${this.state.chartConfig.aggregation === 'day' ? 'selected' : ''}>Dzień</option>
-                        <option value="week" ${this.state.chartConfig.aggregation === 'week' ? 'selected' : ''}>Tydzień</option>
-                        <option value="month" ${this.state.chartConfig.aggregation === 'month' ? 'selected' : ''}>Miesiąc</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label>Opcje:</label>
-                    <div class="toggle-switches">
-                        <label class="toggle-label">
-                            <input type="checkbox" ${this.state.showKPI ? 'checked' : ''}
-                                onchange="DashboardHub.toggleKPI(this.checked)">
-                            <span>KPI</span>
-                        </label>
-                        <label class="toggle-label">
-                            <input type="checkbox" ${this.state.showDataTable ? 'checked' : ''}
-                                onchange="DashboardHub.toggleDataTable(this.checked)">
-                            <span>Tabela</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <button class="btn-secondary btn-sm" onclick="DashboardHub.exportChart()">
-                        <i class="fas fa-download"></i> Eksport PNG
+            <div class="chart-type-buttons">
+                ${types.map(type => `
+                    <button class="btn-chart-type ${this.state.mainChart.type === type.value ? 'active' : ''}"
+                        onclick="DashboardHub.changeChartType('${type.value}')"
+                        title="${type.title}">
+                        <i class="fas ${type.icon}"></i>
                     </button>
-                </div>
+                `).join('')}
             </div>
         `;
     },
@@ -389,28 +433,49 @@ const DashboardHub = {
     renderKPICards() {
         const kpis = this.calculateKPIs();
 
+        if (kpis.length === 0) {
+            return '<p class="no-data-msg">Wybierz sekcje aby zobaczyć wskaźniki KPI</p>';
+        }
+
         return `
             <div class="kpi-header">
                 <h3><i class="fas fa-gauge-high"></i> Wskaźniki KPI</h3>
             </div>
-            <div class="kpi-cards">
+            <div class="kpi-cards-grid">
                 ${kpis.map(kpi => `
-                    <div class="kpi-card" style="border-top: 3px solid ${kpi.color}">
-                        <div class="kpi-icon" style="background: ${kpi.color}20; color: ${kpi.color}">
-                            <i class="fas ${kpi.icon}"></i>
-                        </div>
-                        <div class="kpi-content">
-                            <div class="kpi-label">${kpi.label}</div>
-                            <div class="kpi-value">${kpi.value}</div>
-                            ${kpi.trend ? `<div class="kpi-trend ${kpi.trend > 0 ? 'up' : 'down'}">
-                                <i class="fas fa-arrow-${kpi.trend > 0 ? 'up' : 'down'}"></i>
-                                ${Math.abs(kpi.trend)}%
-                            </div>` : ''}
-                        </div>
+                    <div class="kpi-card" style="border-top-color: ${kpi.color}">
+                        <div class="kpi-label">${kpi.label}</div>
+                        <div class="kpi-value">${kpi.value}</div>
+                        ${kpi.trend ? `<div class="kpi-trend ${kpi.trend > 0 ? 'up' : 'down'}">
+                            <i class="fas fa-arrow-${kpi.trend > 0 ? 'up' : 'down'}"></i> ${Math.abs(kpi.trend)}%
+                        </div>` : ''}
                     </div>
                 `).join('')}
             </div>
         `;
+    },
+
+    /**
+     * Renderuj wykresy pomocnicze
+     */
+    renderHelperCharts() {
+        const enabled = this.state.helperCharts.filter(c => c.enabled);
+
+        if (enabled.length === 0) {
+            return '<p class="no-data-msg">Brak aktywnych wykresów pomocniczych</p>';
+        }
+
+        return enabled.map(chart => `
+            <div class="helper-chart-section">
+                <div class="chart-header">
+                    <h4>${chart.title}</h4>
+                    <button class="btn-icon-xs" onclick="DashboardHub.showChartSettings('${chart.id}')" title="Ustawienia">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+                <div class="chart-container-sm" id="${chart.id}"></div>
+            </div>
+        `).join('');
     },
 
     /**
@@ -419,18 +484,24 @@ const DashboardHub = {
     renderDataTable() {
         return `
             <div class="table-header">
-                <h3><i class="fas fa-table"></i> Szczegółowe dane</h3>
+                <h3><i class="fas fa-table"></i> Szczegóły danych</h3>
+                <button class="btn-secondary btn-sm" onclick="DashboardHub.exportTableToCSV()">
+                    <i class="fas fa-download"></i> Eksport CSV
+                </button>
             </div>
             <div class="table-wrapper">
-                <table class="data-table">
+                <table class="details-table">
                     <thead>
                         <tr>
                             <th>Data</th>
+                            <th>Sekcja</th>
                             <th>Kategoria</th>
+                            <th>Podkategoria</th>
                             <th>Wartość</th>
+                            <th>Jednostka</th>
                         </tr>
                     </thead>
-                    <tbody id="dataTableBody">
+                    <tbody id="detailsTableBody">
                         ${this.renderTableRows()}
                     </tbody>
                 </table>
@@ -443,92 +514,212 @@ const DashboardHub = {
      */
     renderTableRows() {
         const rows = [];
+        let rowCount = 0;
+        const maxRows = 100;
 
-        this.state.selectedDataSources.forEach(source => {
-            const data = this.state.filteredData[source] || [];
-            const config = this.dataSources[source];
+        this.state.activeSections.forEach(sectionKey => {
+            const section = this.sections[sectionKey];
+            const data = this.state.filteredData[sectionKey] || [];
 
-            data.slice(0, 50).forEach(item => {
+            data.slice(0, 20).forEach(item => {
+                if (rowCount >= maxRows) return;
+
                 const dateField = item['Data'] || item['Data wystawienia'] || '';
                 rows.push(`
                     <tr>
                         <td>${dateField}</td>
-                        <td>
-                            <span class="category-badge" style="background: ${config.color}20; color: ${config.color}">
-                                <i class="fas ${config.icon}"></i> ${config.name}
-                            </span>
-                        </td>
-                        <td>${Object.values(item).slice(1, 3).join(' | ')}</td>
+                        <td><span class="badge" style="background: ${section.color}20; color: ${section.color}">${section.name}</span></td>
+                        <td>${item[Object.keys(item)[3]] || '-'}</td>
+                        <td>${item[Object.keys(item)[4]] || '-'}</td>
+                        <td>1</td>
+                        <td>liczba</td>
                     </tr>
                 `);
+                rowCount++;
             });
         });
 
         if (rows.length === 0) {
-            return '<tr><td colspan="3" class="no-data">Brak danych</td></tr>';
+            return '<tr><td colspan="6" class="no-data-cell">Brak danych do wyświetlenia</td></tr>';
         }
 
         return rows.join('');
     },
 
+    // ========================================
+    // DATA LOADING & FILTERING
+    // ========================================
+
+    /**
+     * Załaduj wszystkie dane z localStorage
+     */
+    loadAllData() {
+        Object.keys(this.sections).forEach(sectionKey => {
+            const section = this.sections[sectionKey];
+            const data = Utils.loadFromLocalStorage(section.storageKey) || [];
+            this.state.rawData[sectionKey] = data;
+        });
+    },
+
+    /**
+     * Zastosuj filtry
+     */
+    applyFilters() {
+        this.state.filteredData = {};
+
+        this.state.activeSections.forEach(sectionKey => {
+            let data = this.state.rawData[sectionKey] || [];
+
+            // Filtr daty globalny
+            data = this.filterByDateRange(data, sectionKey);
+
+            // Filtry per sekcja
+            const sectionFilters = this.state.filters[sectionKey] || [];
+            sectionFilters.forEach(filter => {
+                data = this.applyFilter(data, filter);
+            });
+
+            this.state.filteredData[sectionKey] = data;
+        });
+
+        // Odśwież widok
+        this.refreshView();
+    },
+
+    /**
+     * Filtruj według zakresu dat
+     */
+    filterByDateRange(data, sectionKey) {
+        if (!this.state.dateFrom && !this.state.dateTo) return data;
+
+        return data.filter(item => {
+            const dateField = item['Data'] || item['Data wystawienia'] || '';
+            if (!dateField) return false;
+
+            const itemDate = new Date(dateField);
+            if (isNaN(itemDate.getTime())) return false;
+
+            if (this.state.dateFrom && itemDate < new Date(this.state.dateFrom)) return false;
+            if (this.state.dateTo && itemDate > new Date(this.state.dateTo)) return false;
+
+            return true;
+        });
+    },
+
+    /**
+     * Zastosuj pojedynczy filtr
+     */
+    applyFilter(data, filter) {
+        return data.filter(item => {
+            const value = item[filter.field];
+            const filterValue = filter.value;
+
+            switch (filter.operator) {
+                case '=':
+                    return String(value) === String(filterValue);
+                case '≠':
+                    return String(value) !== String(filterValue);
+                case 'zawiera':
+                    return String(value).toLowerCase().includes(String(filterValue).toLowerCase());
+                case '≥':
+                    return parseFloat(value) >= parseFloat(filterValue);
+                case '≤':
+                    return parseFloat(value) <= parseFloat(filterValue);
+                case '>':
+                    return parseFloat(value) > parseFloat(filterValue);
+                case '<':
+                    return parseFloat(value) < parseFloat(filterValue);
+                default:
+                    return true;
+            }
+        });
+    },
+
+    /**
+     * Oblicz KPI
+     */
+    calculateKPIs() {
+        const kpis = [];
+
+        this.state.activeSections.forEach(sectionKey => {
+            const section = this.sections[sectionKey];
+            const data = this.state.filteredData[sectionKey] || [];
+
+            if (data.length > 0) {
+                kpis.push({
+                    label: `${section.name} - Suma`,
+                    value: data.length,
+                    color: section.color,
+                    trend: null
+                });
+
+                const daysRange = this.getDaysInRange();
+                if (daysRange > 0) {
+                    kpis.push({
+                        label: `${section.name} - Średnia/dzień`,
+                        value: (data.length / daysRange).toFixed(1),
+                        color: section.color,
+                        trend: null
+                    });
+                }
+            }
+        });
+
+        return kpis;
+    },
+
+    /**
+     * Pobierz liczbę dni w zakresie
+     */
+    getDaysInRange() {
+        if (!this.state.dateFrom || !this.state.dateTo) return 30;
+
+        const from = new Date(this.state.dateFrom);
+        const to = new Date(this.state.dateTo);
+        const diffTime = Math.abs(to - from);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        return diffDays || 1;
+    },
+
+    // ========================================
+    // CHART RENDERING
+    // ========================================
+
     /**
      * Renderuj główny wykres
      */
-    renderChart() {
+    renderMainChart() {
         const chartData = this.prepareChartData();
 
-        // Zniszcz poprzedni wykres jeśli istnieje
-        if (this.state.chart) {
-            this.state.chart.destroy();
+        if (this.state.mainChart.chartInstance) {
+            this.state.mainChart.chartInstance.destroy();
         }
 
-        // Konfiguracja wykresu
         const options = {
             series: chartData.series,
             chart: {
-                type: this.state.chartConfig.type,
-                height: 450,
+                type: this.state.mainChart.type,
+                height: 400,
                 background: 'transparent',
                 foreColor: '#9aa3b2',
                 toolbar: {
                     show: true,
                     tools: {
                         download: true,
-                        selection: true,
                         zoom: true,
-                        zoomin: true,
-                        zoomout: true,
                         pan: true,
                         reset: true
                     }
-                },
-                animations: {
-                    enabled: true,
-                    speed: 800
                 }
             },
             colors: chartData.colors,
-            dataLabels: {
-                enabled: false
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 2
-            },
             xaxis: {
                 categories: chartData.categories,
-                labels: {
-                    style: {
-                        colors: '#9aa3b2'
-                    }
-                }
+                labels: { style: { colors: '#9aa3b2' } }
             },
             yaxis: {
-                labels: {
-                    style: {
-                        colors: '#9aa3b2'
-                    }
-                }
+                labels: { style: { colors: '#9aa3b2' } }
             },
             grid: {
                 borderColor: '#2d3748',
@@ -536,35 +727,21 @@ const DashboardHub = {
             },
             legend: {
                 position: 'top',
-                horizontalAlign: 'right',
-                labels: {
-                    colors: '#e6e6e6'
-                }
+                labels: { colors: '#e6e6e6' }
             },
-            tooltip: {
-                theme: 'dark',
-                y: {
-                    formatter: function(value) {
-                        return value + ' rekordów';
-                    }
-                }
-            },
-            theme: {
-                mode: 'dark'
-            }
+            theme: { mode: 'dark' },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 }
         };
 
-        // Specjalna konfiguracja dla wykresu kołowego
-        if (this.state.chartConfig.type === 'pie') {
+        if (this.state.mainChart.type === 'pie') {
             options.labels = chartData.categories;
-            options.legend.position = 'bottom';
         }
 
-        // Renderuj wykres
-        const chartElement = document.querySelector('#dashboardChart');
-        if (chartElement) {
-            this.state.chart = new ApexCharts(chartElement, options);
-            this.state.chart.render();
+        const chartEl = document.querySelector('#mainChart');
+        if (chartEl) {
+            this.state.mainChart.chartInstance = new ApexCharts(chartEl, options);
+            this.state.mainChart.chartInstance.render();
         }
     },
 
@@ -576,23 +753,19 @@ const DashboardHub = {
         const colors = [];
         const categories = [];
 
-        // Dla każdego wybranego źródła danych
-        this.state.selectedDataSources.forEach(sourceKey => {
-            const config = this.dataSources[sourceKey];
-            const data = this.state.filteredData[sourceKey] || [];
+        this.state.activeSections.forEach(sectionKey => {
+            const section = this.sections[sectionKey];
+            const data = this.state.filteredData[sectionKey] || [];
 
-            // Agreguj dane według wybranego okresu
-            const aggregated = this.aggregateData(data, sourceKey);
+            const aggregated = this.aggregateData(data, sectionKey);
 
-            // Dodaj serię danych
             series.push({
-                name: config.name,
+                name: section.name,
                 data: Object.values(aggregated)
             });
 
-            colors.push(config.color);
+            colors.push(section.color);
 
-            // Kategorie (etykiety osi X) - używamy pierwszego źródła
             if (categories.length === 0) {
                 categories.push(...Object.keys(aggregated));
             }
@@ -602,46 +775,39 @@ const DashboardHub = {
     },
 
     /**
-     * Agreguj dane według wybranego okresu
+     * Agreguj dane
      */
-    aggregateData(data, sourceKey) {
+    aggregateData(data, sectionKey) {
         const aggregated = {};
-        const config = this.state.chartConfig;
 
         data.forEach(item => {
-            // Znajdź pole z datą
             const dateField = item['Data'] || item['Data wystawienia'] || '';
             if (!dateField) return;
 
-            let key;
             const date = new Date(dateField);
-
             if (isNaN(date.getTime())) return;
 
-            // Agregacja według wybranego okresu
-            if (config.aggregation === 'day') {
+            let key;
+            if (this.state.mainChart.aggregation === 'day') {
                 key = dateField;
-            } else if (config.aggregation === 'week') {
+            } else if (this.state.mainChart.aggregation === 'week') {
                 const weekNum = this.getWeekNumber(date);
                 key = `${date.getFullYear()}-W${weekNum}`;
-            } else if (config.aggregation === 'month') {
+            } else if (this.state.mainChart.aggregation === 'month') {
                 key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             }
 
             aggregated[key] = (aggregated[key] || 0) + 1;
         });
 
-        // Sortuj według klucza (daty)
-        const sorted = Object.keys(aggregated).sort().reduce((acc, key) => {
+        return Object.keys(aggregated).sort().reduce((acc, key) => {
             acc[key] = aggregated[key];
             return acc;
         }, {});
-
-        return sorted;
     },
 
     /**
-     * Oblicz numer tygodnia
+     * Pobierz numer tygodnia
      */
     getWeekNumber(date) {
         const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -651,239 +817,211 @@ const DashboardHub = {
         return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
     },
 
-    /**
-     * Oblicz wskaźniki KPI
-     */
-    calculateKPIs() {
-        const kpis = [];
-
-        this.state.selectedDataSources.forEach(sourceKey => {
-            const config = this.dataSources[sourceKey];
-            const data = this.state.filteredData[sourceKey] || [];
-
-            if (data.length > 0) {
-                const total = data.length;
-                const avg = (total / 30).toFixed(1); // Średnia dzienna (zakładając 30 dni)
-
-                kpis.push({
-                    label: `${config.name} - Suma`,
-                    value: total,
-                    icon: config.icon,
-                    color: config.color,
-                    trend: null
-                });
-
-                kpis.push({
-                    label: `${config.name} - Średnia/dzień`,
-                    value: avg,
-                    icon: 'fa-chart-line',
-                    color: config.color,
-                    trend: null
-                });
-            }
-        });
-
-        return kpis;
-    },
-
-    /**
-     * Załaduj wszystkie dane z localStorage
-     */
-    loadAllData() {
-        Object.keys(this.dataSources).forEach(sourceKey => {
-            const config = this.dataSources[sourceKey];
-            const data = Utils.loadFromLocalStorage(config.storageKey) || [];
-            this.state.filteredData[sourceKey] = this.filterDataByDateRange(data, sourceKey);
-        });
-    },
-
-    /**
-     * Filtruj dane według zakresu dat
-     */
-    filterDataByDateRange(data, sourceKey) {
-        const { dateFrom, dateTo } = this.state.chartConfig;
-
-        if (!dateFrom && !dateTo) return data;
-
-        return data.filter(item => {
-            const dateField = item['Data'] || item['Data wystawienia'] || '';
-            if (!dateField) return false;
-
-            const itemDate = new Date(dateField);
-            if (isNaN(itemDate.getTime())) return false;
-
-            if (dateFrom && itemDate < new Date(dateFrom)) return false;
-            if (dateTo && itemDate > new Date(dateTo)) return false;
-
-            return true;
-        });
-    },
-
     // ========================================
     // EVENT HANDLERS
     // ========================================
 
-    /**
-     * Przełącz widoczność sekcji filtrów
-     */
-    toggleFilterSection(sourceKey) {
-        const section = event.target.closest('.filter-section');
-        section.classList.toggle('expanded');
+    toggleFiltersPanel() {
+        this.state.filterPanelExpanded = !this.state.filterPanelExpanded;
+        const panel = document.getElementById('filtersPanel');
+        if (panel) {
+            panel.classList.toggle('expanded');
+            panel.classList.toggle('collapsed');
+        }
+        // Update chevron icon
+        const chevron = document.querySelector('.btn-expand i:last-child');
+        if (chevron) {
+            chevron.className = `fas fa-chevron-${this.state.filterPanelExpanded ? 'up' : 'down'}`;
+        }
     },
 
-    /**
-     * Przełącz źródło danych
-     */
-    toggleDataSource(sourceKey) {
-        const index = this.state.selectedDataSources.indexOf(sourceKey);
-
+    toggleSection(sectionKey) {
+        const index = this.state.activeSections.indexOf(sectionKey);
         if (index > -1) {
-            this.state.selectedDataSources.splice(index, 1);
+            this.state.activeSections.splice(index, 1);
         } else {
-            this.state.selectedDataSources.push(sourceKey);
+            this.state.activeSections.push(sectionKey);
         }
-
-        // Odśwież widok
-        this.refreshView();
+        this.refreshActiveFilters();
     },
 
-    /**
-     * Usuń źródło danych z chipsa
-     */
-    removeDataSource(sourceKey) {
-        const index = this.state.selectedDataSources.indexOf(sourceKey);
+    removeSection(sectionKey) {
+        const index = this.state.activeSections.indexOf(sectionKey);
         if (index > -1) {
-            this.state.selectedDataSources.splice(index, 1);
+            this.state.activeSections.splice(index, 1);
         }
-
-        // Odznacz checkbox
-        const checkbox = document.getElementById(`source_${sourceKey}`);
+        // Uncheck checkbox
+        const checkbox = document.querySelector(`input[onchange="DashboardHub.toggleSection('${sectionKey}')"]`);
         if (checkbox) checkbox.checked = false;
 
-        this.refreshView();
+        this.applyFilters();
     },
 
-    /**
-     * Zaktualizuj filtr dat
-     */
-    updateDateFilter(sourceKey, type, value) {
+    updateDateRange(type, value) {
         if (type === 'from') {
-            this.state.chartConfig.dateFrom = value;
+            this.state.dateFrom = value;
         } else {
-            this.state.chartConfig.dateTo = value;
+            this.state.dateTo = value;
+        }
+    },
+
+    setDatePreset(days) {
+        const to = new Date();
+        const from = new Date();
+        from.setDate(from.getDate() - days);
+
+        this.state.dateFrom = from.toISOString().split('T')[0];
+        this.state.dateTo = to.toISOString().split('T')[0];
+
+        // Update inputs
+        document.querySelectorAll('.date-input-group input').forEach((input, i) => {
+            if (i === 0) input.value = this.state.dateFrom;
+            if (i === 1) input.value = this.state.dateTo;
+        });
+    },
+
+    showAddFilterDialog() {
+        if (this.state.activeSections.length === 0) {
+            alert('Najpierw wybierz sekcje danych.');
+            return;
         }
 
-        // Automatycznie zastosuj filtry
+        // Pokaż modal z wyborem sekcji -> pola -> operatora -> wartości
+        Modal.show('Dodaj filtr', `
+            <div class="add-filter-form">
+                <div class="form-group">
+                    <label>Wybierz sekcję:</label>
+                    <select id="filterSection" class="form-control" onchange="DashboardHub.updateFilterFields()">
+                        <option value="">-- Wybierz --</option>
+                        ${this.state.activeSections.map(key => `
+                            <option value="${key}">${this.sections[key].name}</option>
+                        `).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Pole:</label>
+                    <select id="filterField" class="form-control" onchange="DashboardHub.updateFilterOperators()">
+                        <option value="">-- Wybierz sekcję --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Operator:</label>
+                    <select id="filterOperator" class="form-control">
+                        <option value="">-- Wybierz pole --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Wartość:</label>
+                    <input type="text" id="filterValue" class="form-control" placeholder="Wpisz wartość...">
+                </div>
+                <div class="form-actions">
+                    <button class="btn-primary" onclick="DashboardHub.addFilter()">
+                        <i class="fas fa-plus"></i> Dodaj
+                    </button>
+                    <button class="btn-secondary" onclick="Modal.hide()">Anuluj</button>
+                </div>
+            </div>
+        `);
+    },
+
+    updateFilterFields() {
+        const sectionKey = document.getElementById('filterSection').value;
+        const fieldSelect = document.getElementById('filterField');
+
+        if (!sectionKey) {
+            fieldSelect.innerHTML = '<option value="">-- Wybierz sekcję --</option>';
+            return;
+        }
+
+        const section = this.sections[sectionKey];
+        const fields = Object.keys(section.fields);
+
+        fieldSelect.innerHTML = '<option value="">-- Wybierz pole --</option>' +
+            fields.map(field => `<option value="${field}">${field}</option>`).join('');
+    },
+
+    updateFilterOperators() {
+        const sectionKey = document.getElementById('filterSection').value;
+        const field = document.getElementById('filterField').value;
+        const operatorSelect = document.getElementById('filterOperator');
+
+        if (!sectionKey || !field) {
+            operatorSelect.innerHTML = '<option value="">-- Wybierz pole --</option>';
+            return;
+        }
+
+        const section = this.sections[sectionKey];
+        const fieldDef = section.fields[field];
+        const operators = fieldDef.operators;
+
+        operatorSelect.innerHTML = operators.map(op => `<option value="${op}">${op}</option>`).join('');
+    },
+
+    addFilter() {
+        const sectionKey = document.getElementById('filterSection').value;
+        const field = document.getElementById('filterField').value;
+        const operator = document.getElementById('filterOperator').value;
+        const value = document.getElementById('filterValue').value;
+
+        if (!sectionKey || !field || !operator || !value) {
+            alert('Wypełnij wszystkie pola');
+            return;
+        }
+
+        if (!this.state.filters[sectionKey]) {
+            this.state.filters[sectionKey] = [];
+        }
+
+        this.state.filters[sectionKey].push({ field, operator, value });
+
+        Modal.hide();
+        this.refreshActiveFilters();
+    },
+
+    removeFilter(sectionKey, index) {
+        this.state.filters[sectionKey].splice(index, 1);
+        if (this.state.filters[sectionKey].length === 0) {
+            delete this.state.filters[sectionKey];
+        }
         this.applyFilters();
     },
 
-    /**
-     * Zaktualizuj filtr kolumny
-     */
-    updateColumnFilter(sourceKey, column, value) {
-        if (!this.state.activeFilters[sourceKey]) {
-            this.state.activeFilters[sourceKey] = {};
-        }
-
-        if (value) {
-            this.state.activeFilters[sourceKey][column] = value;
-        } else {
-            delete this.state.activeFilters[sourceKey][column];
-        }
-    },
-
-    /**
-     * Zastosuj filtry
-     */
-    applyFilters() {
-        this.loadAllData();
-
-        // Zastosuj dodatkowe filtry kolumn
-        Object.keys(this.state.activeFilters).forEach(sourceKey => {
-            const filters = this.state.activeFilters[sourceKey];
-            let data = this.state.filteredData[sourceKey] || [];
-
-            Object.keys(filters).forEach(column => {
-                const filterValue = filters[column].toLowerCase();
-                data = data.filter(item => {
-                    const itemValue = String(item[column] || '').toLowerCase();
-                    return itemValue.includes(filterValue);
-                });
-            });
-
-            this.state.filteredData[sourceKey] = data;
-        });
-
-        this.refreshView();
-    },
-
-    /**
-     * Resetuj filtry
-     */
     resetFilters() {
-        this.state.activeFilters = {
-            patrole: {},
-            wykroczenia: {},
-            wkrd: {},
-            sankcje: {},
-            konwoje: {},
-            spb: {},
-            pilotaze: {},
-            zdarzenia: {}
-        };
-
-        // Wyczyść pola filtrów
-        document.querySelectorAll('.column-filters input[type="text"]').forEach(input => {
-            input.value = '';
-        });
-
+        this.state.filters = {};
+        this.refreshActiveFilters();
         this.applyFilters();
     },
 
-    /**
-     * Zmień typ wykresu
-     */
     changeChartType(type) {
-        this.state.chartConfig.type = type;
-        this.refreshView();
+        this.state.mainChart.type = type;
+        this.renderMainChart();
+        this.refreshChartControls();
     },
 
-    /**
-     * Zmień agregację
-     */
     changeAggregation(aggregation) {
-        this.state.chartConfig.aggregation = aggregation;
-        this.refreshView();
+        this.state.mainChart.aggregation = aggregation;
+        this.applyFilters();
     },
 
-    /**
-     * Przełącz widoczność KPI
-     */
     toggleKPI(show) {
         this.state.showKPI = show;
         const section = document.getElementById('kpiSection');
-        if (section) {
-            section.style.display = show ? 'block' : 'none';
-        }
+        if (section) section.style.display = show ? 'block' : 'none';
     },
 
-    /**
-     * Przełącz widoczność tabeli
-     */
-    toggleDataTable(show) {
-        this.state.showDataTable = show;
-        const section = document.getElementById('dataTableSection');
-        if (section) {
-            section.style.display = show ? 'block' : 'none';
-        }
+    toggleTable(show) {
+        this.state.showTable = show;
+        const section = document.getElementById('tableSection');
+        if (section) section.style.display = show ? 'block' : 'none';
     },
 
-    /**
-     * Eksportuj wykres do PNG
-     */
-    exportChart() {
-        if (this.state.chart) {
-            this.state.chart.dataURI().then(({ imgURI }) => {
+    showChartSettings(chartId) {
+        alert('Ustawienia wykresu: ' + chartId + ' (w budowie)');
+    },
+
+    exportToPNG() {
+        if (this.state.mainChart.chartInstance) {
+            this.state.mainChart.chartInstance.dataURI().then(({ imgURI }) => {
                 const link = document.createElement('a');
                 link.href = imgURI;
                 link.download = `dashboard_${new Date().toISOString().split('T')[0]}.png`;
@@ -892,46 +1030,50 @@ const DashboardHub = {
         }
     },
 
-    /**
-     * Przełącz sidebar
-     */
-    toggleSidebar() {
-        const sidebar = document.getElementById('dashboardSidebar');
-        sidebar.classList.toggle('collapsed');
+    exportToCSV() {
+        alert('Eksport CSV (w budowie)');
     },
 
-    /**
-     * Odśwież widok
-     */
+    exportTableToCSV() {
+        alert('Eksport tabeli do CSV (w budowie)');
+    },
+
+    // ========================================
+    // UI REFRESH
+    // ========================================
+
     refreshView() {
-        // Odśwież aktywne filtry
-        const activeFiltersEl = document.getElementById('activeFilters');
-        if (activeFiltersEl) {
-            activeFiltersEl.innerHTML = this.renderActiveFilters();
+        this.refreshActiveFilters();
+        this.refreshKPI();
+        this.refreshTable();
+        this.renderMainChart();
+    },
+
+    refreshActiveFilters() {
+        const bar = document.getElementById('activeFiltersBar');
+        if (bar) bar.innerHTML = this.renderActiveFilters();
+    },
+
+    refreshKPI() {
+        const section = document.getElementById('kpiSection');
+        if (section && this.state.showKPI) {
+            section.innerHTML = this.renderKPICards();
         }
+    },
 
-        // Odśwież kontrolki
-        const controlsEl = document.querySelector('.chart-controls');
-        if (controlsEl) {
-            controlsEl.innerHTML = this.renderChartControls();
+    refreshTable() {
+        const tbody = document.getElementById('detailsTableBody');
+        if (tbody && this.state.showTable) {
+            tbody.innerHTML = this.renderTableRows();
         }
+    },
 
-        // Odśwież wykres
-        this.renderChart();
-
-        // Odśwież KPI jeśli widoczne
-        if (this.state.showKPI) {
-            const kpiSection = document.getElementById('kpiSection');
-            if (kpiSection) {
-                kpiSection.innerHTML = this.renderKPICards();
-            }
-        }
-
-        // Odśwież tabelę jeśli widoczna
-        if (this.state.showDataTable) {
-            const tableBody = document.getElementById('dataTableBody');
-            if (tableBody) {
-                tableBody.innerHTML = this.renderTableRows();
+    refreshChartControls() {
+        const controls = document.querySelector('.chart-controls-inline');
+        if (controls) {
+            const typeButtons = controls.querySelector('.chart-type-buttons');
+            if (typeButtons) {
+                typeButtons.outerHTML = this.renderChartTypeButtons();
             }
         }
     }
