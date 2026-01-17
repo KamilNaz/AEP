@@ -312,6 +312,8 @@ const MapManager = {
      */
     renderAllLayers() {
         this.renderEvents();
+        this.loadCustomMarkers();
+        this.loadNotes();
     },
 
     /**
@@ -2181,11 +2183,59 @@ const MapManager = {
      */
     showUnitsModal() {
         const units = [
-            { id: 'kpp_warszawa', name: 'KPP Warszawa', lat: 52.2297, lng: 21.0122 },
-            { id: 'kpp_krakow', name: 'KPP Kraków', lat: 50.0647, lng: 19.9450 },
-            { id: 'kpp_gdansk', name: 'KPP Gdańsk', lat: 54.3520, lng: 18.6466 },
-            { id: 'kpp_wroclaw', name: 'KPP Wrocław', lat: 51.1079, lng: 17.0385 },
-            { id: 'kpp_poznan', name: 'KPP Poznań', lat: 52.4064, lng: 16.9252 }
+            // Komendy Wojewódzkie Policji
+            { id: 'kwp_bialystok', name: 'KWP Białystok', address: 'ul. Henryka Sienkiewicza 65, 15-005 Białystok', phone: '47 711 29 00', lat: 53.1325, lng: 23.1688 },
+            { id: 'kwp_bydgoszcz', name: 'KWP Bydgoszcz', address: 'ul. Jagiellońska 1, 85-950 Bydgoszcz', phone: '52 349 70 00', lat: 53.1235, lng: 18.0076 },
+            { id: 'kwp_gdansk', name: 'KWP Gdańsk', address: 'ul. Okopowa 15, 80-810 Gdańsk', phone: '58 32 09 300', lat: 54.3641, lng: 18.6270 },
+            { id: 'kwp_gorzow', name: 'KWP Gorzów Wielkopolski', address: 'ul. Jagiellończyka 8, 66-400 Gorzów Wielkopolski', phone: '95 73 88 200', lat: 52.7368, lng: 15.2288 },
+            { id: 'kwp_katowice', name: 'KWP Katowice', address: 'ul. Lompy 19, 40-038 Katowice', phone: '32 209 30 00', lat: 50.2649, lng: 19.0238 },
+            { id: 'kwp_kielce', name: 'KWP Kielce', address: 'ul. Seminaryjna 12, 25-372 Kielce', phone: '41 342 12 00', lat: 50.8661, lng: 20.6286 },
+            { id: 'kwp_krakow', name: 'KWP Kraków', address: 'ul. Mogilska 109, 31-571 Kraków', phone: '12 615 25 12', lat: 50.0780, lng: 19.9890 },
+            { id: 'kwp_lublin', name: 'KWP Lublin', address: 'ul. Narutowicza 73, 20-019 Lublin', phone: '81 534 04 00', lat: 51.2465, lng: 22.5684 },
+            { id: 'kwp_lodz', name: 'KWP Łódź', address: 'ul. Lutomierska 108/112, 91-048 Łódź', phone: '42 665 41 11', lat: 51.7592, lng: 19.4560 },
+            { id: 'kwp_olsztyn', name: 'KWP Olsztyn', address: 'ul. Partyzantów 6/8, 10-521 Olsztyn', phone: '89 523 30 00', lat: 53.7784, lng: 20.4801 },
+            { id: 'kwp_opole', name: 'KWP Opole', address: 'ul. Damrota 4, 45-064 Opole', phone: '77 44 32 100', lat: 50.6751, lng: 17.9213 },
+            { id: 'kwp_poznan', name: 'KWP Poznań', address: 'ul. Kochanowskiego 2a, 60-845 Poznań', phone: '61 841 56 11', lat: 52.4064, lng: 16.9252 },
+            { id: 'kwp_radom', name: 'KWP Radom', address: 'ul. Kościuszki 10, 26-612 Radom', phone: '48 362 22 22', lat: 51.4027, lng: 21.1471 },
+            { id: 'kwp_rzeszow', name: 'KWP Rzeszów', address: 'ul. Mieszka I 2a, 35-303 Rzeszów', phone: '17 860 64 00', lat: 50.0412, lng: 21.9991 },
+            { id: 'kwp_szczecin', name: 'KWP Szczecin', address: 'ul. Małopolska 47, 70-515 Szczecin', phone: '91 43 00 200', lat: 53.4285, lng: 14.5528 },
+            { id: 'kwp_warszawa', name: 'KWP Warszawa', address: 'ul. Nowolipie 2, 00-150 Warszawa', phone: '22 603 11 55', lat: 52.2297, lng: 21.0122 },
+            { id: 'kwp_wroclaw', name: 'KWP Wrocław', address: 'ul. Podwale 31-33, 50-040 Wrocław', phone: '71 344 96 97', lat: 51.1079, lng: 17.0385 },
+
+            // Komendy Miejskie Policji (przykłady głównych miast)
+            { id: 'kmp_bialystok', name: 'KMP Białystok', address: 'ul. Henryka Sienkiewicza 65, 15-005 Białystok', phone: '47 711 22 00', lat: 53.1325, lng: 23.1688 },
+            { id: 'kmp_bydgoszcz', name: 'KMP Bydgoszcz', address: 'ul. Jagiellońska 1, 85-950 Bydgoszcz', phone: '52 349 77 00', lat: 53.1235, lng: 18.0076 },
+            { id: 'kmp_gdansk', name: 'KMP Gdańsk', address: 'ul. Okopowa 15, 80-810 Gdańsk', phone: '58 32 09 100', lat: 54.3520, lng: 18.6466 },
+            { id: 'kmp_gdynia', name: 'KMP Gdynia', address: 'ul. Portowa 15, 81-350 Gdynia', phone: '58 76 00 255', lat: 54.5189, lng: 18.5305 },
+            { id: 'kmp_katowice', name: 'KMP Katowice', address: 'ul. Lompy 19, 40-038 Katowice', phone: '32 209 31 00', lat: 50.2649, lng: 19.0238 },
+            { id: 'kmp_kielce', name: 'KMP Kielce', address: 'ul. Seminaryjna 12, 25-372 Kielce', phone: '41 342 15 00', lat: 50.8661, lng: 20.6286 },
+            { id: 'kmp_krakow', name: 'KMP Kraków', address: 'ul. Mogilska 109, 31-571 Kraków', phone: '12 615 26 00', lat: 50.0647, lng: 19.9450 },
+            { id: 'kmp_lublin', name: 'KMP Lublin', address: 'ul. Narutowicza 73, 20-019 Lublin', phone: '81 534 03 00', lat: 51.2465, lng: 22.5684 },
+            { id: 'kmp_lodz', name: 'KMP Łódź', address: 'ul. Lutomierska 108/112, 91-048 Łódź', phone: '42 665 44 00', lat: 51.7592, lng: 19.4560 },
+            { id: 'kmp_olsztyn', name: 'KMP Olsztyn', address: 'ul. Partyzantów 6/8, 10-521 Olsztyn', phone: '89 523 33 00', lat: 53.7784, lng: 20.4801 },
+            { id: 'kmp_poznan', name: 'KMP Poznań', address: 'ul. Kochanowskiego 2a, 60-845 Poznań', phone: '61 841 57 00', lat: 52.4082, lng: 16.9335 },
+            { id: 'kmp_radom', name: 'KMP Radom', address: 'ul. Kościuszki 10, 26-612 Radom', phone: '48 362 23 00', lat: 51.4027, lng: 21.1471 },
+            { id: 'kmp_rzeszow', name: 'KMP Rzeszów', address: 'ul. Mieszka I 2a, 35-303 Rzeszów', phone: '17 860 65 00', lat: 50.0412, lng: 21.9991 },
+            { id: 'kmp_szczecin', name: 'KMP Szczecin', address: 'ul. Małopolska 47, 70-515 Szczecin', phone: '91 43 00 300', lat: 53.4285, lng: 14.5528 },
+            { id: 'kmp_torun', name: 'KMP Toruń', address: 'ul. Kościuszki 23, 87-100 Toruń', phone: '56 64 23 200', lat: 53.0138, lng: 18.5984 },
+            { id: 'kmp_wroclaw', name: 'KMP Wrocław', address: 'ul. Podwale 31-33, 50-040 Wrocław', phone: '71 344 97 00', lat: 51.1100, lng: 17.0325 },
+
+            // Komendy Powiatowe Policji (wybrane przykłady)
+            { id: 'kpp_elblаg', name: 'KPP Elbląg', address: 'ul. Saperów 14a, 82-300 Elbląg', phone: '55 239 02 00', lat: 54.1564, lng: 19.4087 },
+            { id: 'kpp_ostroda', name: 'KPP Ostróda', address: 'ul. Czarnieckiego 2, 14-100 Ostróda', phone: '89 646 42 00', lat: 53.6984, lng: 19.9686 },
+            { id: 'kpp_suwalki', name: 'KPP Suwałki', address: 'ul. Noniewicza 71, 16-400 Suwałki', phone: '87 562 62 00', lat: 54.1116, lng: 22.9309 },
+            { id: 'kpp_pila', name: 'KPP Piła', address: 'ul. Kazimierza Wielkiego 1, 64-920 Piła', phone: '67 352 46 00', lat: 53.1515, lng: 16.7377 },
+            { id: 'kpp_slupsk', name: 'KPP Słupsk', address: 'ul. Szczecińska 36, 76-200 Słupsk', phone: '59 84 18 200', lat: 54.4641, lng: 17.0285 },
+            { id: 'kpp_kolobrzeg', name: 'KPP Kołobrzeg', address: 'ul. Armii Krajowej 7, 78-100 Kołobrzeg', phone: '94 35 28 200', lat: 54.1761, lng: 15.5833 },
+            { id: 'kpp_tarnow', name: 'KPP Tarnów', address: 'ul. Nowodąbrowska 106, 33-100 Tarnów', phone: '14 688 62 00', lat: 50.0121, lng: 20.9883 },
+            { id: 'kpp_nowy_sacz', name: 'KPP Nowy Sącz', address: 'ul. Westerplatte 4, 33-300 Nowy Sącz', phone: '18 44 78 200', lat: 49.6247, lng: 20.6931 },
+            { id: 'kpp_zakopane', name: 'KPP Zakopane', address: 'ul. Jagiellońska 9, 34-500 Zakopane', phone: '18 20 12 400', lat: 49.2992, lng: 19.9496 },
+            { id: 'kpp_zamosc', name: 'KPP Zamość', address: 'ul. Szczebrzeska 11a, 22-400 Zamość', phone: '84 677 92 00', lat: 50.7231, lng: 23.2519 },
+            { id: 'kpp_piotrkow', name: 'KPP Piotrków Trybunalski', address: 'ul. Wojska Polskiego 56, 97-300 Piotrków Trybunalski', phone: '44 732 62 00', lat: 51.4054, lng: 19.7033 },
+            { id: 'kpp_sosnowiec', name: 'KPP Sosnowiec', address: 'ul. Małachowskiego 1, 41-200 Sosnowiec', phone: '32 368 92 00', lat: 50.2862, lng: 19.1044 },
+            { id: 'kpp_bielsko', name: 'KPP Bielsko-Biała', address: 'ul. Leszczyny 11, 43-300 Bielsko-Biała', phone: '33 812 18 00', lat: 49.8224, lng: 19.0448 },
+            { id: 'kpp_kalisz', name: 'KPP Kalisz', address: 'ul. Częstochowska 5a, 62-800 Kalisz', phone: '62 598 52 00', lat: 51.7611, lng: 18.0911 },
+            { id: 'kpp_konin', name: 'KPP Konin', address: 'ul. Dworcowa 2, 62-500 Konin', phone: '63 240 92 00', lat: 52.2230, lng: 18.2511 }
         ];
 
         Modal.show('Jednostki policji', `
@@ -2195,17 +2245,27 @@ const MapManager = {
                     Wybierz jednostki do wyświetlenia na mapie
                 </p>
 
-                <div class="units-list">
+                <div class="units-search">
+                    <input type="text" id="unitsSearchInput" placeholder="Szukaj jednostki..." oninput="MapManager.filterUnits()" />
+                    <i class="fas fa-search"></i>
+                </div>
+
+                <div class="units-list" id="unitsList">
                     ${units.map(unit => `
-                        <div class="unit-item">
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="unit_${unit.id}" data-lat="${unit.lat}" data-lng="${unit.lng}">
-                                <span class="toggle-slider"></span>
-                            </label>
-                            <div class="unit-label">
+                        <div class="unit-item" data-name="${unit.name.toLowerCase()}" data-address="${unit.address.toLowerCase()}">
+                            <input type="checkbox" id="unit_${unit.id}" class="unit-checkbox"
+                                data-lat="${unit.lat}"
+                                data-lng="${unit.lng}"
+                                data-name="${unit.name}"
+                                data-address="${unit.address}"
+                                data-phone="${unit.phone}">
+                            <label for="unit_${unit.id}" class="unit-label">
                                 <i class="fas fa-building-shield"></i>
-                                <span>${unit.name}</span>
-                            </div>
+                                <div class="unit-info">
+                                    <span class="unit-name">${unit.name}</span>
+                                    <span class="unit-address">${unit.address}</span>
+                                </div>
+                            </label>
                         </div>
                     `).join('')}
                 </div>
@@ -2223,6 +2283,25 @@ const MapManager = {
     },
 
     /**
+     * Filtruj jednostki
+     */
+    filterUnits() {
+        const searchValue = document.getElementById('unitsSearchInput')?.value.toLowerCase() || '';
+        const items = document.querySelectorAll('.unit-item');
+
+        items.forEach(item => {
+            const name = item.dataset.name || '';
+            const address = item.dataset.address || '';
+
+            if (name.includes(searchValue) || address.includes(searchValue)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    },
+
+    /**
      * Zastosuj wybór jednostek
      */
     applyUnitsSelection() {
@@ -2234,10 +2313,12 @@ const MapManager = {
         });
 
         // Add selected units
-        document.querySelectorAll('.units-modal input[type="checkbox"]:checked').forEach(checkbox => {
+        document.querySelectorAll('.unit-checkbox:checked').forEach(checkbox => {
             const lat = parseFloat(checkbox.dataset.lat);
             const lng = parseFloat(checkbox.dataset.lng);
-            const name = checkbox.parentElement.nextElementSibling.querySelector('span').textContent;
+            const name = checkbox.dataset.name;
+            const address = checkbox.dataset.address;
+            const phone = checkbox.dataset.phone;
 
             const icon = L.divIcon({
                 html: `<div style="background: #3b82f6; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
@@ -2250,7 +2331,17 @@ const MapManager = {
 
             const marker = L.marker([lat, lng], { icon }).addTo(this.map);
             marker.isUnit = true;
-            marker.bindPopup(`<b>${name}</b>`);
+            marker.bindPopup(`
+                <div class="unit-popup">
+                    <h4 style="margin: 0 0 0.5rem 0; color: #3b82f6; font-size: 14px;">${name}</h4>
+                    <p style="margin: 0.25rem 0; font-size: 13px; color: #666;">
+                        <i class="fas fa-map-marker-alt" style="width: 16px; color: #3b82f6;"></i> ${address}
+                    </p>
+                    <p style="margin: 0.25rem 0; font-size: 13px; color: #666;">
+                        <i class="fas fa-phone" style="width: 16px; color: #3b82f6;"></i> ${phone}
+                    </p>
+                </div>
+            `);
             this.markers.push(marker);
         });
 
@@ -2266,16 +2357,403 @@ const MapManager = {
     },
 
     /**
-     * Placeholder - dodaj znacznik
+     * Dodaj niestandardowy znacznik
      */
     addCustomMarker() {
-        this.showToast('Kliknij na mapie aby dodać znacznik');
+        this.showToast('Kliknij na mapie aby dodać znacznik', 'info');
+
+        // Enable one-time click handler
+        const clickHandler = (e) => {
+            const { lat, lng } = e.latlng;
+
+            // Show modal to get marker details
+            Modal.show('Nowy znacznik', `
+                <div class="form-group">
+                    <label for="markerName">Nazwa znacznika:</label>
+                    <input type="text" id="markerName" class="form-control" placeholder="np. Punkt zborny" required />
+                </div>
+                <div class="form-group">
+                    <label for="markerDesc">Opis (opcjonalnie):</label>
+                    <textarea id="markerDesc" class="form-control" rows="3" placeholder="Dodatkowe informacje..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="markerColor">Kolor znacznika:</label>
+                    <select id="markerColor" class="form-control">
+                        <option value="#ef4444">Czerwony</option>
+                        <option value="#f59e0b">Pomarańczowy</option>
+                        <option value="#eab308">Żółty</option>
+                        <option value="#22c55e">Zielony</option>
+                        <option value="#3b82f6" selected>Niebieski</option>
+                        <option value="#8b5cf6">Fioletowy</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-primary" onclick="MapManager.saveCustomMarker(${lat}, ${lng})">
+                        <i class="fas fa-check"></i> Zapisz
+                    </button>
+                    <button class="btn-secondary" onclick="Modal.hide()">Anuluj</button>
+                </div>
+            `);
+
+            // Remove the click handler after first click
+            this.map.off('click', clickHandler);
+        };
+
+        this.map.once('click', clickHandler);
     },
 
     /**
-     * Placeholder - panel notatek
+     * Zapisz niestandardowy znacznik
+     */
+    saveCustomMarker(lat, lng) {
+        const name = document.getElementById('markerName')?.value;
+        const desc = document.getElementById('markerDesc')?.value || '';
+        const color = document.getElementById('markerColor')?.value || '#3b82f6';
+
+        if (!name) {
+            this.showToast('Podaj nazwę znacznika', 'error');
+            return;
+        }
+
+        // Create custom marker
+        const icon = L.divIcon({
+            html: `<div style="background: ${color}; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+                <i class="fas fa-map-pin" style="color: white; font-size: 12px;"></i>
+            </div>`,
+            className: 'custom-marker-icon',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+
+        const marker = L.marker([lat, lng], { icon }).addTo(this.map);
+        marker.isCustom = true;
+        marker.customData = { name, desc, color, lat, lng };
+
+        marker.bindPopup(`
+            <div class="custom-marker-popup">
+                <h4 style="margin: 0 0 0.5rem 0; color: ${color}; font-size: 14px;">
+                    <i class="fas fa-map-pin"></i> ${name}
+                </h4>
+                ${desc ? `<p style="margin: 0; font-size: 12px; color: #666;">${desc}</p>` : ''}
+                <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #eee;">
+                    <button class="btn-danger btn-sm" onclick="MapManager.removeCustomMarker(${lat}, ${lng})" style="font-size: 11px; padding: 0.25rem 0.5rem;">
+                        <i class="fas fa-trash"></i> Usuń
+                    </button>
+                </div>
+            </div>
+        `);
+
+        this.markers.push(marker);
+
+        // Save to localStorage
+        const customMarkers = Utils.loadFromLocalStorage('aep_custom_markers') || [];
+        customMarkers.push({ name, desc, color, lat, lng, id: Date.now() });
+        Utils.saveToLocalStorage('aep_custom_markers', customMarkers);
+
+        Modal.hide();
+        this.showToast('Znacznik dodany');
+    },
+
+    /**
+     * Usuń niestandardowy znacznik
+     */
+    removeCustomMarker(lat, lng) {
+        // Remove from map
+        this.markers = this.markers.filter(marker => {
+            if (marker.isCustom && marker.customData.lat === lat && marker.customData.lng === lng) {
+                this.map.removeLayer(marker);
+                return false;
+            }
+            return true;
+        });
+
+        // Remove from localStorage
+        let customMarkers = Utils.loadFromLocalStorage('aep_custom_markers') || [];
+        customMarkers = customMarkers.filter(m => !(m.lat === lat && m.lng === lng));
+        Utils.saveToLocalStorage('aep_custom_markers', customMarkers);
+
+        this.showToast('Znacznik usunięty');
+    },
+
+    /**
+     * Wczytaj niestandardowe znaczniki
+     */
+    loadCustomMarkers() {
+        const customMarkers = Utils.loadFromLocalStorage('aep_custom_markers') || [];
+
+        customMarkers.forEach(({ name, desc, color, lat, lng }) => {
+            const icon = L.divIcon({
+                html: `<div style="background: ${color}; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+                    <i class="fas fa-map-pin" style="color: white; font-size: 12px;"></i>
+                </div>`,
+                className: 'custom-marker-icon',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+
+            const marker = L.marker([lat, lng], { icon }).addTo(this.map);
+            marker.isCustom = true;
+            marker.customData = { name, desc, color, lat, lng };
+
+            marker.bindPopup(`
+                <div class="custom-marker-popup">
+                    <h4 style="margin: 0 0 0.5rem 0; color: ${color}; font-size: 14px;">
+                        <i class="fas fa-map-pin"></i> ${name}
+                    </h4>
+                    ${desc ? `<p style="margin: 0; font-size: 12px; color: #666;">${desc}</p>` : ''}
+                    <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #eee;">
+                        <button class="btn-danger btn-sm" onclick="MapManager.removeCustomMarker(${lat}, ${lng})" style="font-size: 11px; padding: 0.25rem 0.5rem;">
+                            <i class="fas fa-trash"></i> Usuń
+                        </button>
+                    </div>
+                </div>
+            `);
+
+            this.markers.push(marker);
+        });
+    },
+
+    /**
+     * Panel notatek
      */
     showNotesPanel() {
-        this.showToast('Panel notatek będzie wkrótce dostępny');
+        const notes = Utils.loadFromLocalStorage('aep_map_notes') || [];
+
+        Modal.show('Notatki na mapie', `
+            <div class="notes-panel">
+                <div class="notes-list" id="notesList">
+                    ${notes.length === 0 ?
+                        '<p style="text-align: center; color: #9aa3b2; padding: 2rem;">Brak notatek</p>' :
+                        notes.map((note, index) => `
+                            <div class="note-item" data-index="${index}">
+                                <div class="note-header">
+                                    <h4>${note.title}</h4>
+                                    <button class="btn-icon" onclick="MapManager.deleteNote(${index})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <p class="note-content">${note.content}</p>
+                                <div class="note-footer">
+                                    <span class="note-date">${new Date(note.timestamp).toLocaleString('pl-PL')}</span>
+                                    ${note.lat && note.lng ? `
+                                        <button class="btn-link" onclick="MapManager.showNoteOnMap(${note.lat}, ${note.lng}); Modal.hide();">
+                                            <i class="fas fa-map-marker-alt"></i> Pokaż na mapie
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `).join('')
+                    }
+                </div>
+
+                <div class="form-actions" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                    <button class="btn-primary" onclick="MapManager.showAddNoteForm()">
+                        <i class="fas fa-plus"></i> Nowa notatka
+                    </button>
+                    <button class="btn-secondary" onclick="Modal.hide()">Zamknij</button>
+                </div>
+            </div>
+        `);
+    },
+
+    /**
+     * Pokaż formularz dodawania notatki
+     */
+    showAddNoteForm() {
+        Modal.show('Nowa notatka', `
+            <div class="form-group">
+                <label for="noteTitle">Tytuł:</label>
+                <input type="text" id="noteTitle" class="form-control" placeholder="np. Spotkanie sztabu" required />
+            </div>
+            <div class="form-group">
+                <label for="noteContent">Treść:</label>
+                <textarea id="noteContent" class="form-control" rows="5" placeholder="Wpisz treść notatki..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="noteWithLocation" onchange="MapManager.toggleNoteLocation()">
+                    Dodaj lokalizację na mapie
+                </label>
+                <div id="noteLocationInfo" style="display: none; margin-top: 0.5rem; padding: 0.5rem; background: rgba(59, 130, 246, 0.1); border-radius: 4px; font-size: 12px;">
+                    <i class="fas fa-info-circle"></i> Kliknij na mapie aby wybrać lokalizację
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn-primary" onclick="MapManager.saveNote()">
+                    <i class="fas fa-check"></i> Zapisz
+                </button>
+                <button class="btn-secondary" onclick="MapManager.showNotesPanel()">
+                    <i class="fas fa-arrow-left"></i> Powrót
+                </button>
+            </div>
+        `);
+    },
+
+    /**
+     * Toggle lokalizacji notatki
+     */
+    toggleNoteLocation() {
+        const checkbox = document.getElementById('noteWithLocation');
+        const info = document.getElementById('noteLocationInfo');
+
+        if (checkbox.checked) {
+            info.style.display = 'block';
+            Modal.hide();
+            this.showToast('Kliknij na mapie aby wybrać lokalizację notatki', 'info');
+
+            const clickHandler = (e) => {
+                const { lat, lng } = e.latlng;
+                this.pendingNoteLocation = { lat, lng };
+                this.showAddNoteForm();
+                this.showToast('Lokalizacja wybrana');
+                this.map.off('click', clickHandler);
+            };
+
+            this.map.once('click', clickHandler);
+        } else {
+            info.style.display = 'none';
+            this.pendingNoteLocation = null;
+        }
+    },
+
+    /**
+     * Zapisz notatkę
+     */
+    saveNote() {
+        const title = document.getElementById('noteTitle')?.value;
+        const content = document.getElementById('noteContent')?.value;
+
+        if (!title || !content) {
+            this.showToast('Wypełnij wszystkie pola', 'error');
+            return;
+        }
+
+        const note = {
+            id: Date.now(),
+            title,
+            content,
+            timestamp: new Date().toISOString(),
+            lat: this.pendingNoteLocation?.lat || null,
+            lng: this.pendingNoteLocation?.lng || null
+        };
+
+        const notes = Utils.loadFromLocalStorage('aep_map_notes') || [];
+        notes.push(note);
+        Utils.saveToLocalStorage('aep_map_notes', notes);
+
+        // Add marker if location is set
+        if (note.lat && note.lng) {
+            const icon = L.divIcon({
+                html: `<div style="background: #8b5cf6; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+                    <i class="fas fa-sticky-note" style="color: white; font-size: 12px;"></i>
+                </div>`,
+                className: 'note-marker-icon',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+
+            const marker = L.marker([note.lat, note.lng], { icon }).addTo(this.map);
+            marker.isNote = true;
+            marker.noteData = note;
+
+            marker.bindPopup(`
+                <div class="note-popup">
+                    <h4 style="margin: 0 0 0.5rem 0; color: #8b5cf6; font-size: 14px;">
+                        <i class="fas fa-sticky-note"></i> ${note.title}
+                    </h4>
+                    <p style="margin: 0; font-size: 12px; color: #666; white-space: pre-wrap;">${note.content}</p>
+                    <div style="margin-top: 0.5rem; font-size: 11px; color: #999;">
+                        ${new Date(note.timestamp).toLocaleString('pl-PL')}
+                    </div>
+                </div>
+            `);
+
+            this.markers.push(marker);
+        }
+
+        this.pendingNoteLocation = null;
+        this.showToast('Notatka zapisana');
+        this.showNotesPanel();
+    },
+
+    /**
+     * Usuń notatkę
+     */
+    deleteNote(index) {
+        if (!confirm('Czy na pewno chcesz usunąć tę notatkę?')) {
+            return;
+        }
+
+        let notes = Utils.loadFromLocalStorage('aep_map_notes') || [];
+        const note = notes[index];
+
+        // Remove marker if exists
+        if (note.lat && note.lng) {
+            this.markers = this.markers.filter(marker => {
+                if (marker.isNote && marker.noteData.id === note.id) {
+                    this.map.removeLayer(marker);
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        notes.splice(index, 1);
+        Utils.saveToLocalStorage('aep_map_notes', notes);
+
+        this.showToast('Notatka usunięta');
+        this.showNotesPanel();
+    },
+
+    /**
+     * Pokaż notatkę na mapie
+     */
+    showNoteOnMap(lat, lng) {
+        this.map.setView([lat, lng], 15);
+
+        // Find and open the marker popup
+        this.markers.forEach(marker => {
+            if (marker.isNote && marker.noteData.lat === lat && marker.noteData.lng === lng) {
+                marker.openPopup();
+            }
+        });
+    },
+
+    /**
+     * Wczytaj notatki
+     */
+    loadNotes() {
+        const notes = Utils.loadFromLocalStorage('aep_map_notes') || [];
+
+        notes.forEach(note => {
+            if (note.lat && note.lng) {
+                const icon = L.divIcon({
+                    html: `<div style="background: #8b5cf6; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+                        <i class="fas fa-sticky-note" style="color: white; font-size: 12px;"></i>
+                    </div>`,
+                    className: 'note-marker-icon',
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14]
+                });
+
+                const marker = L.marker([note.lat, note.lng], { icon }).addTo(this.map);
+                marker.isNote = true;
+                marker.noteData = note;
+
+                marker.bindPopup(`
+                    <div class="note-popup">
+                        <h4 style="margin: 0 0 0.5rem 0; color: #8b5cf6; font-size: 14px;">
+                            <i class="fas fa-sticky-note"></i> ${note.title}
+                        </h4>
+                        <p style="margin: 0; font-size: 12px; color: #666; white-space: pre-wrap;">${note.content}</p>
+                        <div style="margin-top: 0.5rem; font-size: 11px; color: #999;">
+                            ${new Date(note.timestamp).toLocaleString('pl-PL')}
+                        </div>
+                    </div>
+                `);
+
+                this.markers.push(marker);
+            }
+        });
     }
 };
