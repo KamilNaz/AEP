@@ -627,7 +627,8 @@ const DashboardHub = {
             console.log(`       ⚠️ PRZYKŁADOWY CAŁY REKORD:`, data[0]);
             console.log(`       ⚠️ DOSTĘPNE KLUCZE:`, Object.keys(data[0]));
             const sampleDates = data.slice(0, 3).map(item => {
-                const dateField = item['Data'] || item['Data wystawienia'] || '';
+                // Sprawdź różne warianty nazw kolumn dat
+                const dateField = item['date'] || item['Data'] || item['Data wystawienia'] || '';
                 return dateField;
             });
             console.log(`       Przykładowe daty w danych:`, sampleDates);
@@ -637,7 +638,8 @@ const DashboardHub = {
         const filterTo = this.state.dateTo ? new Date(this.state.dateTo) : null;
 
         return data.filter(item => {
-            const dateField = item['Data'] || item['Data wystawienia'] || '';
+            // Sprawdź różne warianty nazw kolumn dat (małe i wielkie litery)
+            const dateField = item['date'] || item['Data'] || item['Data wystawienia'] || '';
             if (!dateField) return false;
 
             const itemDate = this.parseDate(dateField);
@@ -838,7 +840,8 @@ const DashboardHub = {
         const aggregated = {};
 
         data.forEach(item => {
-            const dateField = item['Data'] || item['Data wystawienia'] || '';
+            // Sprawdź różne warianty nazw kolumn dat (małe i wielkie litery)
+            const dateField = item['date'] || item['Data'] || item['Data wystawienia'] || '';
             if (!dateField) return;
 
             const date = this.parseDate(dateField);
