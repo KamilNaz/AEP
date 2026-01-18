@@ -840,6 +840,9 @@ const DashboardHub = {
         const aggregated = {};
 
         console.log(`    📊 Agregacja danych dla ${sectionKey}, ${data.length} rekordów`);
+        if (data.length > 0) {
+            console.log(`    📋 Przykładowy rekord:`, JSON.stringify(data[0], null, 2));
+        }
 
         data.forEach(item => {
             // Sprawdź różne warianty nazw kolumn dat (małe i wielkie litery)
@@ -860,25 +863,71 @@ const DashboardHub = {
                 key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             }
 
-            // ZMIANA: Dla danych zagregowanych sumuj wartości z pól, nie liczbę rekordów
+            // Agregacja specyficzna dla każdej sekcji
             let value = 1; // domyślnie: liczba rekordów
 
-            // Patrole mają pole razem_rodzaj (łączna liczba patrol)
-            if (item['razem_rodzaj'] !== undefined) {
-                value = parseInt(item['razem_rodzaj']) || 0;
-                console.log(`      → ${key}: razem_rodzaj = ${value}`);
-            }
-            // Wykroczenia mają rodzaj_razem lub stan_razem
-            else if (item['rodzaj_razem'] !== undefined) {
-                value = parseInt(item['rodzaj_razem']) || 0;
-                console.log(`      → ${key}: rodzaj_razem = ${value}`);
-            }
-            else if (item['stan_razem'] !== undefined) {
-                value = parseInt(item['stan_razem']) || 0;
-                console.log(`      → ${key}: stan_razem = ${value}`);
-            }
-            else {
-                console.log(`      → ${key}: liczba rekordów = 1`);
+            switch(sectionKey) {
+                case 'patrole':
+                    // Patrole: pole 'razem_rodzaj' (łączna liczba patrol)
+                    if (item['razem_rodzaj'] !== undefined) {
+                        value = parseInt(item['razem_rodzaj']) || 0;
+                        console.log(`      → ${key}: razem_rodzaj = ${value}`);
+                    }
+                    break;
+
+                case 'wykroczenia':
+                    // Wykroczenia: rodzaj_razem + mandat
+                    value = parseInt(item['rodzaj_razem']) || parseInt(item['stan_razem']) || 0;
+                    if (item['mandat_bool'] === true || item['mandat_bool'] === 'TAK') {
+                        value += 1;
+                    }
+                    console.log(`      → ${key}: wykroczenia = ${value} (rodzaj_razem + mandat)`);
+                    break;
+
+                case 'wkrd':
+                    // WKRD: pole 'RAZEM' z wiersza 'Pojazdy'
+                    // Szukamy pól: pojazdy_razem, razem_pojazdy, razem, total, itp.
+                    value = parseInt(item['pojazdy_razem']) || parseInt(item['razem_pojazdy']) ||
+                            parseInt(item['razem']) || parseInt(item['total']) || 1;
+                    console.log(`      → ${key}: WKRD = ${value}`);
+                    break;
+
+                case 'sankcje':
+                    // Sankcje: pole 'RAZEM' + mandat
+                    value = parseInt(item['sankcje_razem']) || parseInt(item['razem']) || 0;
+                    if (item['mandat'] === true || item['mandat'] === 'TAK' || item['mandat_bool'] === true) {
+                        value += 1;
+                    }
+                    console.log(`      → ${key}: sankcje = ${value} (razem + mandat)`);
+                    break;
+
+                case 'konwoje':
+                    // Konwoje: pole 'Razem' z 'Rodzaj konwoju'
+                    value = parseInt(item['rodzaj_konwoju_razem']) || parseInt(item['razem']) || 1;
+                    console.log(`      → ${key}: konwoje = ${value}`);
+                    break;
+
+                case 'spb':
+                    // ŚPB: liczba rekordów w "Środki ŚPB"
+                    value = 1; // każdy rekord = 1
+                    console.log(`      → ${key}: ŚPB = ${value} (liczba rekordów)`);
+                    break;
+
+                case 'pilotaze':
+                    // Pilotaże: pole 'Razem' z 'Rodzaj patrolu'
+                    value = parseInt(item['rodzaj_patrolu_razem']) || parseInt(item['razem']) || 1;
+                    console.log(`      → ${key}: pilotaże = ${value}`);
+                    break;
+
+                case 'zdarzenia':
+                    // Zdarzenia drogowe: pole 'Razem' z 'Rodzaj zdarzenia'
+                    value = parseInt(item['rodzaj_zdarzenia_razem']) || parseInt(item['razem']) || 1;
+                    console.log(`      → ${key}: zdarzenia = ${value}`);
+                    break;
+
+                default:
+                    // Inne kategorie: domyślnie liczba rekordów
+                    console.log(`      → ${key}: liczba rekordów = 1`);
             }
 
             aggregated[key] = (aggregated[key] || 0) + value;
