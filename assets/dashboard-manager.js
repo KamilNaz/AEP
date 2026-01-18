@@ -182,15 +182,8 @@ const DashboardHub = {
     render() {
         const mainContent = document.getElementById('mainContent');
 
-        // Ustaw domyślny zakres dat (ostatnie 30 dni)
-        if (!this.state.dateFrom) {
-            const date = new Date();
-            date.setDate(date.getDate() - 30);
-            this.state.dateFrom = date.toISOString().split('T')[0];
-        }
-        if (!this.state.dateTo) {
-            this.state.dateTo = new Date().toISOString().split('T')[0];
-        }
+        // Nie ustawiamy domyślnego zakresu dat - pokazujemy wszystkie dane
+        // Użytkownik może ręcznie zastosować filtr dat jeśli potrzebuje
 
         mainContent.innerHTML = `
             <div class="dashboard-analytics">
