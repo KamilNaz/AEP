@@ -805,9 +805,10 @@ const DashboardHub = {
      */
     prepareChartData() {
         console.log('🔄 Przygotowywanie danych do wykresu...');
-        const series = [];
-        const colors = [];
-        const categories = [];
+
+        // Krok 1: Zagreguj dane dla każdej sekcji
+        const aggregatedBySection = {};
+        const allDates = new Set();
 
         this.state.activeSections.forEach(sectionKey => {
             const section = this.sections[sectionKey];
@@ -817,19 +818,38 @@ const DashboardHub = {
             const aggregated = this.aggregateData(data, sectionKey);
             console.log(`    Zagregowane:`, aggregated);
 
+            aggregatedBySection[sectionKey] = aggregated;
+
+            // Zbierz wszystkie unikalne daty
+            Object.keys(aggregated).forEach(date => allDates.add(date));
+        });
+
+        // Krok 2: Posortuj wszystkie daty
+        const categories = Array.from(allDates).sort();
+        console.log(`  📅 Wszystkie daty w zakresie (${categories.length}):`, categories);
+
+        // Krok 3: Wypełnij brakujące daty zerami dla każdej sekcji
+        const series = [];
+        const colors = [];
+
+        this.state.activeSections.forEach(sectionKey => {
+            const section = this.sections[sectionKey];
+            const aggregated = aggregatedBySection[sectionKey];
+
+            // Dla każdej daty: użyj wartości z agregacji lub 0
+            const dataWithZeros = categories.map(date => aggregated[date] || 0);
+
             series.push({
                 name: section.name,
-                data: Object.values(aggregated)
+                data: dataWithZeros
             });
 
             colors.push(section.color);
 
-            if (categories.length === 0) {
-                categories.push(...Object.keys(aggregated));
-            }
+            console.log(`  → ${section.name}: wypełniono ${dataWithZeros.length} punktów (w tym ${dataWithZeros.filter(v => v === 0).length} zer)`);
         });
 
-        console.log('  ✅ Przygotowano dane:', { series, colors, categories });
+        console.log('  ✅ Przygotowano dane:', { series: series.length, colors: colors.length, categories: categories.length });
         return { series, colors, categories };
     },
 
