@@ -592,20 +592,60 @@ const DashboardHub = {
     },
 
     /**
+     * Parse date from Polish format (DD.MM.YYYY) or ISO (YYYY-MM-DD)
+     */
+    parseDate(dateStr) {
+        if (!dateStr) return null;
+
+        // Try DD.MM.YYYY format first (Polish format)
+        if (dateStr.includes('.')) {
+            const parts = dateStr.split('.');
+            if (parts.length === 3) {
+                const day = parseInt(parts[0]);
+                const month = parseInt(parts[1]) - 1; // months are 0-indexed
+                const year = parseInt(parts[2]);
+                const date = new Date(year, month, day);
+                if (!isNaN(date.getTime())) return date;
+            }
+        }
+
+        // Try ISO format or other standard formats
+        const date = new Date(dateStr);
+        return isNaN(date.getTime()) ? null : date;
+    },
+
+    /**
      * Filtruj według zakresu dat
      */
     filterByDateRange(data, sectionKey) {
         if (!this.state.dateFrom && !this.state.dateTo) return data;
 
+        // Debug: pokaż przykładowe daty z danych
+        console.log(`    🔍 Filtrowanie dat dla ${sectionKey}:`);
+        console.log(`       Zakres: ${this.state.dateFrom} do ${this.state.dateTo}`);
+        if (data.length > 0) {
+            const sampleDates = data.slice(0, 3).map(item => {
+                const dateField = item['Data'] || item['Data wystawienia'] || '';
+                return dateField;
+            });
+            console.log(`       Przykładowe daty w danych:`, sampleDates);
+        }
+
+        const filterFrom = this.state.dateFrom ? new Date(this.state.dateFrom) : null;
+        const filterTo = this.state.dateTo ? new Date(this.state.dateTo) : null;
+
         return data.filter(item => {
             const dateField = item['Data'] || item['Data wystawienia'] || '';
             if (!dateField) return false;
 
-            const itemDate = new Date(dateField);
-            if (isNaN(itemDate.getTime())) return false;
+            const itemDate = this.parseDate(dateField);
+            if (!itemDate) {
+                console.warn(`       ⚠️ Nie można sparsować daty: "${dateField}"`);
+                return false;
+            }
 
-            if (this.state.dateFrom && itemDate < new Date(this.state.dateFrom)) return false;
-            if (this.state.dateTo && itemDate > new Date(this.state.dateTo)) return false;
+            if (filterFrom && itemDate < filterFrom) return false;
+            if (filterTo && itemDate > filterTo) return false;
 
             return true;
         });
@@ -799,12 +839,13 @@ const DashboardHub = {
             const dateField = item['Data'] || item['Data wystawienia'] || '';
             if (!dateField) return;
 
-            const date = new Date(dateField);
-            if (isNaN(date.getTime())) return;
+            const date = this.parseDate(dateField);
+            if (!date) return;
 
             let key;
             if (this.state.mainChart.aggregation === 'day') {
-                key = dateField;
+                // Normalize to YYYY-MM-DD format for consistency
+                key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
             } else if (this.state.mainChart.aggregation === 'week') {
                 const weekNum = this.getWeekNumber(date);
                 key = `${date.getFullYear()}-W${weekNum}`;
@@ -873,14 +914,18 @@ const DashboardHub = {
     },
 
     updateDateRange(type, value) {
+        console.log(`📅 updateDateRange wywołane: ${type} = ${value}`);
+        console.trace('Stack trace:');
         if (type === 'from') {
             this.state.dateFrom = value;
         } else {
             this.state.dateTo = value;
         }
+        this.applyFilters();
     },
 
     setDatePreset(days) {
+        console.log(`📅 setDatePreset wywołane: ${days} dni`);
         const to = new Date();
         const from = new Date();
         from.setDate(from.getDate() - days);
@@ -888,11 +933,13 @@ const DashboardHub = {
         this.state.dateFrom = from.toISOString().split('T')[0];
         this.state.dateTo = to.toISOString().split('T')[0];
 
-        // Update inputs
+        // Update inputs (bez triggera onchange)
         document.querySelectorAll('.date-input-group input').forEach((input, i) => {
             if (i === 0) input.value = this.state.dateFrom;
             if (i === 1) input.value = this.state.dateTo;
         });
+
+        this.applyFilters();
     },
 
     showAddFilterDialog() {
