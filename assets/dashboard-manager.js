@@ -839,6 +839,8 @@ const DashboardHub = {
     aggregateData(data, sectionKey) {
         const aggregated = {};
 
+        console.log(`    📊 Agregacja danych dla ${sectionKey}, ${data.length} rekordów`);
+
         data.forEach(item => {
             // Sprawdź różne warianty nazw kolumn dat (małe i wielkie litery)
             const dateField = item['data'] || item['date'] || item['Data'] || item['Data wystawienia'] || '';
@@ -858,8 +860,31 @@ const DashboardHub = {
                 key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             }
 
-            aggregated[key] = (aggregated[key] || 0) + 1;
+            // ZMIANA: Dla danych zagregowanych sumuj wartości z pól, nie liczbę rekordów
+            let value = 1; // domyślnie: liczba rekordów
+
+            // Patrole mają pole razem_rodzaj (łączna liczba patrol)
+            if (item['razem_rodzaj'] !== undefined) {
+                value = parseInt(item['razem_rodzaj']) || 0;
+                console.log(`      → ${key}: razem_rodzaj = ${value}`);
+            }
+            // Wykroczenia mają rodzaj_razem lub stan_razem
+            else if (item['rodzaj_razem'] !== undefined) {
+                value = parseInt(item['rodzaj_razem']) || 0;
+                console.log(`      → ${key}: rodzaj_razem = ${value}`);
+            }
+            else if (item['stan_razem'] !== undefined) {
+                value = parseInt(item['stan_razem']) || 0;
+                console.log(`      → ${key}: stan_razem = ${value}`);
+            }
+            else {
+                console.log(`      → ${key}: liczba rekordów = 1`);
+            }
+
+            aggregated[key] = (aggregated[key] || 0) + value;
         });
+
+        console.log(`    ✅ Wynik agregacji:`, aggregated);
 
         return Object.keys(aggregated).sort().reduce((acc, key) => {
             acc[key] = aggregated[key];
