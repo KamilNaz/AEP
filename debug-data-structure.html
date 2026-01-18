@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Struktura danych</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        h2 {
+            color: #4ec9b0;
+            border-bottom: 2px solid #4ec9b0;
+            padding-bottom: 5px;
+        }
+        pre {
+            background: #252526;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border-left: 3px solid #007acc;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .count {
+            color: #ce9178;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug - Struktura danych z localStorage</h1>
+
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        // Kategorie do sprawdzenia
+        const categories = [
+            { key: 'Sankcje', title: 'Sankcje' },
+            { key: 'Konwoje', title: 'Konwoje' },
+            { key: 'ŚPB', title: 'ŚPB - Środki Przymusu Bezpośredniego' }
+        ];
+
+        categories.forEach(cat => {
+            const data = JSON.parse(localStorage.getItem(cat.key) || '[]');
+
+            const section = document.createElement('div');
+            section.className = 'section';
+
+            const html = `
+                <h2>${cat.title}</h2>
+                <p class="count">Liczba rekordów: ${data.length}</p>
+                ${data.length > 0 ? `
+                    <h3>Pierwszy rekord:</h3>
+                    <pre>${JSON.stringify(data[0], null, 2)}</pre>
+                    ${data.length > 1 ? `
+                        <h3>Drugi rekord:</h3>
+                        <pre>${JSON.stringify(data[1], null, 2)}</pre>
+                    ` : ''}
+                    <h3>Wszystkie klucze w pierwszym rekordzie:</h3>
+                    <pre>${JSON.stringify(Object.keys(data[0]), null, 2)}</pre>
+                ` : '<p>Brak danych w localStorage dla tej kategorii</p>'}
+            `;
+
+            section.innerHTML = html;
+            output.appendChild(section);
+        });
+    </script>
+</body>
+</html>
