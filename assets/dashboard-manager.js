@@ -6,8 +6,8 @@
 const DashboardHub = {
     // Stan aplikacji
     state: {
-        // Aktywne sekcje
-        activeSections: [],
+        // Aktywne sekcje (domyślnie Patrole)
+        activeSections: ['patrole'],
 
         // Globalny zakres dat
         dateFrom: null,
@@ -554,24 +554,33 @@ const DashboardHub = {
      * Załaduj wszystkie dane z localStorage
      */
     loadAllData() {
+        console.log('📊 Dashboard - Ładowanie danych z localStorage...');
         Object.keys(this.sections).forEach(sectionKey => {
             const section = this.sections[sectionKey];
             const data = Utils.loadFromLocalStorage(section.storageKey) || [];
             this.state.rawData[sectionKey] = data;
+            console.log(`  → ${section.name}: ${data.length} rekordów`);
         });
+        console.log('✅ Wszystkie dane załadowane:', this.state.rawData);
     },
 
     /**
      * Zastosuj filtry
      */
     applyFilters() {
+        console.log('🔍 Dashboard - Stosowanie filtrów...');
+        console.log('  Aktywne sekcje:', this.state.activeSections);
+        console.log('  Zakres dat:', this.state.dateFrom, '-', this.state.dateTo);
+
         this.state.filteredData = {};
 
         this.state.activeSections.forEach(sectionKey => {
             let data = this.state.rawData[sectionKey] || [];
+            console.log(`  → ${sectionKey}: ${data.length} rekordów (raw)`);
 
             // Filtr daty globalny
             data = this.filterByDateRange(data, sectionKey);
+            console.log(`    Po filtrze dat: ${data.length} rekordów`);
 
             // Filtry per sekcja
             const sectionFilters = this.state.filters[sectionKey] || [];
@@ -580,7 +589,10 @@ const DashboardHub = {
             });
 
             this.state.filteredData[sectionKey] = data;
+            console.log(`    ✅ Przefiltrowane: ${data.length} rekordów`);
         });
+
+        console.log('✅ Dane przefiltrowane:', this.state.filteredData);
 
         // Odśwież widok
         this.refreshView();
@@ -690,7 +702,9 @@ const DashboardHub = {
      * Renderuj główny wykres
      */
     renderMainChart() {
+        console.log('📈 Dashboard - Renderowanie wykresu głównego...');
         const chartData = this.prepareChartData();
+        console.log('  Dane wykresu:', chartData);
 
         if (this.state.mainChart.chartInstance) {
             this.state.mainChart.chartInstance.destroy();
@@ -740,8 +754,12 @@ const DashboardHub = {
 
         const chartEl = document.querySelector('#mainChart');
         if (chartEl) {
+            console.log('  Element wykresu znaleziony:', chartEl);
             this.state.mainChart.chartInstance = new ApexCharts(chartEl, options);
             this.state.mainChart.chartInstance.render();
+            console.log('  ✅ Wykres wyrenderowany');
+        } else {
+            console.error('  ❌ Element #mainChart nie znaleziony!');
         }
     },
 
@@ -749,6 +767,7 @@ const DashboardHub = {
      * Przygotuj dane do wykresu
      */
     prepareChartData() {
+        console.log('🔄 Przygotowywanie danych do wykresu...');
         const series = [];
         const colors = [];
         const categories = [];
@@ -756,8 +775,10 @@ const DashboardHub = {
         this.state.activeSections.forEach(sectionKey => {
             const section = this.sections[sectionKey];
             const data = this.state.filteredData[sectionKey] || [];
+            console.log(`  → ${section.name}: ${data.length} rekordów do agregacji`);
 
             const aggregated = this.aggregateData(data, sectionKey);
+            console.log(`    Zagregowane:`, aggregated);
 
             series.push({
                 name: section.name,
@@ -771,6 +792,7 @@ const DashboardHub = {
             }
         });
 
+        console.log('  ✅ Przygotowano dane:', { series, colors, categories });
         return { series, colors, categories };
     },
 
