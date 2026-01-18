@@ -624,6 +624,8 @@ const DashboardHub = {
         console.log(`    🔍 Filtrowanie dat dla ${sectionKey}:`);
         console.log(`       Zakres: ${this.state.dateFrom} do ${this.state.dateTo}`);
         if (data.length > 0) {
+            console.log(`       ⚠️ PRZYKŁADOWY CAŁY REKORD:`, data[0]);
+            console.log(`       ⚠️ DOSTĘPNE KLUCZE:`, Object.keys(data[0]));
             const sampleDates = data.slice(0, 3).map(item => {
                 const dateField = item['Data'] || item['Data wystawienia'] || '';
                 return dateField;
