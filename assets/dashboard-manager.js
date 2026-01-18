@@ -913,24 +913,74 @@ const DashboardHub = {
                     break;
 
                 case 'sankcje':
-                    // Sankcje: pole 'RAZEM' + mandat
-                    value = parseInt(item['sankcje_razem']) || parseInt(item['razem']) || 0;
-                    if (item['mandat'] === true || item['mandat'] === 'TAK' || item['mandat_bool'] === true) {
+                    // Sankcje: 'Sankcja' → 'Razem' + zawsze 1 jeśli jest mandat
+                    value = parseInt(item['sankcja_razem']) || parseInt(item['Sankcja_razem']) ||
+                            parseInt(item['razem']) || 0;
+                    // Zawsze dodaj 1 jeśli jest mandat
+                    if (item['mandat'] === true || item['mandat'] === 'TAK' ||
+                        item['mandat_bool'] === true || item['Mandat'] === true) {
                         value += 1;
                     }
-                    console.log(`      → ${key}: sankcje = ${value} (razem + mandat)`);
+                    console.log(`      → ${key}: sankcje = ${value} (sankcja_razem: ${item['sankcja_razem'] || item['Sankcja_razem'] || item['razem']}, mandat: ${item['mandat'] || item['mandat_bool'] || item['Mandat']})`);
                     break;
 
                 case 'konwoje':
-                    // Konwoje: pole 'Razem' z 'Rodzaj konwoju'
-                    value = parseInt(item['rodzaj_konwoju_razem']) || parseInt(item['razem']) || 1;
-                    console.log(`      → ${key}: konwoje = ${value}`);
+                    // Konwoje: 'Rodzaj konwoju' → 'Razem'
+                    value = parseInt(item['rodzaj_konwoju_razem']) || parseInt(item['Rodzaj_konwoju_razem']) ||
+                            parseInt(item['razem']) || 0;
+                    console.log(`      → ${key}: konwoje = ${value} (rodzaj_konwoju_razem: ${item['rodzaj_konwoju_razem'] || item['Rodzaj_konwoju_razem'] || item['razem']})`);
                     break;
 
                 case 'spb':
-                    // ŚPB: liczba rekordów w "Środki ŚPB"
-                    value = 1; // każdy rekord = 1
-                    console.log(`      → ${key}: ŚPB = ${value} (liczba rekordów)`);
+                    // ŚPB: ilość zaznaczonych checkboxów w "Środki ŚPB"
+                    value = 0;
+
+                    // Możliwe pola które mogą zawierać informacje o zaznaczonych checkboxach
+                    const spbFields = [
+                        'środki_spb', 'srodki_spb', 'Środki_ŚPB', 'Środki_SPB',
+                        'środki', 'srodki', 'Środki', 'checkboxes', 'selected'
+                    ];
+
+                    let foundField = null;
+                    let checkboxData = null;
+
+                    for (const field of spbFields) {
+                        if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
+                            foundField = field;
+                            checkboxData = item[field];
+                            break;
+                        }
+                    }
+
+                    if (checkboxData !== null) {
+                        if (Array.isArray(checkboxData)) {
+                            // Jeśli to tablica - licz jej długość
+                            value = checkboxData.length;
+                        } else if (typeof checkboxData === 'string') {
+                            // Jeśli to string - podziel po przecinkach i licz elementy
+                            const items = checkboxData.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                            value = items.length;
+                        } else if (typeof checkboxData === 'object') {
+                            // Jeśli to obiekt - licz true values
+                            value = Object.values(checkboxData).filter(v => v === true || v === 'true' || v === 1).length;
+                        } else if (typeof checkboxData === 'number') {
+                            // Jeśli to już liczba - użyj jej bezpośrednio
+                            value = checkboxData;
+                        }
+                        console.log(`      → ${key}: ŚPB = ${value} (pole: ${foundField}, typ: ${typeof checkboxData}, dane: ${JSON.stringify(checkboxData)})`);
+                    } else {
+                        // Jeśli nie znaleziono pola - sprawdź czy są pola booleanowskie dla poszczególnych środków
+                        const boolFields = [
+                            'kajdanki', 'Kajdanki', 'pałka', 'Pałka', 'palka', 'Palka',
+                            'gaz', 'Gaz', 'pies', 'Pies', 'paralizator', 'Paralizator'
+                        ];
+
+                        value = boolFields.filter(field =>
+                            item[field] === true || item[field] === 'TAK' || item[field] === '1'
+                        ).length;
+
+                        console.log(`      → ${key}: ŚPB = ${value} (zliczone z pól booleanowskich)`);
+                    }
                     break;
 
                 case 'pilotaze':
