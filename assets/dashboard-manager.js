@@ -984,15 +984,17 @@ const DashboardHub = {
                     break;
 
                 case 'pilotaze':
-                    // Pilotaże: pole 'Razem' z 'Rodzaj patrolu'
-                    value = parseInt(item['rodzaj_patrolu_razem']) || parseInt(item['razem']) || 1;
-                    console.log(`      → ${key}: pilotaże = ${value}`);
+                    // Pilotaże: "Rodzaj patrolu" → "Razem"
+                    value = parseInt(item['rodzaj_patrolu_razem']) || parseInt(item['Rodzaj_patrolu_razem']) ||
+                            parseInt(item['razem']) || 0;
+                    console.log(`      → ${key}: pilotaże = ${value} (rodzaj_patrolu_razem: ${item['rodzaj_patrolu_razem'] || item['Rodzaj_patrolu_razem'] || item['razem']})`);
                     break;
 
                 case 'zdarzenia':
-                    // Zdarzenia drogowe: pole 'Razem' z 'Rodzaj zdarzenia'
-                    value = parseInt(item['rodzaj_zdarzenia_razem']) || parseInt(item['razem']) || 1;
-                    console.log(`      → ${key}: zdarzenia = ${value}`);
+                    // Zdarzenia drogowe: "Rodzaj zdarzenia" → "Razem"
+                    value = parseInt(item['rodzaj_zdarzenia_razem']) || parseInt(item['Rodzaj_zdarzenia_razem']) ||
+                            parseInt(item['razem']) || 0;
+                    console.log(`      → ${key}: zdarzenia = ${value} (rodzaj_zdarzenia_razem: ${item['rodzaj_zdarzenia_razem'] || item['Rodzaj_zdarzenia_razem'] || item['razem']})`);
                     break;
 
                 default:
