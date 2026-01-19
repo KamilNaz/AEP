@@ -204,7 +204,12 @@ const AppState = {
     wykroczeniaDateFilter: {
         active: false,
         dateFrom: null,
-        dateTo: null
+        dateTo: null,
+        numerjw: '',
+        nazwajw: '',
+        miejsce: '',
+        podleglosc: '',
+        grupa: ''
     },
     // WKRD
     wkrdData: [],
@@ -227,7 +232,12 @@ const AppState = {
     wkrdDateFilter: {
         active: false,
         dateFrom: null,
-        dateTo: null
+        dateTo: null,
+        numerjw: '',
+        nazwajw: '',
+        miejsce: '',
+        podleglosc: '',
+        oddzial: ''
     },
     // Sankcje
     sankcjeData: [],
@@ -263,7 +273,14 @@ const AppState = {
     sankcjeDateFilter: {
         active: false,
         dateFrom: null,
-        dateTo: null
+        dateTo: null,
+        numerjw: '',
+        nazwajw: '',
+        miejsce: '',
+        podleglosc: '',
+        grupa: '',
+        jw_prowadzaca: '',
+        oddzial: ''
     },
     // Konwoje
     konwojeData: [],
@@ -293,7 +310,10 @@ const AppState = {
     konwojeDateFilter: {
         active: false,
         dateFrom: null,
-        dateTo: null
+        dateTo: null,
+        rodzaj_konwoju: '',
+        jw_prowadzaca: '',
+        oddzial: ''
     },
     // ŚPB
     spbData: [],
@@ -301,7 +321,14 @@ const AppState = {
     spbDateFilter: {
         active: false,
         dateFrom: null,
-        dateTo: null
+        dateTo: null,
+        numerjw: '',
+        nazwajw: '',
+        miejsce: '',
+        podleglosc: '',
+        grupa: '',
+        jw_prowadzaca: '',
+        oddzial: ''
     },
     // Pilotaże
     pilotazeData: [],
@@ -309,7 +336,10 @@ const AppState = {
     pilotazeDateFilter: {
         active: false,
         dateFrom: null,
-        dateTo: null
+        dateTo: null,
+        wojska: '',
+        jw_prowadzaca: '',
+        oddzial: ''
     },
     // Zdarzenia drogowe
     zdarzeniaData: [],
@@ -317,7 +347,15 @@ const AppState = {
     zdarzenieDateFilter: {
         active: false,
         dateFrom: null,
-        dateTo: null
+        dateTo: null,
+        numerjw: '',
+        nazwajw: '',
+        miejsce: '',
+        podleglosc: '',
+        grupa: '',
+        rodzaj_zdarzenia: '',
+        jw_prowadzaca: '',
+        oddzial: ''
     },
     // Dashboard Hub
     dashboardView: 'hub',
@@ -363,7 +401,9 @@ const AppState = {
     patroleDateFilter: {
         active: false,
         dateFrom: null,
-        dateTo: null
+        dateTo: null,
+        jwProwadzaca: '',
+        oddzialZW: ''
     }
 };
 
@@ -2162,13 +2202,33 @@ const PatroleManager = {
                             </div>
                             <div class="dropdown-divider"></div>
                             <div class="dropdown-section">
-                                <div class="quick-filters-label">Szybki wybór:</div>
-                                <div class="quick-filters">
-                                    <button class="btn-quick-filter" data-days="0">Dziś</button>
-                                    <button class="btn-quick-filter" data-days="7">7 dni</button>
-                                    <button class="btn-quick-filter" data-days="30">30 dni</button>
-                                    <button class="btn-quick-filter" data-days="365">Rok</button>
-                                </div>
+                                <label class="filter-label">JW prowadząca:</label>
+                                <select id="jwProwadzacaFilter" class="patrole-select">
+                                    <option value="">Wszystkie</option>
+                                    <option value="OŻW Elbląg">OŻW Elbląg</option>
+                                    <option value="WŻW Bemowo Piskie">WŻW Bemowo Piskie</option>
+                                    <option value="WŻW Gdynia">WŻW Gdynia</option>
+                                    <option value="PŻW Bartoszyce">PŻW Bartoszyce</option>
+                                    <option value="PŻW Braniewo">PŻW Braniewo</option>
+                                    <option value="PŻW Malbork">PŻW Malbork</option>
+                                    <option value="PŻW Morąg">PŻW Morąg</option>
+                                    <option value="PŻW Giżycko">PŻW Giżycko</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Oddział ŻW:</label>
+                                <select id="oddzialZWFilter" class="patrole-select">
+                                    <option value="">Wszystkie</option>
+                                    <option value="OŻW Elbląg">OŻW Elbląg</option>
+                                    <option value="OŻW Bydgoszcz">OŻW Bydgoszcz</option>
+                                    <option value="OŻW Szczecin">OŻW Szczecin</option>
+                                    <option value="OŻW Żagań">OŻW Żagań</option>
+                                    <option value="OŻW Kraków">OŻW Kraków</option>
+                                    <option value="MOŻW Warszawa">MOŻW Warszawa</option>
+                                    <option value="OŻW Lublin">OŻW Lublin</option>
+                                    <option value="OŻW Łodź">OŻW Łodź</option>
+                                    <option value="OSŻW Mińsk Maz.">OSŻW Mińsk Maz.</option>
+                                </select>
                             </div>
                             <div class="dropdown-divider"></div>
                             <div class="dropdown-actions">
@@ -2356,13 +2416,14 @@ const PatroleManager = {
         const dropdown = document.getElementById('dateFilterDropdown');
         const dateFromInput = document.getElementById('dateFrom');
         const dateToInput = document.getElementById('dateTo');
+        const jwProwadzacaSelect = document.getElementById('jwProwadzacaFilter');
+        const oddzialZWSelect = document.getElementById('oddzialZWFilter');
         const applyBtn = document.getElementById('applyDateFilter');
         const clearDropdownBtn = document.getElementById('clearDateFilterDropdown');
         const clearFilterBtn = document.getElementById('clearDateFilterBtn');
         const filterBadge = document.getElementById('dateFilterBadge');
         const filterInfoBar = document.getElementById('filterInfoBar');
         const filterResultInfo = document.getElementById('filterResultInfo');
-        const quickFilterBtns = document.querySelectorAll('.btn-quick-filter');
 
         // Toggle dropdown
         toggleBtn?.addEventListener('click', (e) => {
@@ -2377,26 +2438,6 @@ const PatroleManager = {
             }
         });
 
-        // Quick filter buttons
-        quickFilterBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const days = parseInt(btn.dataset.days);
-                const today = new Date();
-                const from = new Date(today);
-                
-                if (days === 0) {
-                    // Dziś
-                    from.setHours(0, 0, 0, 0);
-                } else {
-                    // X dni wstecz
-                    from.setDate(today.getDate() - days);
-                }
-
-                dateFromInput.value = this.dateToInputFormat(from);
-                dateToInput.value = this.dateToInputFormat(today);
-            });
-        });
-
         // Apply filter
         applyBtn?.addEventListener('click', () => {
             const from = dateFromInput.value;
@@ -2409,7 +2450,7 @@ const PatroleManager = {
 
             const dateFrom = new Date(from);
             const dateTo = new Date(to);
-            
+
             // Normalizuj daty do 00:00:00
             dateFrom.setHours(0, 0, 0, 0);
             dateTo.setHours(23, 59, 59, 999); // Cały dzień "do"
@@ -2422,6 +2463,8 @@ const PatroleManager = {
             AppState.patroleDateFilter.active = true;
             AppState.patroleDateFilter.dateFrom = dateFrom;
             AppState.patroleDateFilter.dateTo = dateTo;
+            AppState.patroleDateFilter.jwProwadzaca = jwProwadzacaSelect?.value || '';
+            AppState.patroleDateFilter.oddzialZW = oddzialZWSelect?.value || '';
 
             this.applyDateFilter();
             dropdown.classList.add('hidden');
@@ -2431,6 +2474,8 @@ const PatroleManager = {
         clearDropdownBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (jwProwadzacaSelect) jwProwadzacaSelect.value = '';
+            if (oddzialZWSelect) oddzialZWSelect.value = '';
             this.clearDateFilter();
         });
 
@@ -2438,6 +2483,8 @@ const PatroleManager = {
         clearFilterBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (jwProwadzacaSelect) jwProwadzacaSelect.value = '';
+            if (oddzialZWSelect) oddzialZWSelect.value = '';
             this.clearDateFilter();
         });
     },
@@ -2577,6 +2624,8 @@ const PatroleManager = {
         AppState.patroleDateFilter.active = false;
         AppState.patroleDateFilter.dateFrom = null;
         AppState.patroleDateFilter.dateTo = null;
+        AppState.patroleDateFilter.jwProwadzaca = '';
+        AppState.patroleDateFilter.oddzialZW = '';
 
         // Hide UI elements
         const filterBadge = document.getElementById('dateFilterBadge');
@@ -2697,21 +2746,34 @@ const PatroleManager = {
 
             const isSelected = AppState.patroleSelectedRows.has(row.id);
 
-            // Check date filter
+            // Check filters
             let isVisible = true;
             if (AppState.patroleDateFilter.active) {
                 const rowDate = this.parsePolishDate(row.date);
-                const { dateFrom, dateTo } = AppState.patroleDateFilter;
-                
+                const { dateFrom, dateTo, jwProwadzaca, oddzialZW } = AppState.patroleDateFilter;
+
                 console.log(`📋 RenderRows - Wiersz ${lp}: date="${row.date}"`);
                 console.log(`   rowDate=${rowDate}, dateFrom=${dateFrom}, dateTo=${dateTo}`);
-                
+
+                // Check date range
                 if (rowDate) {
                     isVisible = rowDate >= dateFrom && rowDate <= dateTo;
                     console.log(`   Porównanie: ${rowDate.getTime()} >= ${dateFrom.getTime()} && ${rowDate.getTime()} <= ${dateTo.getTime()} = ${isVisible}`);
                 } else {
                     isVisible = false; // Hide if no date
                     console.log(`   ❌ Brak daty - ukryj wiersz`);
+                }
+
+                // Check JW prowadząca filter
+                if (isVisible && jwProwadzaca) {
+                    isVisible = row.jwProwadzaca === jwProwadzaca;
+                    console.log(`   JW prowadząca: "${row.jwProwadzaca}" === "${jwProwadzaca}" = ${isVisible}`);
+                }
+
+                // Check Oddział ŻW filter
+                if (isVisible && oddzialZW) {
+                    isVisible = row.oddzialZW === oddzialZW;
+                    console.log(`   Oddział ŻW: "${row.oddzialZW}" === "${oddzialZW}" = ${isVisible}`);
                 }
             }
 
@@ -2976,13 +3038,54 @@ const WykroczeniaManager = {
                             </div>
                             <div class="dropdown-divider"></div>
                             <div class="dropdown-section">
-                                <div class="quick-filters-label">Szybki wybór:</div>
-                                <div class="quick-filters">
-                                    <button class="btn-quick-filter" data-days="0">Dziś</button>
-                                    <button class="btn-quick-filter" data-days="7">7 dni</button>
-                                    <button class="btn-quick-filter" data-days="30">30 dni</button>
-                                    <button class="btn-quick-filter" data-days="365">Rok</button>
-                                </div>
+                                <label class="filter-label">Numer JW:</label>
+                                <select id="wykroczeniaNumerjwFilter" class="wykroczenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Nazwa JW:</label>
+                                <select id="wykroczeniaNazwajwFilter" class="wykroczenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Miejsce stac.:</label>
+                                <select id="wykroczeniaMiejsceFilter" class="wykroczenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="Miejscowość A">Miejscowość A</option>
+                                    <option value="Miejscowość B">Miejscowość B</option>
+                                    <option value="Miejscowość C">Miejscowość C</option>
+                                    <option value="Miejscowość D">Miejscowość D</option>
+                                    <option value="Miejscowość E">Miejscowość E</option>
+                                    <option value="Miejscowość F">Miejscowość F</option>
+                                    <option value="Miejscowość G">Miejscowość G</option>
+                                    <option value="Miejscowość H">Miejscowość H</option>
+                                    <option value="Miejscowość I">Miejscowość I</option>
+                                    <option value="Miejscowość J">Miejscowość J</option>
+                                    <option value="Miejscowość K">Miejscowość K</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Podległość RSZ:</label>
+                                <select id="wykroczeniaPodlegloscFilter" class="wykroczenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="WL">WL</option>
+                                    <option value="SP">SP</option>
+                                    <option value="MW">MW</option>
+                                    <option value="WOT">WOT</option>
+                                    <option value="ŻW">ŻW</option>
+                                    <option value="inne">inne</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Grupa oś.:</label>
+                                <select id="wykroczeniaGrupaFilter" class="wykroczenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="żołnierz">żołnierz</option>
+                                    <option value="pracownik RON">pracownik RON</option>
+                                    <option value="osoba cywilna">osoba cywilna</option>
+                                </select>
                             </div>
                             <div class="dropdown-divider"></div>
                             <div class="dropdown-actions">
@@ -3401,22 +3504,48 @@ const WykroczeniaManager = {
             return;
         }
 
-        // FILTROWANIE DAT
+        // FILTROWANIE DAT I INNYCH KRYTERIÓW
         let dataToRender = AppState.wykroczeniaData;
         if (AppState.wykroczeniaDateFilter.active) {
-            const { dateFrom, dateTo } = AppState.wykroczeniaDateFilter;
-            
+            const { dateFrom, dateTo, numerjw, nazwajw, miejsce, podleglosc, grupa } = AppState.wykroczeniaDateFilter;
+
             // Zbierz ID głównych wierszy, które pasują do filtru
             const matchingMainRowIds = new Set();
             AppState.wykroczeniaData.forEach(row => {
                 if (row.isMainRow !== false) {
+                    let matches = true;
+
+                    // Check date range
                     const rowDate = this.parsePolishDate(row.data);
-                    if (rowDate && rowDate >= dateFrom && rowDate <= dateTo) {
+                    if (rowDate) {
+                        matches = rowDate >= dateFrom && rowDate <= dateTo;
+                    } else {
+                        matches = false;
+                    }
+
+                    // Check additional filters
+                    if (matches && numerjw) {
+                        matches = row.nr_jw === numerjw;
+                    }
+                    if (matches && nazwajw) {
+                        matches = row.nazwa_jw === nazwajw;
+                    }
+                    if (matches && miejsce) {
+                        matches = row.miejsce === miejsce;
+                    }
+                    if (matches && podleglosc) {
+                        matches = row.podleglosc === podleglosc;
+                    }
+                    if (matches && grupa) {
+                        matches = row.grupa === grupa;
+                    }
+
+                    if (matches) {
                         matchingMainRowIds.add(row.groupId || row.id);
                     }
                 }
             });
-            
+
             // Pokaż główne wiersze + wszystkie ich podwiersze
             dataToRender = AppState.wykroczeniaData.filter(row => {
                 const groupId = row.groupId || row.id;
@@ -4267,13 +4396,36 @@ const WykroczeniaManager = {
         const dropdown = document.getElementById('wykroczeniaDateFilterDropdown');
         const dateFromInput = document.getElementById('wykroczeniaDateFrom');
         const dateToInput = document.getElementById('wykroczeniaDateTo');
+        const numerjwSelect = document.getElementById('wykroczeniaNumerjwFilter');
+        const nazwajwSelect = document.getElementById('wykroczeniaNazwajwFilter');
+        const miejsceSelect = document.getElementById('wykroczeniaMiejsceFilter');
+        const podlegloscSelect = document.getElementById('wykroczeniaPodlegloscFilter');
+        const grupaSelect = document.getElementById('wykroczeniaGrupaFilter');
         const applyBtn = document.getElementById('applyWykroczeniaDateFilter');
         const clearDropdownBtn = document.getElementById('clearWykroczeniaDateFilterDropdown');
         const clearFilterBtn = document.getElementById('clearWykroczeniaDateFilterBtn');
         const filterBadge = document.getElementById('wykroczeniaDateFilterBadge');
         const filterInfoBar = document.getElementById('wykroczeniaFilterInfoBar');
         const filterResultInfo = document.getElementById('wykroczeniaFilterResultInfo');
-        const quickFilterBtns = dropdown?.querySelectorAll('.btn-quick-filter');
+
+        // Populate dynamic selects
+        if (numerjwSelect) {
+            for (let i = 1; i <= 99; i++) {
+                const option = document.createElement('option');
+                option.value = `JW nr ${String(i).padStart(2, '0')}`;
+                option.textContent = `JW nr ${String(i).padStart(2, '0')}`;
+                numerjwSelect.appendChild(option);
+            }
+        }
+
+        if (nazwajwSelect) {
+            for (let i = 1; i <= 80; i++) {
+                const option = document.createElement('option');
+                option.value = `JW nazwa nr ${i}`;
+                option.textContent = `JW nazwa nr ${i}`;
+                nazwajwSelect.appendChild(option);
+            }
+        }
 
         // Toggle dropdown
         toggleBtn?.addEventListener('click', (e) => {
@@ -4288,26 +4440,6 @@ const WykroczeniaManager = {
             }
         });
 
-        // Quick filter buttons
-        quickFilterBtns?.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const days = parseInt(btn.dataset.days);
-                const today = new Date();
-                const from = new Date(today);
-                
-                if (days === 0) {
-                    // Dziś
-                    from.setHours(0, 0, 0, 0);
-                } else {
-                    // X dni wstecz
-                    from.setDate(today.getDate() - days);
-                }
-
-                dateFromInput.value = this.dateToInputFormat(from);
-                dateToInput.value = this.dateToInputFormat(today);
-            });
-        });
-
         // Apply filter
         applyBtn?.addEventListener('click', () => {
             const from = dateFromInput.value;
@@ -4320,7 +4452,7 @@ const WykroczeniaManager = {
 
             const dateFrom = new Date(from);
             const dateTo = new Date(to);
-            
+
             // Normalizuj daty do 00:00:00
             dateFrom.setHours(0, 0, 0, 0);
             dateTo.setHours(23, 59, 59, 999); // Cały dzień "do"
@@ -4333,6 +4465,11 @@ const WykroczeniaManager = {
             AppState.wykroczeniaDateFilter.active = true;
             AppState.wykroczeniaDateFilter.dateFrom = dateFrom;
             AppState.wykroczeniaDateFilter.dateTo = dateTo;
+            AppState.wykroczeniaDateFilter.numerjw = numerjwSelect?.value || '';
+            AppState.wykroczeniaDateFilter.nazwajw = nazwajwSelect?.value || '';
+            AppState.wykroczeniaDateFilter.miejsce = miejsceSelect?.value || '';
+            AppState.wykroczeniaDateFilter.podleglosc = podlegloscSelect?.value || '';
+            AppState.wykroczeniaDateFilter.grupa = grupaSelect?.value || '';
 
             this.applyDateFilter();
             dropdown.classList.add('hidden');
@@ -4342,6 +4479,11 @@ const WykroczeniaManager = {
         clearDropdownBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (numerjwSelect) numerjwSelect.value = '';
+            if (nazwajwSelect) nazwajwSelect.value = '';
+            if (miejsceSelect) miejsceSelect.value = '';
+            if (podlegloscSelect) podlegloscSelect.value = '';
+            if (grupaSelect) grupaSelect.value = '';
             this.clearDateFilter();
         });
 
@@ -4349,6 +4491,11 @@ const WykroczeniaManager = {
         clearFilterBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (numerjwSelect) numerjwSelect.value = '';
+            if (nazwajwSelect) nazwajwSelect.value = '';
+            if (miejsceSelect) miejsceSelect.value = '';
+            if (podlegloscSelect) podlegloscSelect.value = '';
+            if (grupaSelect) grupaSelect.value = '';
             this.clearDateFilter();
         });
     },
@@ -4481,6 +4628,11 @@ const WykroczeniaManager = {
         AppState.wykroczeniaDateFilter.active = false;
         AppState.wykroczeniaDateFilter.dateFrom = null;
         AppState.wykroczeniaDateFilter.dateTo = null;
+        AppState.wykroczeniaDateFilter.numerjw = '';
+        AppState.wykroczeniaDateFilter.nazwajw = '';
+        AppState.wykroczeniaDateFilter.miejsce = '';
+        AppState.wykroczeniaDateFilter.podleglosc = '';
+        AppState.wykroczeniaDateFilter.grupa = '';
 
         // Hide UI elements
         const filterBadge = document.getElementById('wykroczeniaDateFilterBadge');
@@ -4603,13 +4755,40 @@ const WKRDManager = {
                             </div>
                             <div class="dropdown-divider"></div>
                             <div class="dropdown-section">
-                                <div class="quick-filters-label">Szybki wybór:</div>
-                                <div class="quick-filters">
-                                    <button class="btn-quick-filter" data-days="0">Dziś</button>
-                                    <button class="btn-quick-filter" data-days="7">7 dni</button>
-                                    <button class="btn-quick-filter" data-days="30">30 dni</button>
-                                    <button class="btn-quick-filter" data-days="365">Rok</button>
-                                </div>
+                                <label class="filter-label">Numer JW:</label>
+                                <select id="wkrdNumerjwFilter" class="wkrd-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Nazwa JW:</label>
+                                <select id="wkrdNazwajwFilter" class="wkrd-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Miejsce stacjonowania:</label>
+                                <select id="wkrdMiejsceFilter" class="wkrd-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Podległość RSZ:</label>
+                                <select id="wkrdPodlegloscFilter" class="wkrd-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="WL">WL</option>
+                                    <option value="SP">SP</option>
+                                    <option value="MW">MW</option>
+                                    <option value="WOT">WOT</option>
+                                    <option value="ŻW">ŻW</option>
+                                    <option value="inne">inne</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Oddział:</label>
+                                <select id="wkrdOddzialFilter" class="wkrd-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
                             </div>
                             <div class="dropdown-divider"></div>
                             <div class="dropdown-actions">
@@ -4803,13 +4982,58 @@ const WKRDManager = {
         const dropdown = document.getElementById('wkrdDateFilterDropdown');
         const dateFromInput = document.getElementById('wkrdDateFrom');
         const dateToInput = document.getElementById('wkrdDateTo');
+        const numerjwSelect = document.getElementById('wkrdNumerjwFilter');
+        const nazwajwSelect = document.getElementById('wkrdNazwajwFilter');
+        const miejsceSelect = document.getElementById('wkrdMiejsceFilter');
+        const podlegloscSelect = document.getElementById('wkrdPodlegloscFilter');
+        const oddzialSelect = document.getElementById('wkrdOddzialFilter');
         const applyBtn = document.getElementById('applyWkrdDateFilter');
         const clearDropdownBtn = document.getElementById('clearWkrdDateFilterDropdown');
         const clearFilterBtn = document.getElementById('clearWkrdDateFilterBtn');
         const filterBadge = document.getElementById('wkrdDateFilterBadge');
         const filterInfoBar = document.getElementById('wkrdFilterInfoBar');
         const filterResultInfo = document.getElementById('wkrdFilterResultInfo');
-        const quickFilterBtns = dropdown?.querySelectorAll('.btn-quick-filter');
+
+        // Populate dynamic selects
+        if (numerjwSelect) {
+            for (let i = 1; i <= 99; i++) {
+                const option = document.createElement('option');
+                option.value = `JW nr ${String(i).padStart(2, '0')}`;
+                option.textContent = `JW nr ${String(i).padStart(2, '0')}`;
+                numerjwSelect.appendChild(option);
+            }
+        }
+
+        if (nazwajwSelect) {
+            for (let i = 1; i <= 80; i++) {
+                const option = document.createElement('option');
+                option.value = `JW nazwa nr ${i}`;
+                option.textContent = `JW nazwa nr ${i}`;
+                nazwajwSelect.appendChild(option);
+            }
+        }
+
+        if (miejsceSelect) {
+            const miejsceOptions = ['Miejscowość A', 'Miejscowość B', 'Miejscowość C', 'Miejscowość D',
+                                   'Miejscowość E', 'Miejscowość F', 'Miejscowość G', 'Miejscowość H',
+                                   'Miejscowość I', 'Miejscowość J', 'Miejscowość K'];
+            miejsceOptions.forEach(miejsce => {
+                const option = document.createElement('option');
+                option.value = miejsce;
+                option.textContent = miejsce;
+                miejsceSelect.appendChild(option);
+            });
+        }
+
+        if (oddzialSelect) {
+            const oddzialOptions = ['Elbląg', 'Bydgoszcz', 'Szczecin', 'Żagań', 'Kraków', 'Lublin', 'Warszawa', 'Łódź'];
+            oddzialOptions.forEach(oddzial => {
+                const option = document.createElement('option');
+                option.value = oddzial;
+                option.textContent = oddzial;
+                oddzialSelect.appendChild(option);
+            });
+        }
 
         toggleBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -4820,23 +5044,6 @@ const WKRDManager = {
             if (!dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
-        });
-
-        quickFilterBtns?.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const days = parseInt(btn.dataset.days);
-                const today = new Date();
-                const from = new Date(today);
-                
-                if (days === 0) {
-                    from.setHours(0, 0, 0, 0);
-                } else {
-                    from.setDate(today.getDate() - days);
-                }
-
-                dateFromInput.value = this.dateToInputFormat(from);
-                dateToInput.value = this.dateToInputFormat(today);
-            });
         });
 
         applyBtn?.addEventListener('click', () => {
@@ -4850,7 +5057,7 @@ const WKRDManager = {
 
             const dateFrom = new Date(from);
             const dateTo = new Date(to);
-            
+
             dateFrom.setHours(0, 0, 0, 0);
             dateTo.setHours(23, 59, 59, 999);
 
@@ -4862,6 +5069,11 @@ const WKRDManager = {
             AppState.wkrdDateFilter.active = true;
             AppState.wkrdDateFilter.dateFrom = dateFrom;
             AppState.wkrdDateFilter.dateTo = dateTo;
+            AppState.wkrdDateFilter.numerjw = numerjwSelect?.value || '';
+            AppState.wkrdDateFilter.nazwajw = nazwajwSelect?.value || '';
+            AppState.wkrdDateFilter.miejsce = miejsceSelect?.value || '';
+            AppState.wkrdDateFilter.podleglosc = podlegloscSelect?.value || '';
+            AppState.wkrdDateFilter.oddzial = oddzialSelect?.value || '';
 
             this.applyDateFilter();
             dropdown.classList.add('hidden');
@@ -4870,12 +5082,22 @@ const WKRDManager = {
         clearDropdownBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (numerjwSelect) numerjwSelect.value = '';
+            if (nazwajwSelect) nazwajwSelect.value = '';
+            if (miejsceSelect) miejsceSelect.value = '';
+            if (podlegloscSelect) podlegloscSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
             this.clearDateFilter();
         });
 
         clearFilterBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (numerjwSelect) numerjwSelect.value = '';
+            if (nazwajwSelect) nazwajwSelect.value = '';
+            if (miejsceSelect) miejsceSelect.value = '';
+            if (podlegloscSelect) podlegloscSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
             this.clearDateFilter();
         });
     },
@@ -4993,6 +5215,11 @@ const WKRDManager = {
         AppState.wkrdDateFilter.active = false;
         AppState.wkrdDateFilter.dateFrom = null;
         AppState.wkrdDateFilter.dateTo = null;
+        AppState.wkrdDateFilter.numerjw = '';
+        AppState.wkrdDateFilter.nazwajw = '';
+        AppState.wkrdDateFilter.miejsce = '';
+        AppState.wkrdDateFilter.podleglosc = '';
+        AppState.wkrdDateFilter.oddzial = '';
 
         const filterBadge = document.getElementById('wkrdDateFilterBadge');
         const filterInfoBar = document.getElementById('wkrdFilterInfoBar');
@@ -5018,11 +5245,31 @@ const WKRDManager = {
 
         let dataToRender = AppState.wkrdData;
         if (AppState.wkrdDateFilter.active) {
-            const { dateFrom, dateTo } = AppState.wkrdDateFilter;
+            const { dateFrom, dateTo, numerjw, nazwajw, miejsce, podleglosc, oddzial } = AppState.wkrdDateFilter;
             dataToRender = AppState.wkrdData.filter(row => {
+                // Check date range
                 const rowDate = this.parsePolishDate(row.data);
                 if (!rowDate) return false;
-                return rowDate >= dateFrom && rowDate <= dateTo;
+                let matches = rowDate >= dateFrom && rowDate <= dateTo;
+
+                // Check additional filters
+                if (matches && numerjw) {
+                    matches = row.nr_jw === numerjw;
+                }
+                if (matches && nazwajw) {
+                    matches = row.nazwa_jw === nazwajw;
+                }
+                if (matches && miejsce) {
+                    matches = row.miejsce === miejsce;
+                }
+                if (matches && podleglosc) {
+                    matches = row.podleglosc === podleglosc;
+                }
+                if (matches && oddzial) {
+                    matches = row.oddzial === oddzial;
+                }
+
+                return matches;
             });
         }
 
@@ -5323,13 +5570,82 @@ const SankcjeManager = {
                             </div>
                             <div class="dropdown-divider"></div>
                             <div class="dropdown-section">
-                                <div class="quick-filters-label">Szybki wybór:</div>
-                                <div class="quick-filters">
-                                    <button class="btn-quick-filter" data-days="0">Dziś</button>
-                                    <button class="btn-quick-filter" data-days="7">7 dni</button>
-                                    <button class="btn-quick-filter" data-days="30">30 dni</button>
-                                    <button class="btn-quick-filter" data-days="365">Rok</button>
-                                </div>
+                                <label class="filter-label">Numer JW:</label>
+                                <select id="sankcjeNumerjwFilter" class="sankcje-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Nazwa JW:</label>
+                                <select id="sankcjeNazwajwFilter" class="sankcje-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Miejsce stacjonowania:</label>
+                                <select id="sankcjeMiejsceFilter" class="sankcje-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="Miejscowość A">Miejscowość A</option>
+                                    <option value="Miejscowość B">Miejscowość B</option>
+                                    <option value="Miejscowość C">Miejscowość C</option>
+                                    <option value="Miejscowość D">Miejscowość D</option>
+                                    <option value="Miejscowość E">Miejscowość E</option>
+                                    <option value="Miejscowość F">Miejscowość F</option>
+                                    <option value="Miejscowość G">Miejscowość G</option>
+                                    <option value="Miejscowość H">Miejscowość H</option>
+                                    <option value="Miejscowość I">Miejscowość I</option>
+                                    <option value="Miejscowość J">Miejscowość J</option>
+                                    <option value="Miejscowość K">Miejscowość K</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Podległość RSZ:</label>
+                                <select id="sankcjePodlegloscFilter" class="sankcje-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="WL">WL</option>
+                                    <option value="SP">SP</option>
+                                    <option value="MW">MW</option>
+                                    <option value="WOT">WOT</option>
+                                    <option value="ŻW">ŻW</option>
+                                    <option value="inne">inne</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Grupa os.:</label>
+                                <select id="sankcjeGrupaFilter" class="sankcje-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="żołnierz">żołnierz</option>
+                                    <option value="pracownik RON">pracownik RON</option>
+                                    <option value="osoba cywilna">osoba cywilna</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">JŻW prow.:</label>
+                                <select id="sankcjeJzwFilter" class="sankcje-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="OŻW Elbląg">OŻW Elbląg</option>
+                                    <option value="WŻW Bemowo Piskie">WŻW Bemowo Piskie</option>
+                                    <option value="WŻW Gdynia">WŻW Gdynia</option>
+                                    <option value="PŻW Bartoszyce">PŻW Bartoszyce</option>
+                                    <option value="PŻW Braniewo">PŻW Braniewo</option>
+                                    <option value="PŻW Malbork">PŻW Malbork</option>
+                                    <option value="PŻW Morąg">PŻW Morąg</option>
+                                    <option value="PŻW Giżycko">PŻW Giżycko</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Oddział:</label>
+                                <select id="sankcjeOddzialFilter" class="sankcje-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="Elbląg">Elbląg</option>
+                                    <option value="Bydgoszcz">Bydgoszcz</option>
+                                    <option value="Szczecin">Szczecin</option>
+                                    <option value="Żagań">Żagań</option>
+                                    <option value="Kraków">Kraków</option>
+                                    <option value="Lublin">Lublin</option>
+                                    <option value="Warszawa">Warszawa</option>
+                                    <option value="Łódź">Łódź</option>
+                                </select>
                             </div>
                             <div class="dropdown-divider"></div>
                             <div class="dropdown-actions">
@@ -5790,13 +6106,38 @@ const SankcjeManager = {
         const dropdown = document.getElementById('sankcjeDateFilterDropdown');
         const dateFromInput = document.getElementById('sankcjeDateFrom');
         const dateToInput = document.getElementById('sankcjeDateTo');
+        const numerjwSelect = document.getElementById('sankcjeNumerjwFilter');
+        const nazwajwSelect = document.getElementById('sankcjeNazwajwFilter');
+        const miejsceSelect = document.getElementById('sankcjeMiejsceFilter');
+        const podlegloscSelect = document.getElementById('sankcjePodlegloscFilter');
+        const grupaSelect = document.getElementById('sankcjeGrupaFilter');
+        const jzwSelect = document.getElementById('sankcjeJzwFilter');
+        const oddzialSelect = document.getElementById('sankcjeOddzialFilter');
         const applyBtn = document.getElementById('applySankcjeDateFilter');
         const clearDropdownBtn = document.getElementById('clearSankcjeDateFilterDropdown');
         const clearFilterBtn = document.getElementById('clearSankcjeDateFilterBtn');
         const filterBadge = document.getElementById('sankcjeDateFilterBadge');
         const filterInfoBar = document.getElementById('sankcjeFilterInfoBar');
         const filterResultInfo = document.getElementById('sankcjeFilterResultInfo');
-        const quickFilterBtns = dropdown?.querySelectorAll('.btn-quick-filter');
+
+        // Populate dynamic selects
+        if (numerjwSelect) {
+            for (let i = 1; i <= 99; i++) {
+                const option = document.createElement('option');
+                option.value = `JW nr ${String(i).padStart(2, '0')}`;
+                option.textContent = `JW nr ${String(i).padStart(2, '0')}`;
+                numerjwSelect.appendChild(option);
+            }
+        }
+
+        if (nazwajwSelect) {
+            for (let i = 1; i <= 80; i++) {
+                const option = document.createElement('option');
+                option.value = `JW nazwa nr ${i}`;
+                option.textContent = `JW nazwa nr ${i}`;
+                nazwajwSelect.appendChild(option);
+            }
+        }
 
         toggleBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -5807,23 +6148,6 @@ const SankcjeManager = {
             if (!dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
-        });
-
-        quickFilterBtns?.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const days = parseInt(btn.dataset.days);
-                const today = new Date();
-                const from = new Date(today);
-                
-                if (days === 0) {
-                    from.setHours(0, 0, 0, 0);
-                } else {
-                    from.setDate(today.getDate() - days);
-                }
-
-                dateFromInput.value = this.dateToInputFormat(from);
-                dateToInput.value = this.dateToInputFormat(today);
-            });
         });
 
         applyBtn?.addEventListener('click', () => {
@@ -5837,7 +6161,7 @@ const SankcjeManager = {
 
             const dateFrom = new Date(from);
             const dateTo = new Date(to);
-            
+
             dateFrom.setHours(0, 0, 0, 0);
             dateTo.setHours(23, 59, 59, 999);
 
@@ -5849,6 +6173,13 @@ const SankcjeManager = {
             AppState.sankcjeDateFilter.active = true;
             AppState.sankcjeDateFilter.dateFrom = dateFrom;
             AppState.sankcjeDateFilter.dateTo = dateTo;
+            AppState.sankcjeDateFilter.numerjw = numerjwSelect?.value || '';
+            AppState.sankcjeDateFilter.nazwajw = nazwajwSelect?.value || '';
+            AppState.sankcjeDateFilter.miejsce = miejsceSelect?.value || '';
+            AppState.sankcjeDateFilter.podleglosc = podlegloscSelect?.value || '';
+            AppState.sankcjeDateFilter.grupa = grupaSelect?.value || '';
+            AppState.sankcjeDateFilter.jw_prowadzaca = jzwSelect?.value || '';
+            AppState.sankcjeDateFilter.oddzial = oddzialSelect?.value || '';
 
             this.applyDateFilter();
             dropdown.classList.add('hidden');
@@ -5857,12 +6188,26 @@ const SankcjeManager = {
         clearDropdownBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (numerjwSelect) numerjwSelect.value = '';
+            if (nazwajwSelect) nazwajwSelect.value = '';
+            if (miejsceSelect) miejsceSelect.value = '';
+            if (podlegloscSelect) podlegloscSelect.value = '';
+            if (grupaSelect) grupaSelect.value = '';
+            if (jzwSelect) jzwSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
             this.clearDateFilter();
         });
 
         clearFilterBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (numerjwSelect) numerjwSelect.value = '';
+            if (nazwajwSelect) nazwajwSelect.value = '';
+            if (miejsceSelect) miejsceSelect.value = '';
+            if (podlegloscSelect) podlegloscSelect.value = '';
+            if (grupaSelect) grupaSelect.value = '';
+            if (jzwSelect) jzwSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
             this.clearDateFilter();
         });
     },
@@ -5982,6 +6327,13 @@ const SankcjeManager = {
         AppState.sankcjeDateFilter.active = false;
         AppState.sankcjeDateFilter.dateFrom = null;
         AppState.sankcjeDateFilter.dateTo = null;
+        AppState.sankcjeDateFilter.numerjw = '';
+        AppState.sankcjeDateFilter.nazwajw = '';
+        AppState.sankcjeDateFilter.miejsce = '';
+        AppState.sankcjeDateFilter.podleglosc = '';
+        AppState.sankcjeDateFilter.grupa = '';
+        AppState.sankcjeDateFilter.jw_prowadzaca = '';
+        AppState.sankcjeDateFilter.oddzial = '';
 
         const filterBadge = document.getElementById('sankcjeDateFilterBadge');
         const filterInfoBar = document.getElementById('sankcjeFilterInfoBar');
@@ -6149,21 +6501,53 @@ const SankcjeManager = {
             return;
         }
 
-        // Filtrowanie dat
+        // Filtrowanie dat i innych kryteriów
         let dataToRender = AppState.sankcjeData;
         if (AppState.sankcjeDateFilter.active) {
-            const { dateFrom, dateTo } = AppState.sankcjeDateFilter;
+            const { dateFrom, dateTo, numerjw, nazwajw, miejsce, podleglosc, grupa, jw_prowadzaca, oddzial } = AppState.sankcjeDateFilter;
             const matchingMainRowIds = new Set();
-            
+
             AppState.sankcjeData.forEach(row => {
                 if (row.isMainRow !== false) {
+                    let matches = true;
+
+                    // Check date range
                     const rowDate = this.parsePolishDate(row.data);
-                    if (rowDate && rowDate >= dateFrom && rowDate <= dateTo) {
+                    if (rowDate) {
+                        matches = rowDate >= dateFrom && rowDate <= dateTo;
+                    } else {
+                        matches = false;
+                    }
+
+                    // Check additional filters
+                    if (matches && numerjw) {
+                        matches = row.nr_jw === numerjw;
+                    }
+                    if (matches && nazwajw) {
+                        matches = row.nazwa_jw === nazwajw;
+                    }
+                    if (matches && miejsce) {
+                        matches = row.miejsce === miejsce;
+                    }
+                    if (matches && podleglosc) {
+                        matches = row.podleglosc === podleglosc;
+                    }
+                    if (matches && grupa) {
+                        matches = row.grupa === grupa;
+                    }
+                    if (matches && jw_prowadzaca) {
+                        matches = row.jzw_prowadzaca === jw_prowadzaca;
+                    }
+                    if (matches && oddzial) {
+                        matches = row.oddzial === oddzial;
+                    }
+
+                    if (matches) {
                         matchingMainRowIds.add(row.groupId || row.id);
                     }
                 }
             });
-            
+
             dataToRender = AppState.sankcjeData.filter(row => {
                 const groupId = row.groupId || row.id;
                 return matchingMainRowIds.has(groupId);
@@ -6534,12 +6918,36 @@ const KonwojeManager = createBaseTableManager({
                                 <input type="date" id="konwojeDateFrom" class="date-input">
                                 <label>Data do:</label>
                                 <input type="date" id="konwojeDateTo" class="date-input">
-                                <div class="quick-filters">
-                                    <button class="btn-quick-filter" data-days="0">Dziś</button>
-                                    <button class="btn-quick-filter" data-days="7">7 dni</button>
-                                    <button class="btn-quick-filter" data-days="30">30 dni</button>
-                                    <button class="btn-quick-filter" data-days="90">90 dni</button>
-                                </div>
+                                <label>Rodzaj konwoju:</label>
+                                <select id="konwojeRodzajFilter" class="date-input">
+                                    <option value="">Wszystkie</option>
+                                    <option value="miejscowy">Miejscowy</option>
+                                    <option value="zamiejscowy">Zamiejscowy</option>
+                                </select>
+                                <label>JW prowadząca:</label>
+                                <select id="konwojeJwFilter" class="date-input">
+                                    <option value="">Wszystkie</option>
+                                    <option value="OŻW Elbląg">OŻW Elbląg</option>
+                                    <option value="WŻW Bemowo Piskie">WŻW Bemowo Piskie</option>
+                                    <option value="WŻW Gdynia">WŻW Gdynia</option>
+                                    <option value="PŻW Bartoszyce">PŻW Bartoszyce</option>
+                                    <option value="PŻW Braniewo">PŻW Braniewo</option>
+                                    <option value="PŻW Malbork">PŻW Malbork</option>
+                                    <option value="PŻW Morąg">PŻW Morąg</option>
+                                    <option value="PŻW Giżycko">PŻW Giżycko</option>
+                                </select>
+                                <label>Oddział:</label>
+                                <select id="konwojeOddzialFilter" class="date-input">
+                                    <option value="">Wszystkie</option>
+                                    <option value="Elbląg">Elbląg</option>
+                                    <option value="Bydgoszcz">Bydgoszcz</option>
+                                    <option value="Szczecin">Szczecin</option>
+                                    <option value="Żagań">Żagań</option>
+                                    <option value="Kraków">Kraków</option>
+                                    <option value="Lublin">Lublin</option>
+                                    <option value="Warszawa">Warszawa</option>
+                                    <option value="Łódź">Łódź</option>
+                                </select>
                                 <div id="konwojeFilterResultInfo" class="filter-result-info hidden"></div>
                                 <div class="dropdown-actions">
                                     <button class="btn-secondary btn-sm" id="applyKonwojeDateFilter">
@@ -6621,12 +7029,14 @@ const KonwojeManager = createBaseTableManager({
         const dropdown = document.getElementById('konwojeDateFilterDropdown');
         const dateFromInput = document.getElementById('konwojeDateFrom');
         const dateToInput = document.getElementById('konwojeDateTo');
+        const rodzajSelect = document.getElementById('konwojeRodzajFilter');
+        const jwSelect = document.getElementById('konwojeJwFilter');
+        const oddzialSelect = document.getElementById('konwojeOddzialFilter');
         const applyBtn = document.getElementById('applyKonwojeDateFilter');
         const clearDropdownBtn = document.getElementById('clearKonwojeDateFilterDropdown');
         const filterBadge = document.getElementById('konwojeDateFilterBadge');
         const filterInfoBar = document.getElementById('konwojeFilterInfoBar');
         const filterResultInfo = document.getElementById('konwojeFilterResultInfo');
-        const quickFilterBtns = dropdown?.querySelectorAll('.btn-quick-filter');
 
         toggleBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -6637,23 +7047,6 @@ const KonwojeManager = createBaseTableManager({
             if (!dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
-        });
-
-        quickFilterBtns?.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const days = parseInt(btn.dataset.days);
-                const today = new Date();
-                const from = new Date(today);
-                
-                if (days === 0) {
-                    from.setHours(0, 0, 0, 0);
-                } else {
-                    from.setDate(today.getDate() - days);
-                }
-
-                dateFromInput.value = this.dateToInputFormat(from);
-                dateToInput.value = this.dateToInputFormat(today);
-            });
         });
 
         applyBtn?.addEventListener('click', () => {
@@ -6667,7 +7060,7 @@ const KonwojeManager = createBaseTableManager({
 
             const dateFrom = new Date(from);
             const dateTo = new Date(to);
-            
+
             dateFrom.setHours(0, 0, 0, 0);
             dateTo.setHours(23, 59, 59, 999);
 
@@ -6679,6 +7072,9 @@ const KonwojeManager = createBaseTableManager({
             AppState.konwojeDateFilter.active = true;
             AppState.konwojeDateFilter.dateFrom = dateFrom;
             AppState.konwojeDateFilter.dateTo = dateTo;
+            AppState.konwojeDateFilter.rodzaj_konwoju = rodzajSelect?.value || '';
+            AppState.konwojeDateFilter.jw_prowadzaca = jwSelect?.value || '';
+            AppState.konwojeDateFilter.oddzial = oddzialSelect?.value || '';
 
             this.applyDateFilter();
             dropdown.classList.add('hidden');
@@ -6687,6 +7083,9 @@ const KonwojeManager = createBaseTableManager({
         clearDropdownBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (rodzajSelect) rodzajSelect.value = '';
+            if (jwSelect) jwSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
             this.clearDateFilter();
         });
     },
@@ -6812,6 +7211,9 @@ const KonwojeManager = createBaseTableManager({
         AppState.konwojeDateFilter.active = false;
         AppState.konwojeDateFilter.dateFrom = null;
         AppState.konwojeDateFilter.dateTo = null;
+        AppState.konwojeDateFilter.rodzaj_konwoju = '';
+        AppState.konwojeDateFilter.jw_prowadzaca = '';
+        AppState.konwojeDateFilter.oddzial = '';
 
         const filterBadge = document.getElementById('konwojeDateFilterBadge');
         const filterInfoBar = document.getElementById('konwojeFilterInfoBar');
@@ -6893,11 +7295,34 @@ const KonwojeManager = createBaseTableManager({
 
         let dataToRender = AppState.konwojeData;
         if (AppState.konwojeDateFilter.active) {
-            const { dateFrom, dateTo } = AppState.konwojeDateFilter;
-            
+            const { dateFrom, dateTo, rodzaj_konwoju, jw_prowadzaca, oddzial } = AppState.konwojeDateFilter;
+
             dataToRender = AppState.konwojeData.filter(row => {
+                // Check date range
                 const rowDate = this.parsePolishDate(row.data);
-                return rowDate && rowDate >= dateFrom && rowDate <= dateTo;
+                if (!rowDate) return false;
+                let matches = rowDate >= dateFrom && rowDate <= dateTo;
+
+                // Check rodzaj konwoju
+                if (matches && rodzaj_konwoju) {
+                    if (rodzaj_konwoju === 'miejscowy') {
+                        matches = (parseInt(row.miejscowy) || 0) > 0;
+                    } else if (rodzaj_konwoju === 'zamiejscowy') {
+                        matches = (parseInt(row.zamiejscowy) || 0) > 0;
+                    }
+                }
+
+                // Check JW prowadząca
+                if (matches && jw_prowadzaca) {
+                    matches = row.jw_prowadzaca === jw_prowadzaca;
+                }
+
+                // Check oddział
+                if (matches && oddzial) {
+                    matches = row.oddzial === oddzial;
+                }
+
+                return matches;
             });
         }
 
@@ -7433,14 +7858,87 @@ const ZdarzeniaManager = createBaseTableManager({
                                 <input type="date" id="zdarzenieDateFrom" class="date-input">
                                 <label>Data do:</label>
                                 <input type="date" id="zdarzenieDateTo" class="date-input">
-                                <div class="quick-filters">
-                                    <button class="btn-quick-filter" data-days="0">Dziś</button>
-                                    <button class="btn-quick-filter" data-days="7">7 dni</button>
-                                    <button class="btn-quick-filter" data-days="30">30 dni</button>
-                                    <button class="btn-quick-filter" data-days="90">90 dni</button>
-                                </div>
-                                <div id="zdarzenieFilterResultInfo" class="filter-result-info hidden"></div>
-                                <div class="dropdown-actions">
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Numer JW:</label>
+                                <select id="zdarzeniaNumerjwFilter" class="zdarzenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Nazwa JW:</label>
+                                <select id="zdarzeniaNazwajwFilter" class="zdarzenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Miejsce stac.:</label>
+                                <select id="zdarzeniaMiejsceFilter" class="zdarzenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Podległość RSZ:</label>
+                                <select id="zdarzeniaPodlegloscFilter" class="zdarzenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="WL">WL</option>
+                                    <option value="SP">SP</option>
+                                    <option value="MW">MW</option>
+                                    <option value="WOT">WOT</option>
+                                    <option value="ŻW">ŻW</option>
+                                    <option value="inne">inne</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Grupa os.:</label>
+                                <select id="zdarzeniaGrupaFilter" class="zdarzenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="żołnierz">żołnierz</option>
+                                    <option value="pracownik RON">pracownik RON</option>
+                                    <option value="osoba cywilna">osoba cywilna</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Rodzaj zdarzenia:</label>
+                                <select id="zdarzeniaRodzajFilter" class="zdarzenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="wypadek">wypadek</option>
+                                    <option value="kolizja">kolizja</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">JŻW prow.:</label>
+                                <select id="zdarzeniaJwProwadzacaFilter" class="zdarzenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="OŻW Elbląg">OŻW Elbląg</option>
+                                    <option value="WŻW Bemowo Piskie">WŻW Bemowo Piskie</option>
+                                    <option value="WŻW Gdynia">WŻW Gdynia</option>
+                                    <option value="PŻW Bartoszyce">PŻW Bartoszyce</option>
+                                    <option value="PŻW Braniewo">PŻW Braniewo</option>
+                                    <option value="PŻW Giżycko">PŻW Giżycko</option>
+                                    <option value="PŻW Malbork">PŻW Malbork</option>
+                                    <option value="PŻW Morąg">PŻW Morąg</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Oddział:</label>
+                                <select id="zdarzeniaOddzialFilter" class="zdarzenia-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="Elbląg">Elbląg</option>
+                                    <option value="Szczecin">Szczecin</option>
+                                    <option value="Lublin">Lublin</option>
+                                    <option value="Bydgoszcz">Bydgoszcz</option>
+                                    <option value="Kraków">Kraków</option>
+                                    <option value="Żagań">Żagań</option>
+                                    <option value="Warszawa">Warszawa</option>
+                                    <option value="Łódź">Łódź</option>
+                                    <option value="Mińsk Mazowiecki">Mińsk Mazowiecki</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div id="zdarzenieFilterResultInfo" class="filter-result-info hidden"></div>
+                            <div class="dropdown-actions">
                                     <button class="btn-secondary btn-sm" id="applyZdarzenieDateFilter">
                                         <i class="fas fa-check"></i> Zastosuj
                                     </button>
@@ -7653,9 +8151,48 @@ const ZdarzeniaManager = createBaseTableManager({
         const dropdown = document.getElementById('zdarzenieDateFilterDropdown');
         const dateFromInput = document.getElementById('zdarzenieDateFrom');
         const dateToInput = document.getElementById('zdarzenieDateTo');
+        const numerjwSelect = document.getElementById('zdarzeniaNumerjwFilter');
+        const nazwajwSelect = document.getElementById('zdarzeniaNazwajwFilter');
+        const miejsceSelect = document.getElementById('zdarzeniaMiejsceFilter');
+        const podlegloscSelect = document.getElementById('zdarzeniaPodlegloscFilter');
+        const grupaSelect = document.getElementById('zdarzeniaGrupaFilter');
+        const rodzajSelect = document.getElementById('zdarzeniaRodzajFilter');
+        const jwProwadzacaSelect = document.getElementById('zdarzeniaJwProwadzacaFilter');
+        const oddzialSelect = document.getElementById('zdarzeniaOddzialFilter');
         const applyBtn = document.getElementById('applyZdarzenieDateFilter');
         const clearDropdownBtn = document.getElementById('clearZdarzenieDateFilterDropdown');
-        const quickFilterBtns = dropdown?.querySelectorAll('.btn-quick-filter');
+        const clearFilterBtn = document.getElementById('clearZdarzenieDateFilterBtn');
+        const filterBadge = document.getElementById('zdarzenieDateFilterBadge');
+        const filterInfoBar = document.getElementById('zdarzeniaFilterInfoBar');
+        const filterResultInfo = document.getElementById('zdarzenieFilterResultInfo');
+
+        // Populate dynamic selects
+        if (numerjwSelect) {
+            for (let i = 1; i <= 99; i++) {
+                const option = document.createElement('option');
+                option.value = String(i);
+                option.textContent = String(i);
+                numerjwSelect.appendChild(option);
+            }
+        }
+
+        if (nazwajwSelect) {
+            for (let i = 1; i <= 80; i++) {
+                const option = document.createElement('option');
+                option.value = `JW ${i}`;
+                option.textContent = `JW ${i}`;
+                nazwajwSelect.appendChild(option);
+            }
+        }
+
+        if (miejsceSelect) {
+            for (let i = 1; i <= 30; i++) {
+                const option = document.createElement('option');
+                option.value = `Miejsce ${i}`;
+                option.textContent = `Miejsce ${i}`;
+                miejsceSelect.appendChild(option);
+            }
+        }
 
         toggleBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -7666,23 +8203,6 @@ const ZdarzeniaManager = createBaseTableManager({
             if (!dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
-        });
-
-        quickFilterBtns?.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const days = parseInt(btn.dataset.days);
-                const today = new Date();
-                const from = new Date(today);
-                
-                if (days === 0) {
-                    from.setHours(0, 0, 0, 0);
-                } else {
-                    from.setDate(today.getDate() - days);
-                }
-
-                dateFromInput.value = this.dateToInputFormat(from);
-                dateToInput.value = this.dateToInputFormat(today);
-            });
         });
 
         applyBtn?.addEventListener('click', () => {
@@ -7696,7 +8216,7 @@ const ZdarzeniaManager = createBaseTableManager({
 
             const dateFrom = new Date(from);
             const dateTo = new Date(to);
-            
+
             dateFrom.setHours(0, 0, 0, 0);
             dateTo.setHours(23, 59, 59, 999);
 
@@ -7708,6 +8228,14 @@ const ZdarzeniaManager = createBaseTableManager({
             AppState.zdarzenieDateFilter.active = true;
             AppState.zdarzenieDateFilter.dateFrom = dateFrom;
             AppState.zdarzenieDateFilter.dateTo = dateTo;
+            AppState.zdarzenieDateFilter.numerjw = numerjwSelect?.value || '';
+            AppState.zdarzenieDateFilter.nazwajw = nazwajwSelect?.value || '';
+            AppState.zdarzenieDateFilter.miejsce = miejsceSelect?.value || '';
+            AppState.zdarzenieDateFilter.podleglosc = podlegloscSelect?.value || '';
+            AppState.zdarzenieDateFilter.grupa = grupaSelect?.value || '';
+            AppState.zdarzenieDateFilter.rodzaj_zdarzenia = rodzajSelect?.value || '';
+            AppState.zdarzenieDateFilter.jw_prowadzaca = jwProwadzacaSelect?.value || '';
+            AppState.zdarzenieDateFilter.oddzial = oddzialSelect?.value || '';
 
             this.applyDateFilter();
             dropdown.classList.add('hidden');
@@ -7716,6 +8244,28 @@ const ZdarzeniaManager = createBaseTableManager({
         clearDropdownBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (numerjwSelect) numerjwSelect.value = '';
+            if (nazwajwSelect) nazwajwSelect.value = '';
+            if (miejsceSelect) miejsceSelect.value = '';
+            if (podlegloscSelect) podlegloscSelect.value = '';
+            if (grupaSelect) grupaSelect.value = '';
+            if (rodzajSelect) rodzajSelect.value = '';
+            if (jwProwadzacaSelect) jwProwadzacaSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
+            this.clearDateFilter();
+        });
+
+        clearFilterBtn?.addEventListener('click', () => {
+            dateFromInput.value = '';
+            dateToInput.value = '';
+            if (numerjwSelect) numerjwSelect.value = '';
+            if (nazwajwSelect) nazwajwSelect.value = '';
+            if (miejsceSelect) miejsceSelect.value = '';
+            if (podlegloscSelect) podlegloscSelect.value = '';
+            if (grupaSelect) grupaSelect.value = '';
+            if (rodzajSelect) rodzajSelect.value = '';
+            if (jwProwadzacaSelect) jwProwadzacaSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
             this.clearDateFilter();
         });
     },
@@ -7828,14 +8378,24 @@ const ZdarzeniaManager = createBaseTableManager({
         AppState.zdarzenieDateFilter.active = false;
         AppState.zdarzenieDateFilter.dateFrom = null;
         AppState.zdarzenieDateFilter.dateTo = null;
+        AppState.zdarzenieDateFilter.numerjw = '';
+        AppState.zdarzenieDateFilter.nazwajw = '';
+        AppState.zdarzenieDateFilter.miejsce = '';
+        AppState.zdarzenieDateFilter.podleglosc = '';
+        AppState.zdarzenieDateFilter.grupa = '';
+        AppState.zdarzenieDateFilter.rodzaj_zdarzenia = '';
+        AppState.zdarzenieDateFilter.jw_prowadzaca = '';
+        AppState.zdarzenieDateFilter.oddzial = '';
 
         const filterBadge = document.getElementById('zdarzenieDateFilterBadge');
         const filterInfoBar = document.getElementById('zdarzeniaFilterInfoBar');
         const filterResultInfo = document.getElementById('zdarzenieFilterResultInfo');
+        const clearFilterBtn = document.getElementById('clearZdarzenieDateFilterBtn');
 
         filterBadge?.classList.add('hidden');
         filterInfoBar?.classList.add('hidden');
         filterResultInfo?.classList.add('hidden');
+        clearFilterBtn?.classList.add('hidden');
 
         this.renderRows();
     },
@@ -7986,11 +8546,43 @@ const ZdarzeniaManager = createBaseTableManager({
 
         let dataToRender = AppState.zdarzeniaData;
         if (AppState.zdarzenieDateFilter.active) {
-            const { dateFrom, dateTo } = AppState.zdarzenieDateFilter;
-            
+            const { dateFrom, dateTo, numerjw, nazwajw, miejsce, podleglosc, grupa, rodzaj_zdarzenia, jw_prowadzaca, oddzial } = AppState.zdarzenieDateFilter;
+
             dataToRender = AppState.zdarzeniaData.filter(row => {
                 const rowDate = this.parsePolishDate(row.data);
-                return rowDate && rowDate >= dateFrom && rowDate <= dateTo;
+                let matches = rowDate && rowDate >= dateFrom && rowDate <= dateTo;
+
+                // Check additional filters
+                if (matches && numerjw) {
+                    matches = row.nr_jw === numerjw;
+                }
+                if (matches && nazwajw) {
+                    matches = row.nazwa_jw === nazwajw;
+                }
+                if (matches && miejsce) {
+                    matches = row.miejsce === miejsce;
+                }
+                if (matches && podleglosc) {
+                    matches = row.podleglosc === podleglosc;
+                }
+                if (matches && grupa) {
+                    matches = row.grupa === grupa;
+                }
+                if (matches && rodzaj_zdarzenia) {
+                    if (rodzaj_zdarzenia === 'wypadek') {
+                        matches = (row.wypadek || 0) > 0;
+                    } else if (rodzaj_zdarzenia === 'kolizja') {
+                        matches = (row.kolizja || 0) > 0;
+                    }
+                }
+                if (matches && jw_prowadzaca) {
+                    matches = row.jzw === jw_prowadzaca;
+                }
+                if (matches && oddzial) {
+                    matches = row.oddzial === oddzial;
+                }
+
+                return matches;
             });
         }
 
@@ -8383,14 +8975,48 @@ const PilotazeManager = createBaseTableManager({
                                 <input type="date" id="pilotazeDateFrom" class="date-input">
                                 <label>Data do:</label>
                                 <input type="date" id="pilotazeDateTo" class="date-input">
-                                <div class="quick-filters">
-                                    <button class="btn-quick-filter" data-days="0">Dziś</button>
-                                    <button class="btn-quick-filter" data-days="7">7 dni</button>
-                                    <button class="btn-quick-filter" data-days="30">30 dni</button>
-                                    <button class="btn-quick-filter" data-days="90">90 dni</button>
-                                </div>
-                                <div id="pilotazeFilterResultInfo" class="filter-result-info hidden"></div>
-                                <div class="dropdown-actions">
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Wojska:</label>
+                                <select id="pilotazeWojskaFilter" class="pilotaze-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="własne">własne</option>
+                                    <option value="sojusznicze">sojusznicze</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">JŻW prow.:</label>
+                                <select id="pilotazeJwProwadzacaFilter" class="pilotaze-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="OŻW Elbląg">OŻW Elbląg</option>
+                                    <option value="WŻW Bemowo Piskie">WŻW Bemowo Piskie</option>
+                                    <option value="WŻW Gdynia">WŻW Gdynia</option>
+                                    <option value="PŻW Bartoszyce">PŻW Bartoszyce</option>
+                                    <option value="PŻW Braniewo">PŻW Braniewo</option>
+                                    <option value="PŻW Giżycko">PŻW Giżycko</option>
+                                    <option value="PŻW Malbork">PŻW Malbork</option>
+                                    <option value="PŻW Morąg">PŻW Morąg</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Oddział:</label>
+                                <select id="pilotazeOddzialFilter" class="pilotaze-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="Elbląg">Elbląg</option>
+                                    <option value="Szczecin">Szczecin</option>
+                                    <option value="Lublin">Lublin</option>
+                                    <option value="Bydgoszcz">Bydgoszcz</option>
+                                    <option value="Kraków">Kraków</option>
+                                    <option value="Żagań">Żagań</option>
+                                    <option value="Warszawa">Warszawa</option>
+                                    <option value="Łódź">Łódź</option>
+                                    <option value="Mińsk Mazowiecki">Mińsk Mazowiecki</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div id="pilotazeFilterResultInfo" class="filter-result-info hidden"></div>
+                            <div class="dropdown-actions">
                                     <button class="btn-secondary btn-sm" id="applyPilotazeDateFilter">
                                         <i class="fas fa-check"></i> Zastosuj
                                     </button>
@@ -8462,9 +9088,15 @@ const PilotazeManager = createBaseTableManager({
         const dropdown = document.getElementById('pilotazeDateFilterDropdown');
         const dateFromInput = document.getElementById('pilotazeDateFrom');
         const dateToInput = document.getElementById('pilotazeDateTo');
+        const wojskaSelect = document.getElementById('pilotazeWojskaFilter');
+        const jwProwadzacaSelect = document.getElementById('pilotazeJwProwadzacaFilter');
+        const oddzialSelect = document.getElementById('pilotazeOddzialFilter');
         const applyBtn = document.getElementById('applyPilotazeDateFilter');
         const clearDropdownBtn = document.getElementById('clearPilotazeDateFilterDropdown');
-        const quickFilterBtns = dropdown?.querySelectorAll('.btn-quick-filter');
+        const clearFilterBtn = document.getElementById('clearPilotazeDateFilterBtn');
+        const filterBadge = document.getElementById('pilotazeDateFilterBadge');
+        const filterInfoBar = document.getElementById('pilotazeFilterInfoBar');
+        const filterResultInfo = document.getElementById('pilotazeFilterResultInfo');
 
         toggleBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -8475,23 +9107,6 @@ const PilotazeManager = createBaseTableManager({
             if (!dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
-        });
-
-        quickFilterBtns?.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const days = parseInt(btn.dataset.days);
-                const today = new Date();
-                const from = new Date(today);
-                
-                if (days === 0) {
-                    from.setHours(0, 0, 0, 0);
-                } else {
-                    from.setDate(today.getDate() - days);
-                }
-
-                dateFromInput.value = this.dateToInputFormat(from);
-                dateToInput.value = this.dateToInputFormat(today);
-            });
         });
 
         applyBtn?.addEventListener('click', () => {
@@ -8505,7 +9120,7 @@ const PilotazeManager = createBaseTableManager({
 
             const dateFrom = new Date(from);
             const dateTo = new Date(to);
-            
+
             dateFrom.setHours(0, 0, 0, 0);
             dateTo.setHours(23, 59, 59, 999);
 
@@ -8517,6 +9132,9 @@ const PilotazeManager = createBaseTableManager({
             AppState.pilotazeDateFilter.active = true;
             AppState.pilotazeDateFilter.dateFrom = dateFrom;
             AppState.pilotazeDateFilter.dateTo = dateTo;
+            AppState.pilotazeDateFilter.wojska = wojskaSelect?.value || '';
+            AppState.pilotazeDateFilter.jw_prowadzaca = jwProwadzacaSelect?.value || '';
+            AppState.pilotazeDateFilter.oddzial = oddzialSelect?.value || '';
 
             this.applyDateFilter();
             dropdown.classList.add('hidden');
@@ -8525,6 +9143,18 @@ const PilotazeManager = createBaseTableManager({
         clearDropdownBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (wojskaSelect) wojskaSelect.value = '';
+            if (jwProwadzacaSelect) jwProwadzacaSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
+            this.clearDateFilter();
+        });
+
+        clearFilterBtn?.addEventListener('click', () => {
+            dateFromInput.value = '';
+            dateToInput.value = '';
+            if (wojskaSelect) wojskaSelect.value = '';
+            if (jwProwadzacaSelect) jwProwadzacaSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
             this.clearDateFilter();
         });
     },
@@ -8637,14 +9267,19 @@ const PilotazeManager = createBaseTableManager({
         AppState.pilotazeDateFilter.active = false;
         AppState.pilotazeDateFilter.dateFrom = null;
         AppState.pilotazeDateFilter.dateTo = null;
+        AppState.pilotazeDateFilter.wojska = '';
+        AppState.pilotazeDateFilter.jw_prowadzaca = '';
+        AppState.pilotazeDateFilter.oddzial = '';
 
         const filterBadge = document.getElementById('pilotazeDateFilterBadge');
         const filterInfoBar = document.getElementById('pilotazeFilterInfoBar');
         const filterResultInfo = document.getElementById('pilotazeFilterResultInfo');
+        const clearFilterBtn = document.getElementById('clearPilotazeDateFilterBtn');
 
         filterBadge?.classList.add('hidden');
         filterInfoBar?.classList.add('hidden');
         filterResultInfo?.classList.add('hidden');
+        clearFilterBtn?.classList.add('hidden');
 
         this.renderRows();
     },
@@ -8712,11 +9347,28 @@ const PilotazeManager = createBaseTableManager({
 
         let dataToRender = AppState.pilotazeData;
         if (AppState.pilotazeDateFilter.active) {
-            const { dateFrom, dateTo } = AppState.pilotazeDateFilter;
-            
+            const { dateFrom, dateTo, wojska, jw_prowadzaca, oddzial } = AppState.pilotazeDateFilter;
+
             dataToRender = AppState.pilotazeData.filter(row => {
                 const rowDate = this.parsePolishDate(row.data);
-                return rowDate && rowDate >= dateFrom && rowDate <= dateTo;
+                let matches = rowDate && rowDate >= dateFrom && rowDate <= dateTo;
+
+                // Check additional filters
+                if (matches && wojska) {
+                    if (wojska === 'własne') {
+                        matches = (row.wlasne || 0) > 0;
+                    } else if (wojska === 'sojusznicze') {
+                        matches = (row.sojusznicze || 0) > 0;
+                    }
+                }
+                if (matches && jw_prowadzaca) {
+                    matches = row.jzw === jw_prowadzaca;
+                }
+                if (matches && oddzial) {
+                    matches = row.oddzial === oddzial;
+                }
+
+                return matches;
             });
         }
 
@@ -8915,14 +9567,79 @@ const SPBManager = createBaseTableManager({
                                 <input type="date" id="spbDateFrom" class="date-input">
                                 <label>Data do:</label>
                                 <input type="date" id="spbDateTo" class="date-input">
-                                <div class="quick-filters">
-                                    <button class="btn-quick-filter" data-days="0">Dziś</button>
-                                    <button class="btn-quick-filter" data-days="7">7 dni</button>
-                                    <button class="btn-quick-filter" data-days="30">30 dni</button>
-                                    <button class="btn-quick-filter" data-days="90">90 dni</button>
-                                </div>
-                                <div id="spbFilterResultInfo" class="filter-result-info hidden"></div>
-                                <div class="dropdown-actions">
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Numer JW:</label>
+                                <select id="spbNumerjwFilter" class="spb-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Nazwa JW:</label>
+                                <select id="spbNazwajwFilter" class="spb-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Miejsce stac.:</label>
+                                <select id="spbMiejsceFilter" class="spb-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Podległość RSZ:</label>
+                                <select id="spbPodlegloscFilter" class="spb-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="WL">WL</option>
+                                    <option value="SP">SP</option>
+                                    <option value="MW">MW</option>
+                                    <option value="WOT">WOT</option>
+                                    <option value="ŻW">ŻW</option>
+                                    <option value="inne">inne</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Grupa os.:</label>
+                                <select id="spbGrupaFilter" class="spb-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="żołnierz">żołnierz</option>
+                                    <option value="pracownik RON">pracownik RON</option>
+                                    <option value="osoba cywilna">osoba cywilna</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">JŻW prow.:</label>
+                                <select id="spbJwProwadzacaFilter" class="spb-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="OŻW Elbląg">OŻW Elbląg</option>
+                                    <option value="WŻW Bemowo Piskie">WŻW Bemowo Piskie</option>
+                                    <option value="WŻW Gdynia">WŻW Gdynia</option>
+                                    <option value="PŻW Bartoszyce">PŻW Bartoszyce</option>
+                                    <option value="PŻW Braniewo">PŻW Braniewo</option>
+                                    <option value="PŻW Giżycko">PŻW Giżycko</option>
+                                    <option value="PŻW Malbork">PŻW Malbork</option>
+                                    <option value="PŻW Morąg">PŻW Morąg</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Oddział:</label>
+                                <select id="spbOddzialFilter" class="spb-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">Wszystkie</option>
+                                    <option value="Elbląg">Elbląg</option>
+                                    <option value="Szczecin">Szczecin</option>
+                                    <option value="Lublin">Lublin</option>
+                                    <option value="Bydgoszcz">Bydgoszcz</option>
+                                    <option value="Kraków">Kraków</option>
+                                    <option value="Żagań">Żagań</option>
+                                    <option value="Warszawa">Warszawa</option>
+                                    <option value="Łódź">Łódź</option>
+                                    <option value="Mińsk Mazowiecki">Mińsk Mazowiecki</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div id="spbFilterResultInfo" class="filter-result-info hidden"></div>
+                            <div class="dropdown-actions">
                                     <button class="btn-secondary btn-sm" id="applySPBDateFilter">
                                         <i class="fas fa-check"></i> Zastosuj
                                     </button>
@@ -9079,9 +9796,47 @@ const SPBManager = createBaseTableManager({
         const dropdown = document.getElementById('spbDateFilterDropdown');
         const dateFromInput = document.getElementById('spbDateFrom');
         const dateToInput = document.getElementById('spbDateTo');
+        const numerjwSelect = document.getElementById('spbNumerjwFilter');
+        const nazwajwSelect = document.getElementById('spbNazwajwFilter');
+        const miejsceSelect = document.getElementById('spbMiejsceFilter');
+        const podlegloscSelect = document.getElementById('spbPodlegloscFilter');
+        const grupaSelect = document.getElementById('spbGrupaFilter');
+        const jwProwadzacaSelect = document.getElementById('spbJwProwadzacaFilter');
+        const oddzialSelect = document.getElementById('spbOddzialFilter');
         const applyBtn = document.getElementById('applySPBDateFilter');
         const clearDropdownBtn = document.getElementById('clearSPBDateFilterDropdown');
-        const quickFilterBtns = dropdown?.querySelectorAll('.btn-quick-filter');
+        const clearFilterBtn = document.getElementById('clearSPBDateFilterBtn');
+        const filterBadge = document.getElementById('spbDateFilterBadge');
+        const filterInfoBar = document.getElementById('spbFilterInfoBar');
+        const filterResultInfo = document.getElementById('spbFilterResultInfo');
+
+        // Populate dynamic selects
+        if (numerjwSelect) {
+            for (let i = 1; i <= 99; i++) {
+                const option = document.createElement('option');
+                option.value = String(i);
+                option.textContent = String(i);
+                numerjwSelect.appendChild(option);
+            }
+        }
+
+        if (nazwajwSelect) {
+            for (let i = 1; i <= 80; i++) {
+                const option = document.createElement('option');
+                option.value = `JW ${i}`;
+                option.textContent = `JW ${i}`;
+                nazwajwSelect.appendChild(option);
+            }
+        }
+
+        if (miejsceSelect) {
+            for (let i = 1; i <= 30; i++) {
+                const option = document.createElement('option');
+                option.value = `Miejsce ${i}`;
+                option.textContent = `Miejsce ${i}`;
+                miejsceSelect.appendChild(option);
+            }
+        }
 
         toggleBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -9092,23 +9847,6 @@ const SPBManager = createBaseTableManager({
             if (!dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
-        });
-
-        quickFilterBtns?.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const days = parseInt(btn.dataset.days);
-                const today = new Date();
-                const from = new Date(today);
-
-                if (days === 0) {
-                    from.setHours(0, 0, 0, 0);
-                } else {
-                    from.setDate(today.getDate() - days);
-                }
-
-                dateFromInput.value = this.dateToInputFormat(from);
-                dateToInput.value = this.dateToInputFormat(today);
-            });
         });
 
         applyBtn?.addEventListener('click', () => {
@@ -9134,6 +9872,13 @@ const SPBManager = createBaseTableManager({
             AppState.spbDateFilter.active = true;
             AppState.spbDateFilter.dateFrom = dateFrom;
             AppState.spbDateFilter.dateTo = dateTo;
+            AppState.spbDateFilter.numerjw = numerjwSelect?.value || '';
+            AppState.spbDateFilter.nazwajw = nazwajwSelect?.value || '';
+            AppState.spbDateFilter.miejsce = miejsceSelect?.value || '';
+            AppState.spbDateFilter.podleglosc = podlegloscSelect?.value || '';
+            AppState.spbDateFilter.grupa = grupaSelect?.value || '';
+            AppState.spbDateFilter.jw_prowadzaca = jwProwadzacaSelect?.value || '';
+            AppState.spbDateFilter.oddzial = oddzialSelect?.value || '';
 
             this.applyDateFilter();
             dropdown.classList.add('hidden');
@@ -9142,6 +9887,26 @@ const SPBManager = createBaseTableManager({
         clearDropdownBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
+            if (numerjwSelect) numerjwSelect.value = '';
+            if (nazwajwSelect) nazwajwSelect.value = '';
+            if (miejsceSelect) miejsceSelect.value = '';
+            if (podlegloscSelect) podlegloscSelect.value = '';
+            if (grupaSelect) grupaSelect.value = '';
+            if (jwProwadzacaSelect) jwProwadzacaSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
+            this.clearDateFilter();
+        });
+
+        clearFilterBtn?.addEventListener('click', () => {
+            dateFromInput.value = '';
+            dateToInput.value = '';
+            if (numerjwSelect) numerjwSelect.value = '';
+            if (nazwajwSelect) nazwajwSelect.value = '';
+            if (miejsceSelect) miejsceSelect.value = '';
+            if (podlegloscSelect) podlegloscSelect.value = '';
+            if (grupaSelect) grupaSelect.value = '';
+            if (jwProwadzacaSelect) jwProwadzacaSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
             this.clearDateFilter();
         });
     },
@@ -9254,14 +10019,23 @@ const SPBManager = createBaseTableManager({
         AppState.spbDateFilter.active = false;
         AppState.spbDateFilter.dateFrom = null;
         AppState.spbDateFilter.dateTo = null;
+        AppState.spbDateFilter.numerjw = '';
+        AppState.spbDateFilter.nazwajw = '';
+        AppState.spbDateFilter.miejsce = '';
+        AppState.spbDateFilter.podleglosc = '';
+        AppState.spbDateFilter.grupa = '';
+        AppState.spbDateFilter.jw_prowadzaca = '';
+        AppState.spbDateFilter.oddzial = '';
 
         const filterBadge = document.getElementById('spbDateFilterBadge');
         const filterInfoBar = document.getElementById('spbFilterInfoBar');
         const filterResultInfo = document.getElementById('spbFilterResultInfo');
+        const clearFilterBtn = document.getElementById('clearSPBDateFilterBtn');
 
         filterBadge?.classList.add('hidden');
         filterInfoBar?.classList.add('hidden');
         filterResultInfo?.classList.add('hidden');
+        clearFilterBtn?.classList.add('hidden');
 
         this.renderRows();
     },
@@ -9406,11 +10180,36 @@ const SPBManager = createBaseTableManager({
 
         let dataToRender = AppState.spbData;
         if (AppState.spbDateFilter.active) {
-            const { dateFrom, dateTo } = AppState.spbDateFilter;
-            
+            const { dateFrom, dateTo, numerjw, nazwajw, miejsce, podleglosc, grupa, jw_prowadzaca, oddzial } = AppState.spbDateFilter;
+
             dataToRender = AppState.spbData.filter(row => {
                 const rowDate = this.parsePolishDate(row.data);
-                return rowDate && rowDate >= dateFrom && rowDate <= dateTo;
+                let matches = rowDate && rowDate >= dateFrom && rowDate <= dateTo;
+
+                // Check additional filters
+                if (matches && numerjw) {
+                    matches = row.nr_jw === numerjw;
+                }
+                if (matches && nazwajw) {
+                    matches = row.nazwa_jw === nazwajw;
+                }
+                if (matches && miejsce) {
+                    matches = row.miejsce === miejsce;
+                }
+                if (matches && podleglosc) {
+                    matches = row.podleglosc === podleglosc;
+                }
+                if (matches && grupa) {
+                    matches = row.grupa === grupa;
+                }
+                if (matches && jw_prowadzaca) {
+                    matches = row.jzw_prowadzaca === jw_prowadzaca;
+                }
+                if (matches && oddzial) {
+                    matches = row.oddzial === oddzial;
+                }
+
+                return matches;
             });
         }
 
