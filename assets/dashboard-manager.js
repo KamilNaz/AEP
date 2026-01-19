@@ -925,10 +925,11 @@ const DashboardHub = {
                     break;
 
                 case 'konwoje':
-                    // Konwoje: 'Rodzaj konwoju' → 'Razem'
-                    value = parseInt(item['rodzaj_konwoju_razem']) || parseInt(item['Rodzaj_konwoju_razem']) ||
-                            parseInt(item['razem']) || 0;
-                    console.log(`      → ${key}: konwoje = ${value} (rodzaj_konwoju_razem: ${item['rodzaj_konwoju_razem'] || item['Rodzaj_konwoju_razem'] || item['razem']})`);
+                    // Konwoje: 'Rodzaj konwoju' → 'Razem' = miejscowy + zamiejscowy
+                    const miejscowy = parseInt(item['miejscowy']) || 0;
+                    const zamiejscowy = parseInt(item['zamiejscowy']) || 0;
+                    value = miejscowy + zamiejscowy;
+                    console.log(`      → ${key}: konwoje = ${value} (miejscowy: ${miejscowy}, zamiejscowy: ${zamiejscowy})`);
                     break;
 
                 case 'spb':
@@ -969,32 +970,38 @@ const DashboardHub = {
                         }
                         console.log(`      → ${key}: ŚPB = ${value} (pole: ${foundField}, typ: ${typeof checkboxData}, dane: ${JSON.stringify(checkboxData)})`);
                     } else {
-                        // Jeśli nie znaleziono pola - sprawdź czy są pola booleanowskie dla poszczególnych środków
-                        const boolFields = [
-                            'kajdanki', 'Kajdanki', 'pałka', 'Pałka', 'palka', 'Palka',
-                            'gaz', 'Gaz', 'pies', 'Pies', 'paralizator', 'Paralizator'
+                        // Jeśli nie znaleziono pola - sprawdź czy są pola numeryczne/booleanowskie dla poszczególnych środków
+                        const spbCheckboxFields = [
+                            'sila_fizyczna', 'kajdanki', 'Kajdanki', 'kaftan', 'kask', 'siatka',
+                            'pałka', 'Pałka', 'palka', 'Palka', 'pies', 'Pies',
+                            'chem_sr', 'gaz', 'Gaz', 'paralizator', 'Paralizator',
+                            'kolczatka', 'bron'
                         ];
 
-                        value = boolFields.filter(field =>
-                            item[field] === true || item[field] === 'TAK' || item[field] === '1'
-                        ).length;
+                        value = spbCheckboxFields.filter(field => {
+                            const fieldValue = item[field];
+                            // Sprawdź czy wartość to 1, true, 'TAK' lub '1'
+                            return fieldValue === 1 || fieldValue === true || fieldValue === 'TAK' || fieldValue === '1' || fieldValue > 0;
+                        }).length;
 
-                        console.log(`      → ${key}: ŚPB = ${value} (zliczone z pól booleanowskich)`);
+                        console.log(`      → ${key}: ŚPB = ${value} (zliczone z pól: sila_fizyczna=${item['sila_fizyczna']}, kajdanki=${item['kajdanki']}, kaftan=${item['kaftan']}, siatka=${item['siatka']}, palka=${item['palka']}, pies=${item['pies']}, chem_sr=${item['chem_sr']}, paralizator=${item['paralizator']}, kolczatka=${item['kolczatka']}, bron=${item['bron']})`);
                     }
                     break;
 
                 case 'pilotaze':
-                    // Pilotaże: "Rodzaj patrolu" → "Razem"
-                    value = parseInt(item['rodzaj_patrolu_razem']) || parseInt(item['Rodzaj_patrolu_razem']) ||
-                            parseInt(item['razem']) || 0;
-                    console.log(`      → ${key}: pilotaże = ${value} (rodzaj_patrolu_razem: ${item['rodzaj_patrolu_razem'] || item['Rodzaj_patrolu_razem'] || item['razem']})`);
+                    // Pilotaże: "Rodzaj patrolu" → "Razem" = wlasne + sojusznicze
+                    const wlasne = parseInt(item['wlasne']) || 0;
+                    const sojusznicze = parseInt(item['sojusznicze']) || 0;
+                    value = wlasne + sojusznicze;
+                    console.log(`      → ${key}: pilotaże = ${value} (wlasne: ${wlasne}, sojusznicze: ${sojusznicze})`);
                     break;
 
                 case 'zdarzenia':
-                    // Zdarzenia drogowe: "Rodzaj zdarzenia" → "Razem"
-                    value = parseInt(item['rodzaj_zdarzenia_razem']) || parseInt(item['Rodzaj_zdarzenia_razem']) ||
-                            parseInt(item['razem']) || 0;
-                    console.log(`      → ${key}: zdarzenia = ${value} (rodzaj_zdarzenia_razem: ${item['rodzaj_zdarzenia_razem'] || item['Rodzaj_zdarzenia_razem'] || item['razem']})`);
+                    // Zdarzenia drogowe: "Rodzaj zdarzenia" → "Razem" = wypadek + kolizja
+                    const wypadek = parseInt(item['wypadek']) || 0;
+                    const kolizja = parseInt(item['kolizja']) || 0;
+                    value = wypadek + kolizja;
+                    console.log(`      → ${key}: zdarzenia = ${value} (wypadek: ${wypadek}, kolizja: ${kolizja})`);
                     break;
 
                 default:
