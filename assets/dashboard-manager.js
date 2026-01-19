@@ -1411,6 +1411,11 @@ const DashboardHub = {
                 const insightsEl = document.getElementById('insightsContent');
                 const insightsText = insightsEl ? insightsEl.textContent.trim() : '';
 
+                console.log('🖼️ Eksport PNG:');
+                console.log('  insightsEl:', insightsEl);
+                console.log('  insightsText:', insightsText);
+                console.log('  insightsText length:', insightsText.length);
+
                 // Stwórz canvas
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -1427,8 +1432,10 @@ const DashboardHub = {
 
                 // Podziel tekst na linie
                 let lines = [];
-                if (insightsText) {
+                if (insightsText && insightsText.length > 0) {
                     lines = this.wrapText(ctx, insightsText, maxWidth);
+                    console.log('  Liczba linii:', lines.length);
+                    console.log('  Pierwsze 3 linie:', lines.slice(0, 3));
                 }
 
                 const textHeight = lines.length > 0 ? (lines.length * lineHeight) + (padding * 2) : 0;
