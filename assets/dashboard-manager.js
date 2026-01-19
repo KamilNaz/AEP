@@ -19,7 +19,7 @@ const DashboardHub = {
 
         // Ustawienia wykresu głównego
         mainChart: {
-            type: 'line', // line, bar, area, pie
+            type: 'line', // line, bar, area
             aggregation: 'day', // day, week, month
             xAxis: 'Data',
             yAxis: 'Liczba zdarzeń',
@@ -403,8 +403,7 @@ const DashboardHub = {
         const types = [
             { value: 'line', icon: 'fa-chart-line', title: 'Liniowy' },
             { value: 'bar', icon: 'fa-chart-bar', title: 'Słupkowy' },
-            { value: 'area', icon: 'fa-chart-area', title: 'Obszarowy' },
-            { value: 'pie', icon: 'fa-chart-pie', title: 'Kołowy' }
+            { value: 'area', icon: 'fa-chart-area', title: 'Obszarowy' }
         ];
 
         return `
@@ -784,10 +783,6 @@ const DashboardHub = {
             dataLabels: { enabled: false },
             stroke: { curve: 'smooth', width: 2 }
         };
-
-        if (this.state.mainChart.type === 'pie') {
-            options.labels = chartData.categories;
-        }
 
         const chartEl = document.querySelector('#mainChart');
         if (chartEl) {
