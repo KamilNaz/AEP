@@ -37,7 +37,6 @@ const DashboardHub = {
 
         // Przełączniki widoczności
         showKPI: true,
-        showTable: false,
 
         // Dane
         rawData: {},
@@ -232,6 +231,15 @@ const DashboardHub = {
                             </div>
                         </div>
                         <div class="chart-container" id="mainChart"></div>
+
+                        <!-- AI Chart Insights -->
+                        <div class="chart-insights" id="chartInsights" style="display: none;">
+                            <div class="insights-header">
+                                <i class="fas fa-lightbulb"></i>
+                                <h4>Spostrzeżenia</h4>
+                            </div>
+                            <div class="insights-content" id="insightsContent"></div>
+                        </div>
                     </div>
 
                     <!-- KPI Cards -->
@@ -242,11 +250,6 @@ const DashboardHub = {
                     <!-- Helper Charts (2 columns) -->
                     <div class="helper-charts-grid">
                         ${this.renderHelperCharts()}
-                    </div>
-
-                    <!-- Data Table -->
-                    <div class="table-section" id="tableSection" style="display: ${this.state.showTable ? 'block' : 'none'}">
-                        ${this.renderDataTable()}
                     </div>
                 </div>
             </div>
@@ -340,11 +343,6 @@ const DashboardHub = {
                             <input type="checkbox" ${this.state.showKPI ? 'checked' : ''}
                                 onchange="DashboardHub.toggleKPI(this.checked)">
                             <span>KPI</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" ${this.state.showTable ? 'checked' : ''}
-                                onchange="DashboardHub.toggleTable(this.checked)">
-                            <span>Tabela</span>
                         </label>
                     </div>
                 </div>
@@ -473,73 +471,6 @@ const DashboardHub = {
         `).join('');
     },
 
-    /**
-     * Renderuj tabelę szczegółów
-     */
-    renderDataTable() {
-        return `
-            <div class="table-header">
-                <h3><i class="fas fa-table"></i> Szczegóły danych</h3>
-                <button class="btn-secondary btn-sm" onclick="DashboardHub.exportTableToCSV()">
-                    <i class="fas fa-download"></i> Eksport CSV
-                </button>
-            </div>
-            <div class="table-wrapper">
-                <table class="details-table">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Sekcja</th>
-                            <th>Kategoria</th>
-                            <th>Podkategoria</th>
-                            <th>Wartość</th>
-                            <th>Jednostka</th>
-                        </tr>
-                    </thead>
-                    <tbody id="detailsTableBody">
-                        ${this.renderTableRows()}
-                    </tbody>
-                </table>
-            </div>
-        `;
-    },
-
-    /**
-     * Renderuj wiersze tabeli
-     */
-    renderTableRows() {
-        const rows = [];
-        let rowCount = 0;
-        const maxRows = 100;
-
-        this.state.activeSections.forEach(sectionKey => {
-            const section = this.sections[sectionKey];
-            const data = this.state.filteredData[sectionKey] || [];
-
-            data.slice(0, 20).forEach(item => {
-                if (rowCount >= maxRows) return;
-
-                const dateField = item['Data'] || item['Data wystawienia'] || '';
-                rows.push(`
-                    <tr>
-                        <td>${dateField}</td>
-                        <td><span class="badge" style="background: ${section.color}20; color: ${section.color}">${section.name}</span></td>
-                        <td>${item[Object.keys(item)[3]] || '-'}</td>
-                        <td>${item[Object.keys(item)[4]] || '-'}</td>
-                        <td>1</td>
-                        <td>liczba</td>
-                    </tr>
-                `);
-                rowCount++;
-            });
-        });
-
-        if (rows.length === 0) {
-            return '<tr><td colspan="6" class="no-data-cell">Brak danych do wyświetlenia</td></tr>';
-        }
-
-        return rows.join('');
-    },
 
     // ========================================
     // DATA LOADING & FILTERING
@@ -785,6 +716,96 @@ const DashboardHub = {
         return diffDays || 1;
     },
 
+    /**
+     * Generuj AI spostrzeżenia dla wykresu
+     */
+    generateChartInsights(chartData) {
+        const insights = [];
+        const { series, categories } = chartData;
+
+        if (series.length === 0 || categories.length === 0) {
+            document.getElementById('chartInsights').style.display = 'none';
+            return;
+        }
+
+        // Analiza 1: Trend dla każdej serii
+        series.forEach(s => {
+            const data = s.data;
+            if (data.length >= 3) {
+                const firstHalf = data.slice(0, Math.floor(data.length / 2));
+                const secondHalf = data.slice(Math.floor(data.length / 2));
+                const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+                const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+
+                if (avgSecond > avgFirst * 1.15) {
+                    insights.push(`📈 <strong>${s.name}</strong> wykazuje wyraźny <strong>trend wzrostowy</strong> - w drugiej połowie okresu średnia wartość wzrosła o ${((avgSecond - avgFirst) / avgFirst * 100).toFixed(0)}%.`);
+                } else if (avgSecond < avgFirst * 0.85) {
+                    insights.push(`📉 <strong>${s.name}</strong> wykazuje <strong>trend spadkowy</strong> - w drugiej połowie okresu średnia wartość spadła o ${((avgFirst - avgSecond) / avgFirst * 100).toFixed(0)}%.`);
+                } else {
+                    insights.push(`➡️ <strong>${s.name}</strong> utrzymuje się na <strong>stabilnym poziomie</strong> bez większych wahań.`);
+                }
+            }
+        });
+
+        // Analiza 2: Najaktywniejszy dzień
+        if (series.length > 0) {
+            let maxValue = -Infinity;
+            let maxDate = '';
+            let maxSeries = '';
+
+            categories.forEach((date, idx) => {
+                series.forEach(s => {
+                    if (s.data[idx] > maxValue) {
+                        maxValue = s.data[idx];
+                        maxDate = this.formatDate(date);
+                        maxSeries = s.name;
+                    }
+                });
+            });
+
+            if (maxValue > 0) {
+                insights.push(`🔥 Najwyższa aktywność: <strong>${maxSeries}</strong> osiągnęło wartość <strong>${maxValue}</strong> w dniu <strong>${maxDate}</strong>.`);
+            }
+        }
+
+        // Analiza 3: Korelacje między seriami (jeśli więcej niż 1)
+        if (series.length >= 2) {
+            // Sprawdź korelację między pierwszymi dwiema seriami
+            const s1 = series[0];
+            const s2 = series[1];
+
+            // Znajdź wspólne punkty wzrostu
+            let correlatedGrowth = 0;
+            for (let i = 1; i < Math.min(s1.data.length, s2.data.length); i++) {
+                const s1Growth = s1.data[i] > s1.data[i - 1];
+                const s2Growth = s2.data[i] > s2.data[i - 1];
+                if (s1Growth && s2Growth) correlatedGrowth++;
+            }
+
+            const correlationPercent = (correlatedGrowth / (Math.min(s1.data.length, s2.data.length) - 1)) * 100;
+
+            if (correlationPercent > 60) {
+                insights.push(`🔗 Zauważamy <strong>pozytywną korelację</strong> między <strong>${s1.name}</strong> a <strong>${s2.name}</strong> - wzrost jednego często wiąże się ze wzrostem drugiego (${correlationPercent.toFixed(0)}% przypadków).`);
+            }
+        }
+
+        // Analiza 4: Suma i średnia
+        const totalSum = series.reduce((sum, s) => sum + s.data.reduce((a, b) => a + b, 0), 0);
+        const avgDaily = (totalSum / categories.length).toFixed(1);
+        insights.push(`📊 W analizowanym okresie (${categories.length} ${categories.length === 1 ? 'dzień' : 'dni'}) zarejestrowano łącznie <strong>${totalSum}</strong> zdarzeń, średnio <strong>${avgDaily}</strong> dziennie.`);
+
+        // Wyświetl spostrzeżenia
+        const insightsEl = document.getElementById('chartInsights');
+        const contentEl = document.getElementById('insightsContent');
+
+        if (insights.length > 0) {
+            contentEl.innerHTML = insights.map(insight => `<p>${insight}</p>`).join('');
+            insightsEl.style.display = 'block';
+        } else {
+            insightsEl.style.display = 'none';
+        }
+    },
+
     // ========================================
     // CHART RENDERING
     // ========================================
@@ -845,6 +866,9 @@ const DashboardHub = {
             this.state.mainChart.chartInstance = new ApexCharts(chartEl, options);
             this.state.mainChart.chartInstance.render();
             console.log('  ✅ Wykres wyrenderowany');
+
+            // Generuj AI spostrzeżenia
+            this.generateChartInsights(chartData);
         } else {
             console.error('  ❌ Element #mainChart nie znaleziony!');
         }
@@ -1257,7 +1281,17 @@ const DashboardHub = {
     },
 
     resetFilters() {
+        // Resetuj wszystkie filtry
         this.state.filters = {};
+        this.state.dateFrom = null;
+        this.state.dateTo = null;
+
+        // Wyczyść pola dat w UI
+        const dateFromInput = document.getElementById('filterDateFrom');
+        const dateToInput = document.getElementById('filterDateTo');
+        if (dateFromInput) dateFromInput.value = '';
+        if (dateToInput) dateToInput.value = '';
+
         this.refreshActiveFilters();
         this.applyFilters();
     },
@@ -1276,12 +1310,6 @@ const DashboardHub = {
     toggleKPI(show) {
         this.state.showKPI = show;
         const section = document.getElementById('kpiSection');
-        if (section) section.style.display = show ? 'block' : 'none';
-    },
-
-    toggleTable(show) {
-        this.state.showTable = show;
-        const section = document.getElementById('tableSection');
         if (section) section.style.display = show ? 'block' : 'none';
     },
 
@@ -1304,10 +1332,6 @@ const DashboardHub = {
         alert('Eksport CSV (w budowie)');
     },
 
-    exportTableToCSV() {
-        alert('Eksport tabeli do CSV (w budowie)');
-    },
-
     // ========================================
     // UI REFRESH
     // ========================================
@@ -1315,7 +1339,6 @@ const DashboardHub = {
     refreshView() {
         this.refreshActiveFilters();
         this.refreshKPI();
-        this.refreshTable();
         this.renderMainChart();
     },
 
@@ -1331,12 +1354,6 @@ const DashboardHub = {
         }
     },
 
-    refreshTable() {
-        const tbody = document.getElementById('detailsTableBody');
-        if (tbody && this.state.showTable) {
-            tbody.innerHTML = this.renderTableRows();
-        }
-    },
 
     refreshChartControls() {
         const controls = document.querySelector('.chart-controls-inline');
