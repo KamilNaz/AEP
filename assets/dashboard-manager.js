@@ -235,8 +235,7 @@ const DashboardHub = {
                         <!-- AI Chart Insights -->
                         <div class="chart-insights" id="chartInsights" style="display: none;">
                             <div class="insights-header">
-                                <i class="fas fa-lightbulb"></i>
-                                <h4>Spostrzeżenia</h4>
+                                <h4>Opis</h4>
                             </div>
                             <div class="insights-content" id="insightsContent"></div>
                         </div>
@@ -717,7 +716,7 @@ const DashboardHub = {
     },
 
     /**
-     * Generuj AI spostrzeżenia dla wykresu
+     * Generuj opis analizy dla wykresu
      */
     generateChartInsights(chartData) {
         const insights = [];
@@ -728,7 +727,26 @@ const DashboardHub = {
             return;
         }
 
-        // Analiza 1: Trend dla każdej serii
+        // Oblicz rzeczywisty zakres dat (od-do)
+        const firstDate = categories[0];
+        const lastDate = categories[categories.length - 1];
+        const dateFrom = this.parseDate(this.formatDateReverse(firstDate));
+        const dateTo = this.parseDate(this.formatDateReverse(lastDate));
+        const diffDays = Math.ceil((dateTo - dateFrom) / (1000 * 60 * 60 * 24)) + 1;
+
+        // Analiza 1: Podsumowanie okresu (na początku)
+        const totalSum = series.reduce((sum, s) => sum + s.data.reduce((a, b) => a + b, 0), 0);
+        const avgDaily = (totalSum / diffDays).toFixed(1);
+        const daysWithData = categories.length;
+
+        insights.push(
+            `W okresie od <strong>${this.formatDate(firstDate)}</strong> do <strong>${this.formatDate(lastDate)}</strong> ` +
+            `(<strong>${diffDays} dni</strong>) zarejestrowano łącznie <strong>${totalSum}</strong> zdarzeń ` +
+            `w <strong>${daysWithData}</strong> ${daysWithData === 1 ? 'dniu' : 'dniach'}, ` +
+            `co daje średnią <strong>${avgDaily}</strong> zdarzenia dziennie.`
+        );
+
+        // Analiza 2: Trend dla każdej serii
         series.forEach(s => {
             const data = s.data;
             if (data.length >= 3) {
@@ -738,16 +756,24 @@ const DashboardHub = {
                 const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
 
                 if (avgSecond > avgFirst * 1.15) {
-                    insights.push(`📈 <strong>${s.name}</strong> wykazuje wyraźny <strong>trend wzrostowy</strong> - w drugiej połowie okresu średnia wartość wzrosła o ${((avgSecond - avgFirst) / avgFirst * 100).toFixed(0)}%.`);
+                    insights.push(
+                        `Kategoria <strong>${s.name}</strong> wykazuje <strong>trend wzrostowy</strong> - ` +
+                        `w drugiej połowie okresu średnia wartość wzrosła o <strong>${((avgSecond - avgFirst) / avgFirst * 100).toFixed(0)}%</strong>.`
+                    );
                 } else if (avgSecond < avgFirst * 0.85) {
-                    insights.push(`📉 <strong>${s.name}</strong> wykazuje <strong>trend spadkowy</strong> - w drugiej połowie okresu średnia wartość spadła o ${((avgFirst - avgSecond) / avgFirst * 100).toFixed(0)}%.`);
+                    insights.push(
+                        `Kategoria <strong>${s.name}</strong> wykazuje <strong>trend spadkowy</strong> - ` +
+                        `w drugiej połowie okresu średnia wartość spadła o <strong>${((avgFirst - avgSecond) / avgFirst * 100).toFixed(0)}%</strong>.`
+                    );
                 } else {
-                    insights.push(`➡️ <strong>${s.name}</strong> utrzymuje się na <strong>stabilnym poziomie</strong> bez większych wahań.`);
+                    insights.push(
+                        `Kategoria <strong>${s.name}</strong> utrzymuje się na <strong>stabilnym poziomie</strong> bez większych wahań.`
+                    );
                 }
             }
         });
 
-        // Analiza 2: Najaktywniejszy dzień
+        // Analiza 3: Najaktywniejszy dzień
         if (series.length > 0) {
             let maxValue = -Infinity;
             let maxDate = '';
@@ -764,37 +790,69 @@ const DashboardHub = {
             });
 
             if (maxValue > 0) {
-                insights.push(`🔥 Najwyższa aktywność: <strong>${maxSeries}</strong> osiągnęło wartość <strong>${maxValue}</strong> w dniu <strong>${maxDate}</strong>.`);
+                insights.push(
+                    `Najwyższa aktywność odnotowana została w kategorii <strong>${maxSeries}</strong> ` +
+                    `w dniu <strong>${maxDate}</strong> z wartością <strong>${maxValue}</strong>.`
+                );
             }
         }
 
-        // Analiza 3: Korelacje między seriami (jeśli więcej niż 1)
+        // Analiza 4: Korelacje między wszystkimi parami serii
         if (series.length >= 2) {
-            // Sprawdź korelację między pierwszymi dwiema seriami
-            const s1 = series[0];
-            const s2 = series[1];
+            const correlations = [];
 
-            // Znajdź wspólne punkty wzrostu
-            let correlatedGrowth = 0;
-            for (let i = 1; i < Math.min(s1.data.length, s2.data.length); i++) {
-                const s1Growth = s1.data[i] > s1.data[i - 1];
-                const s2Growth = s2.data[i] > s2.data[i - 1];
-                if (s1Growth && s2Growth) correlatedGrowth++;
+            for (let i = 0; i < series.length; i++) {
+                for (let j = i + 1; j < series.length; j++) {
+                    const s1 = series[i];
+                    const s2 = series[j];
+
+                    // Znajdź wspólne punkty wzrostu i spadku
+                    let correlatedGrowth = 0;
+                    let correlatedDrop = 0;
+                    let antiCorrelated = 0;
+
+                    for (let k = 1; k < Math.min(s1.data.length, s2.data.length); k++) {
+                        const s1Change = s1.data[k] - s1.data[k - 1];
+                        const s2Change = s2.data[k] - s2.data[k - 1];
+
+                        if (s1Change > 0 && s2Change > 0) {
+                            correlatedGrowth++;
+                        } else if (s1Change < 0 && s2Change < 0) {
+                            correlatedDrop++;
+                        } else if ((s1Change > 0 && s2Change < 0) || (s1Change < 0 && s2Change > 0)) {
+                            antiCorrelated++;
+                        }
+                    }
+
+                    const totalChanges = Math.min(s1.data.length, s2.data.length) - 1;
+                    const positiveCorrelation = ((correlatedGrowth + correlatedDrop) / totalChanges) * 100;
+
+                    if (positiveCorrelation > 60) {
+                        correlations.push({
+                            s1: s1.name,
+                            s2: s2.name,
+                            percent: positiveCorrelation.toFixed(0),
+                            growth: correlatedGrowth,
+                            drop: correlatedDrop
+                        });
+                    }
+                }
             }
 
-            const correlationPercent = (correlatedGrowth / (Math.min(s1.data.length, s2.data.length) - 1)) * 100;
-
-            if (correlationPercent > 60) {
-                insights.push(`🔗 Zauważamy <strong>pozytywną korelację</strong> między <strong>${s1.name}</strong> a <strong>${s2.name}</strong> - wzrost jednego często wiąże się ze wzrostem drugiego (${correlationPercent.toFixed(0)}% przypadków).`);
+            // Wyświetl korelacje
+            if (correlations.length > 0) {
+                correlations.forEach(corr => {
+                    insights.push(
+                        `Zaobserwowano <strong>pozytywną korelację</strong> między kategoriami ` +
+                        `<strong>${corr.s1}</strong> i <strong>${corr.s2}</strong> - ` +
+                        `w <strong>${corr.percent}%</strong> przypadków zmiany wartości następują w tym samym kierunku ` +
+                        `(wspólny wzrost: ${corr.growth}, wspólny spadek: ${corr.drop}).`
+                    );
+                });
             }
         }
 
-        // Analiza 4: Suma i średnia
-        const totalSum = series.reduce((sum, s) => sum + s.data.reduce((a, b) => a + b, 0), 0);
-        const avgDaily = (totalSum / categories.length).toFixed(1);
-        insights.push(`📊 W analizowanym okresie (${categories.length} ${categories.length === 1 ? 'dzień' : 'dni'}) zarejestrowano łącznie <strong>${totalSum}</strong> zdarzeń, średnio <strong>${avgDaily}</strong> dziennie.`);
-
-        // Wyświetl spostrzeżenia
+        // Wyświetl opis
         const insightsEl = document.getElementById('chartInsights');
         const contentEl = document.getElementById('insightsContent');
 
@@ -804,6 +862,28 @@ const DashboardHub = {
         } else {
             insightsEl.style.display = 'none';
         }
+    },
+
+    /**
+     * Formatuj datę z DD.MM do YYYY-MM-DD
+     */
+    formatDateReverse(dateStr) {
+        if (!dateStr) return '';
+
+        // Jeśli już w formacie YYYY-MM-DD
+        if (dateStr.includes('-') && dateStr.length >= 10) {
+            return dateStr;
+        }
+
+        // Jeśli w formacie DD.MM.YYYY
+        if (dateStr.includes('.')) {
+            const parts = dateStr.split('.');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+        }
+
+        return dateStr;
     },
 
     // ========================================
