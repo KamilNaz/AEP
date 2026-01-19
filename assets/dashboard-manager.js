@@ -857,7 +857,8 @@ const DashboardHub = {
         const contentEl = document.getElementById('insightsContent');
 
         if (insights.length > 0) {
-            contentEl.innerHTML = insights.map(insight => `<p>${insight}</p>`).join('');
+            // Połącz wszystkie insighty w jeden bloczek
+            contentEl.innerHTML = `<p>${insights.join(' ')}</p>`;
             insightsEl.style.display = 'block';
         } else {
             insightsEl.style.display = 'none';
@@ -1398,14 +1399,113 @@ const DashboardHub = {
     },
 
     exportToPNG() {
-        if (this.state.mainChart.chartInstance) {
-            this.state.mainChart.chartInstance.dataURI().then(({ imgURI }) => {
-                const link = document.createElement('a');
-                link.href = imgURI;
-                link.download = `dashboard_${new Date().toISOString().split('T')[0]}.png`;
-                link.click();
-            });
+        if (!this.state.mainChart.chartInstance) return;
+
+        // Pobierz wykres jako dataURI
+        this.state.mainChart.chartInstance.dataURI().then(({ imgURI }) => {
+            const chartImage = new Image();
+            chartImage.crossOrigin = 'anonymous';
+
+            chartImage.onload = () => {
+                // Pobierz tekst opisu
+                const insightsEl = document.getElementById('insightsContent');
+                const insightsText = insightsEl ? insightsEl.textContent.trim() : '';
+
+                // Stwórz canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Wymiary
+                const chartWidth = chartImage.width;
+                const chartHeight = chartImage.height;
+                const padding = 30;
+                const lineHeight = 24;
+                const maxWidth = chartWidth - (padding * 2);
+
+                // Ustaw czcionkę Roboto
+                ctx.font = '16px Roboto, sans-serif';
+
+                // Podziel tekst na linie
+                let lines = [];
+                if (insightsText) {
+                    lines = this.wrapText(ctx, insightsText, maxWidth);
+                }
+
+                const textHeight = lines.length > 0 ? (lines.length * lineHeight) + (padding * 2) : 0;
+                const totalHeight = chartHeight + textHeight;
+
+                // Ustaw wymiary canvas
+                canvas.width = chartWidth;
+                canvas.height = totalHeight;
+
+                // Białe tło
+                ctx.fillStyle = '#1a202c';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Narysuj wykres
+                ctx.drawImage(chartImage, 0, 0);
+
+                // Narysuj opis (jeśli istnieje)
+                if (lines.length > 0) {
+                    // Tło dla opisu
+                    const textY = chartHeight;
+                    ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
+                    ctx.fillRect(0, textY, chartWidth, textHeight);
+
+                    // Ramka
+                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(0, textY, chartWidth, textHeight);
+
+                    // Tekst
+                    ctx.fillStyle = '#e5e7eb';
+                    ctx.font = '16px Roboto, sans-serif';
+
+                    lines.forEach((line, index) => {
+                        ctx.fillText(line, padding, textY + padding + (index * lineHeight) + 18);
+                    });
+                }
+
+                // Pobierz jako PNG
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `dashboard_${new Date().toISOString().split('T')[0]}.png`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                });
+            };
+
+            chartImage.src = imgURI;
+        });
+    },
+
+    /**
+     * Podziel tekst na linie (word wrap)
+     */
+    wrapText(ctx, text, maxWidth) {
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+
+        words.forEach(word => {
+            const testLine = currentLine + (currentLine ? ' ' : '') + word;
+            const metrics = ctx.measureText(testLine);
+
+            if (metrics.width > maxWidth && currentLine) {
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        });
+
+        if (currentLine) {
+            lines.push(currentLine);
         }
+
+        return lines;
     },
 
     exportToCSV() {
