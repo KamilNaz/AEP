@@ -1399,92 +1399,140 @@ const DashboardHub = {
     },
 
     exportToPNG() {
-        if (!this.state.mainChart.chartInstance) return;
+        if (!this.state.mainChart.chartInstance) {
+            console.error('❌ Brak instancji wykresu');
+            return;
+        }
 
-        // Pobierz wykres jako dataURI
-        this.state.mainChart.chartInstance.dataURI().then(({ imgURI }) => {
-            const chartImage = new Image();
-            chartImage.crossOrigin = 'anonymous';
+        // Upewnij się, że czcionka Roboto jest załadowana
+        document.fonts.ready.then(() => {
+            console.log('✅ Czcionki załadowane');
 
-            chartImage.onload = () => {
-                // Pobierz tekst opisu
-                const insightsEl = document.getElementById('insightsContent');
-                const insightsText = insightsEl ? insightsEl.textContent.trim() : '';
+            // Pobierz wykres jako dataURI
+            this.state.mainChart.chartInstance.dataURI().then(({ imgURI }) => {
+                const chartImage = new Image();
+                chartImage.crossOrigin = 'anonymous';
 
-                console.log('🖼️ Eksport PNG:');
-                console.log('  insightsEl:', insightsEl);
-                console.log('  insightsText:', insightsText);
-                console.log('  insightsText length:', insightsText.length);
+                chartImage.onload = () => {
+                    // Pobierz tekst opisu - użyj innerText zamiast textContent
+                    const insightsEl = document.getElementById('insightsContent');
+                    let insightsText = '';
 
-                // Stwórz canvas
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
+                    if (insightsEl) {
+                        // innerText zachowuje formatowanie i pomija ukryte elementy
+                        insightsText = insightsEl.innerText.trim();
 
-                // Wymiary
-                const chartWidth = chartImage.width;
-                const chartHeight = chartImage.height;
-                const padding = 30;
-                const lineHeight = 24;
-                const maxWidth = chartWidth - (padding * 2);
+                        // Jeśli innerText jest puste, spróbuj textContent
+                        if (!insightsText) {
+                            insightsText = insightsEl.textContent.trim();
+                        }
+                    }
 
-                // Ustaw czcionkę Roboto
-                ctx.font = '16px Roboto, sans-serif';
+                    console.log('🖼️ Eksport PNG:');
+                    console.log('  insightsEl:', insightsEl);
+                    console.log('  insightsEl.innerHTML:', insightsEl ? insightsEl.innerHTML.substring(0, 100) : 'null');
+                    console.log('  insightsText:', insightsText);
+                    console.log('  insightsText length:', insightsText.length);
 
-                // Podziel tekst na linie
-                let lines = [];
-                if (insightsText && insightsText.length > 0) {
-                    lines = this.wrapText(ctx, insightsText, maxWidth);
-                    console.log('  Liczba linii:', lines.length);
-                    console.log('  Pierwsze 3 linie:', lines.slice(0, 3));
-                }
+                    // Stwórz canvas
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
 
-                const textHeight = lines.length > 0 ? (lines.length * lineHeight) + (padding * 2) : 0;
-                const totalHeight = chartHeight + textHeight;
+                    // Wymiary
+                    const chartWidth = chartImage.width;
+                    const chartHeight = chartImage.height;
+                    const padding = 30;
+                    const lineHeight = 26;
+                    const maxWidth = chartWidth - (padding * 2);
 
-                // Ustaw wymiary canvas
-                canvas.width = chartWidth;
-                canvas.height = totalHeight;
+                    // Ustaw czcionkę Roboto (sprawdź czy jest dostępna)
+                    const fontFamily = document.fonts.check('16px Roboto') ? 'Roboto' : 'Arial';
+                    ctx.font = `16px ${fontFamily}, sans-serif`;
+                    console.log('  Używana czcionka:', fontFamily);
 
-                // Białe tło
-                ctx.fillStyle = '#1a202c';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    // Podziel tekst na linie
+                    let lines = [];
+                    if (insightsText && insightsText.length > 0) {
+                        lines = this.wrapText(ctx, insightsText, maxWidth);
+                        console.log('  Liczba linii:', lines.length);
+                        console.log('  Pierwsze 3 linie:', lines.slice(0, 3));
+                    } else {
+                        console.warn('⚠️ Brak tekstu opisu do wyeksportowania');
+                    }
 
-                // Narysuj wykres
-                ctx.drawImage(chartImage, 0, 0);
+                    const textHeight = lines.length > 0 ? (lines.length * lineHeight) + (padding * 3) : 0;
+                    const totalHeight = chartHeight + textHeight;
 
-                // Narysuj opis (jeśli istnieje)
-                if (lines.length > 0) {
-                    // Tło dla opisu
-                    const textY = chartHeight;
-                    ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
-                    ctx.fillRect(0, textY, chartWidth, textHeight);
+                    console.log('  Wymiary canvas:', chartWidth, 'x', totalHeight);
+                    console.log('  Wysokość tekstu:', textHeight);
 
-                    // Ramka
-                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.3)';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(0, textY, chartWidth, textHeight);
+                    // Ustaw wymiary canvas
+                    canvas.width = chartWidth;
+                    canvas.height = totalHeight;
 
-                    // Tekst
-                    ctx.fillStyle = '#e5e7eb';
-                    ctx.font = '16px Roboto, sans-serif';
+                    // Ciemne tło (jak w UI)
+                    ctx.fillStyle = '#1a202c';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                    lines.forEach((line, index) => {
-                        ctx.fillText(line, padding, textY + padding + (index * lineHeight) + 18);
-                    });
-                }
+                    // Narysuj wykres
+                    ctx.drawImage(chartImage, 0, 0);
 
-                // Pobierz jako PNG
-                canvas.toBlob((blob) => {
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `dashboard_${new Date().toISOString().split('T')[0]}.png`;
-                    link.click();
-                    URL.revokeObjectURL(url);
-                });
-            };
+                    // Narysuj opis (jeśli istnieje)
+                    if (lines.length > 0) {
+                        console.log('  ✏️ Rysowanie tekstu...');
 
-            chartImage.src = imgURI;
+                        const textY = chartHeight;
+
+                        // Tło dla opisu
+                        ctx.fillStyle = 'rgba(59, 130, 246, 0.08)';
+                        ctx.fillRect(0, textY, chartWidth, textHeight);
+
+                        // Ramka
+                        ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(1, textY + 1, chartWidth - 2, textHeight - 2);
+
+                        // Nagłówek "Opis"
+                        ctx.fillStyle = '#e6e6e6';
+                        ctx.font = `bold 18px ${fontFamily}, sans-serif`;
+                        ctx.fillText('Opis', padding, textY + padding + 18);
+
+                        // Tekst opisu
+                        ctx.fillStyle = '#d1d5db';
+                        ctx.font = `16px ${fontFamily}, sans-serif`;
+
+                        lines.forEach((line, index) => {
+                            const y = textY + padding + 50 + (index * lineHeight);
+                            ctx.fillText(line, padding, y);
+                        });
+
+                        console.log('  ✅ Tekst narysowany');
+                    }
+
+                    // Pobierz jako PNG
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `dashboard_${new Date().toISOString().split('T')[0]}.png`;
+                            link.click();
+                            URL.revokeObjectURL(url);
+                            console.log('✅ PNG pobrany');
+                        } else {
+                            console.error('❌ Błąd tworzenia blobu');
+                        }
+                    }, 'image/png');
+                };
+
+                chartImage.onerror = () => {
+                    console.error('❌ Błąd ładowania obrazu wykresu');
+                };
+
+                chartImage.src = imgURI;
+            }).catch(err => {
+                console.error('❌ Błąd pobierania dataURI:', err);
+            });
         });
     },
 
