@@ -27,10 +27,10 @@ const DashboardHub = {
             chartInstance: null
         },
 
-        // Ustawienia wykresów pomocniczych
+        // Ustawienia wykresów pomocniczych (wyłączone - zastąpione przez KPI)
         helperCharts: [
-            { id: 'helper1', type: 'bar', title: 'Struktura kategorii', enabled: true },
-            { id: 'helper2', type: 'line', title: 'Heatmapa dni tygodnia', enabled: true },
+            { id: 'helper1', type: 'bar', title: 'Struktura kategorii', enabled: false },
+            { id: 'helper2', type: 'line', title: 'Heatmapa dni tygodnia', enabled: false },
             { id: 'helper3', type: 'bar', title: 'Top N podkategorii', enabled: false },
             { id: 'helper4', type: 'line', title: 'Porównanie okresów', enabled: false }
         ],
@@ -436,10 +436,13 @@ const DashboardHub = {
             <div class="kpi-cards-grid">
                 ${kpis.map(kpi => `
                     <div class="kpi-card" style="border-top-color: ${kpi.color}">
+                        <div class="kpi-icon" style="color: ${kpi.color}">
+                            <i class="fas ${kpi.icon || 'fa-chart-line'}"></i>
+                        </div>
                         <div class="kpi-label">${kpi.label}</div>
                         <div class="kpi-value">${kpi.value}</div>
-                        ${kpi.trend ? `<div class="kpi-trend ${kpi.trend > 0 ? 'up' : 'down'}">
-                            <i class="fas fa-arrow-${kpi.trend > 0 ? 'up' : 'down'}"></i> ${Math.abs(kpi.trend)}%
+                        ${kpi.trend ? `<div class="kpi-trend ${kpi.trend}">
+                            <i class="fas ${kpi.icon}"></i>
                         </div>` : ''}
                     </div>
                 `).join('')}
@@ -694,26 +697,78 @@ const DashboardHub = {
             const data = this.state.filteredData[sectionKey] || [];
 
             if (data.length > 0) {
+                // Używamy agregacji aby uzyskać prawdziwe wartości
+                const aggregated = this.aggregateData(data, sectionKey);
+                const values = Object.values(aggregated);
+                const totalSum = values.reduce((sum, val) => sum + val, 0);
+
+                // 1. Łączna suma
                 kpis.push({
                     label: `${section.name} - Suma`,
-                    value: data.length,
+                    value: totalSum,
                     color: section.color,
+                    icon: 'fa-hashtag',
                     trend: null
                 });
 
+                // 2. Średnia dzienna
                 const daysRange = this.getDaysInRange();
                 if (daysRange > 0) {
                     kpis.push({
                         label: `${section.name} - Średnia/dzień`,
-                        value: (data.length / daysRange).toFixed(1),
+                        value: (totalSum / daysRange).toFixed(1),
                         color: section.color,
+                        icon: 'fa-calendar-day',
                         trend: null
+                    });
+                }
+
+                // 3. Najaktywniejszy dzień
+                if (values.length > 0) {
+                    const maxValue = Math.max(...values);
+                    const maxDate = Object.keys(aggregated).find(key => aggregated[key] === maxValue);
+                    kpis.push({
+                        label: `${section.name} - Najaktywniejszy dzień`,
+                        value: `${maxValue} (${this.formatDate(maxDate)})`,
+                        color: section.color,
+                        icon: 'fa-fire',
+                        trend: null
+                    });
+                }
+
+                // 4. Trend (porównanie pierwszej i drugiej połowy okresu)
+                if (values.length >= 4) {
+                    const midPoint = Math.floor(values.length / 2);
+                    const firstHalf = values.slice(0, midPoint);
+                    const secondHalf = values.slice(midPoint);
+                    const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+                    const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+                    const trendPercent = ((avgSecond - avgFirst) / avgFirst * 100).toFixed(1);
+
+                    kpis.push({
+                        label: `${section.name} - Trend`,
+                        value: `${trendPercent > 0 ? '+' : ''}${trendPercent}%`,
+                        color: section.color,
+                        icon: trendPercent > 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down',
+                        trend: trendPercent > 0 ? 'up' : 'down'
                     });
                 }
             }
         });
 
         return kpis;
+    },
+
+    /**
+     * Formatuj datę z YYYY-MM-DD do DD.MM
+     */
+    formatDate(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}.${parts[1]}`;
+        }
+        return dateStr;
     },
 
     /**
