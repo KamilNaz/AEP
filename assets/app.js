@@ -7428,19 +7428,19 @@ const KonwojeManager = createBaseTableManager({
                     </td>
                     <td class="col-number col-razem">${rodzajRazem}</td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.miejscowy || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.miejscowy || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
                                onchange="KonwojeManager.updateField(${row.id}, 'miejscowy', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.zamiejscowy || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.zamiejscowy || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
                                onchange="KonwojeManager.updateField(${row.id}, 'zamiejscowy', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7461,27 +7461,27 @@ const KonwojeManager = createBaseTableManager({
                     </td>
                     <td class="col-number col-razem">${zleceniodawcaRazem}</td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.prokuratura || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.prokuratura || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
                                onchange="KonwojeManager.updateField(${row.id}, 'prokuratura', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.sad || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.sad || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
                                onchange="KonwojeManager.updateField(${row.id}, 'sad', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.wlasne || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.wlasne || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
                                onchange="KonwojeManager.updateField(${row.id}, 'wlasne', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7492,27 +7492,27 @@ const KonwojeManager = createBaseTableManager({
                     </td>
                     <td class="col-number col-razem">${coKonwojowanoRazem}</td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.dokumenty || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.dokumenty || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
                                onchange="KonwojeManager.updateField(${row.id}, 'dokumenty', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.osoby || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.osoby || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
                                onchange="KonwojeManager.updateField(${row.id}, 'osoby', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.przedmioty || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.przedmioty || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
                                onchange="KonwojeManager.updateField(${row.id}, 'przedmioty', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-select">
@@ -7532,6 +7532,45 @@ const KonwojeManager = createBaseTableManager({
         const clearBtn = document.getElementById('clearKonwojeData');
         if (clearBtn) {
             clearBtn.disabled = AppState.konwojeData.length === 0;
+        }
+    },
+
+    updateField(id, field, value) {
+        const row = AppState.konwojeData.find(r => r.id === id);
+        if (row) {
+            // Walidacja 0/1 dla pól binarnych
+            const binaryFields = ['miejscowy', 'zamiejscowy', 'prokuratura', 'sad', 'wlasne',
+                                 'dokumenty', 'osoby', 'przedmioty'];
+            if (binaryFields.includes(field)) {
+                let numValue = parseInt(value) || 0;
+                if (numValue > 1) numValue = 1;
+                if (numValue < 0) numValue = 0;
+                value = numValue;
+            }
+
+            // Obsługa daty
+            if (field === 'data' && value) {
+                const date = new Date(value);
+                row.data = date.toLocaleDateString('pl-PL');
+            } else {
+                row[field] = value;
+            }
+
+            // Walidacja: Jeśli rodzaj konwoju > 0, to ilość ŻW i ilość WPM muszą być > 0
+            const rodzajRazem = (parseInt(row.miejscowy) || 0) + (parseInt(row.zamiejscowy) || 0);
+            if (rodzajRazem > 0) {
+                if ((parseInt(row.ilosc_zw) || 0) === 0 || (parseInt(row.ilosc_wpm) || 0) === 0) {
+                    setTimeout(() => {
+                        alert('BŁĄD WALIDACJI\n\nJeśli "Razem" w Rodzaj konwoju jest większe niż 0,\nto zarówno "Ilość ŻW" jak i "Ilość WPM" muszą być większe niż 0!');
+                    }, 100);
+                }
+            }
+
+            // Auto-oblicz pola RAZEM
+            CalculationEngine.calculate('konwoje', row);
+
+            this.renderRows();
+            this.autoSave();
         }
     }
     }
