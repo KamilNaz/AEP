@@ -7867,18 +7867,18 @@ const ZdarzeniaManager = createBaseTableManager({
                     
                     <div class="date-filter-wrapper">
                         <button class="btn-secondary" id="toggleZdarzenieDateFilterBtn">
-                            <i class="fas fa-calendar-alt"></i> Filtruj daty
+                            <i class="fas fa-calendar-days"></i> Filtruj daty <i class="fas fa-chevron-down"></i>
                             <span id="zdarzenieDateFilterBadge" class="filter-badge hidden"></span>
                         </button>
-                        
+                        <button class="btn-secondary btn-clear-filter hidden" id="clearZdarzenieDateFilterBtn">
+                            <i class="fas fa-times"></i> Wyczyść filtr
+                        </button>
                         <div class="date-filter-dropdown hidden" id="zdarzenieDateFilterDropdown">
-                            <div class="dropdown-header">
-                                <i class="fas fa-calendar-alt"></i> Filtrowanie po dacie
-                            </div>
-                            <div class="dropdown-body">
-                                <label>Data od:</label>
+                            <div class="dropdown-header">Filtruj według dat</div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Data od:</label>
                                 <input type="date" id="zdarzenieDateFrom" class="date-input">
-                                <label>Data do:</label>
+                                <label class="filter-label">Data do:</label>
                                 <input type="date" id="zdarzenieDateTo" class="date-input">
                             </div>
                             <div class="dropdown-divider"></div>
@@ -7916,9 +7916,10 @@ const ZdarzeniaManager = createBaseTableManager({
                                 <label class="filter-label">Grupa os.:</label>
                                 <select id="zdarzeniaGrupaFilter" class="zdarzenia-select" style="width: 100%; padding: 0.5rem;">
                                     <option value="">Wszystkie</option>
-                                    <option value="żołnierz">żołnierz</option>
-                                    <option value="pracownik RON">pracownik RON</option>
-                                    <option value="osoba cywilna">osoba cywilna</option>
+                                    <option value="szeregowy">szeregowy</option>
+                                    <option value="podoficer">podoficer</option>
+                                    <option value="oficer">oficer</option>
+                                    <option value="generał/admirał">generał/admirał</option>
                                 </select>
                             </div>
                             <div class="dropdown-section">
@@ -7959,17 +7960,17 @@ const ZdarzeniaManager = createBaseTableManager({
                                 </select>
                             </div>
                             <div class="dropdown-divider"></div>
-                            <div id="zdarzenieFilterResultInfo" class="filter-result-info hidden"></div>
                             <div class="dropdown-actions">
-                                    <button class="btn-secondary btn-sm" id="applyZdarzenieDateFilter">
-                                        <i class="fas fa-check"></i> Zastosuj
-                                    </button>
-                                    <button class="btn-secondary btn-sm" id="clearZdarzenieDateFilterDropdown">
-                                        <i class="fas fa-times"></i> Wyczyść
-                                    </button>
-                                </div>
+                                <button class="btn-dropdown" id="applyZdarzenieDateFilter">
+                                    <i class="fas fa-search"></i> Filtruj
+                                </button>
+                                <button class="btn-dropdown" id="clearZdarzenieDateFilterDropdown">
+                                    <i class="fas fa-times"></i> Wyczyść
+                                </button>
                             </div>
+                            <div id="zdarzenieFilterResultInfo" class="filter-result-info hidden"></div>
                         </div>
+                    </div>
                     </div>
                 </div>
 
@@ -8393,6 +8394,9 @@ const ZdarzeniaManager = createBaseTableManager({
         }
         filterResultInfo.classList.remove('hidden');
 
+        const clearFilterBtn = document.getElementById('clearZdarzenieDateFilterBtn');
+        clearFilterBtn?.classList.remove('hidden');
+
         this.renderRows();
     },
 
@@ -8617,7 +8621,7 @@ const ZdarzeniaManager = createBaseTableManager({
         const nazwaJWOptions = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
         const miejsceOptions = Array.from({length: 30}, (_, i) => `Miejsce ${i + 1}`);
         const podlegloscOptions = ['WL', 'WOT', 'MW', 'WSpec.', 'ŻW', 'SP'];
-        const grupaOptions = ['szeregowy', 'podoficer', 'oficer', 'generał'];
+        const grupaOptions = ['szeregowy', 'podoficer', 'oficer', 'generał/admirał'];
         const jzwOptions = ['OŻW Elbląg', 'WŻW Bemowo Piskie', 'WŻW Gdynia', 'PŻW Bartoszyce', 'PŻW Braniewo', 'PŻW Giżycko', 'PŻW Malbork', 'PŻW Morąg'];
         const oddzialOptions = ['Elbląg', 'Szczecin', 'Lublin', 'Bydgoszcz', 'Kraków', 'Żagań', 'Warszawa', 'Łódź', 'Mińsk Mazowiecki'];
 
@@ -8984,18 +8988,18 @@ const PilotazeManager = createBaseTableManager({
                     
                     <div class="date-filter-wrapper">
                         <button class="btn-secondary" id="togglePilotazeDateFilterBtn">
-                            <i class="fas fa-calendar-alt"></i> Filtruj daty
+                            <i class="fas fa-calendar-days"></i> Filtruj daty <i class="fas fa-chevron-down"></i>
                             <span id="pilotazeDateFilterBadge" class="filter-badge hidden"></span>
                         </button>
-                        
+                        <button class="btn-secondary btn-clear-filter hidden" id="clearPilotazeDateFilterBtn">
+                            <i class="fas fa-times"></i> Wyczyść filtr
+                        </button>
                         <div class="date-filter-dropdown hidden" id="pilotazeDateFilterDropdown">
-                            <div class="dropdown-header">
-                                <i class="fas fa-calendar-alt"></i> Filtrowanie po dacie
-                            </div>
-                            <div class="dropdown-body">
-                                <label>Data od:</label>
+                            <div class="dropdown-header">Filtruj według dat</div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Data od:</label>
                                 <input type="date" id="pilotazeDateFrom" class="date-input">
-                                <label>Data do:</label>
+                                <label class="filter-label">Data do:</label>
                                 <input type="date" id="pilotazeDateTo" class="date-input">
                             </div>
                             <div class="dropdown-divider"></div>
@@ -9037,16 +9041,16 @@ const PilotazeManager = createBaseTableManager({
                                 </select>
                             </div>
                             <div class="dropdown-divider"></div>
-                            <div id="pilotazeFilterResultInfo" class="filter-result-info hidden"></div>
                             <div class="dropdown-actions">
-                                    <button class="btn-secondary btn-sm" id="applyPilotazeDateFilter">
-                                        <i class="fas fa-check"></i> Zastosuj
-                                    </button>
-                                    <button class="btn-secondary btn-sm" id="clearPilotazeDateFilterDropdown">
-                                        <i class="fas fa-times"></i> Wyczyść
-                                    </button>
-                                </div>
+                                <button class="btn-dropdown" id="applyPilotazeDateFilter">
+                                    <i class="fas fa-search"></i> Filtruj
+                                </button>
+                                <button class="btn-dropdown" id="clearPilotazeDateFilterDropdown">
+                                    <i class="fas fa-times"></i> Wyczyść
+                                </button>
                             </div>
+                            <div id="pilotazeFilterResultInfo" class="filter-result-info hidden"></div>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -9281,6 +9285,9 @@ const PilotazeManager = createBaseTableManager({
             filterResultInfo.style.color = '#ff9800';
         }
         filterResultInfo.classList.remove('hidden');
+
+        const clearFilterBtn = document.getElementById('clearPilotazeDateFilterBtn');
+        clearFilterBtn?.classList.remove('hidden');
 
         this.renderRows();
     },
