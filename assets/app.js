@@ -664,8 +664,12 @@ const ValidationEngine = {
 
         const errors = [];
 
-        // 1. Sprawdź wymagane pola
-        if (rules.required) {
+        // PUNKT 3: Podwiersze (child rows) nie wymagają wypełnienia pól głównych
+        // ponieważ dziedziczą je z rodzica
+        const isChildRow = row.isMainRow === false;
+
+        // 1. Sprawdź wymagane pola (tylko dla głównych wierszy)
+        if (rules.required && !isChildRow) {
             rules.required.forEach(field => {
                 const value = row[field];
                 if (value === undefined || value === null || value === '') {
@@ -3704,12 +3708,13 @@ const WykroczeniaManager = {
                     <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pouczenie || 0}"
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pouczenie', parseInt(this.value) || 0)"></td>
                     <td class="checkbox-cell ${errorClass}">
-                        <input type="checkbox" ${row.mandat_bool ? 'checked' : ''} 
+                        <input type="checkbox" ${row.mandat_bool ? 'checked' : ''}
                                onchange="WykroczeniaManager.updateField(${row.id}, 'mandat_bool', this.checked)">
                     </td>
                     <td>
-                        <input type="text" class="wykroczenia-input-number" style="width: 80px;" 
-                               value="${row.wysokosc_mandatu || ''}" placeholder="0" 
+                        <input type="text" class="wykroczenia-input-number" style="width: 80px;"
+                               value="${row.wysokosc_mandatu || ''}" placeholder="0"
+                               ${!row.mandat_bool ? 'disabled' : ''}
                                onchange="WykroczeniaManager.updateField(${row.id}, 'wysokosc_mandatu', this.value)">
                     </td>
                     <td class="checkbox-cell">
@@ -3795,13 +3800,28 @@ const WykroczeniaManager = {
     updateField(id, field, value) {
         const row = AppState.wykroczeniaData.find(r => r.id === id);
         if (row) {
+            // PUNKT 1 i 4: Wymuszanie wartości 0 lub 1 dla pól rodzaju interwencji
+            const binaryFields = ['zatrzymanie', 'doprowadzenie', 'wylegitymowanie', 'pouczenie'];
+            if (binaryFields.includes(field)) {
+                // Konwertuj na liczbę i ogranicz do 0 lub 1
+                let numValue = parseInt(value) || 0;
+                if (numValue > 1) numValue = 1;
+                if (numValue < 0) numValue = 0;
+                value = numValue;
+            }
+
             if (field === 'data' && value) {
                 const date = new Date(value);
                 row.data = date.toLocaleDateString('pl-PL');
             } else {
                 row[field] = value;
             }
-            
+
+            // PUNKT 2: Jeśli checkbox mandat jest odznaczony, wyczyść pole wysokości mandatu
+            if (field === 'mandat_bool' && !value) {
+                row.wysokosc_mandatu = '';
+            }
+
             // SYNCHRONIZACJA: Jeśli główny wiersz zmienia "legitymowany", propaguj do podwierszy
             if (field === 'legitymowany' && row.isMainRow !== false) {
                 const groupId = row.groupId || row.id;
@@ -3812,14 +3832,14 @@ const WykroczeniaManager = {
                     }
                 });
             }
-            
+
             // REAL-TIME WALIDACJA przy zmianie pól Podstawa lub Rodzaj
-            const isPodstawaField = ['nar_ubiorcz', 'inne_nar', 'nar_kk', 'wykr_porzadek', 
-                                     'wykr_bezp', 'nar_dyscyplina', 'nar_bron', 'nar_ochr_zdr', 
+            const isPodstawaField = ['nar_ubiorcz', 'inne_nar', 'nar_kk', 'wykr_porzadek',
+                                     'wykr_bezp', 'nar_dyscyplina', 'nar_bron', 'nar_ochr_zdr',
                                      'nar_zakwat', 'pozostale'].includes(field);
-            const isRodzajField = ['zatrzymanie', 'doprowadzenie', 'wylegitymowanie', 
+            const isRodzajField = ['zatrzymanie', 'doprowadzenie', 'wylegitymowanie',
                                    'pouczenie', 'mandat_bool'].includes(field);
-            
+
             if (isPodstawaField || isRodzajField) {
                 const validation = ValidationEngine.validateRow('wykroczenia', row);
                 if (!validation.valid) {
