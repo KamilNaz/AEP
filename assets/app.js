@@ -3687,16 +3687,19 @@ const WykroczeniaManager = {
                             <button class="tag-add-btn" onclick="WykroczeniaManager.openPodstawaModal(${row.id})" title="Dodaj wykroczenie">+</button>
                         </div>
                     </td>
-                    
+
                     <!-- Stan -->
                     <td class="col-razem-value">${stanRazem}</td>
                     <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pod_wplywem_alk || 0}"
+                           ${isChildRow ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pod_wplywem_alk', parseInt(this.value) || 0)"></td>
                     <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.nietrzezwy || 0}"
+                           ${isChildRow ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'nietrzezwy', parseInt(this.value) || 0)"></td>
                     <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pod_wplywem_srod || 0}"
+                           ${isChildRow ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pod_wplywem_srod', parseInt(this.value) || 0)"></td>
-                    
+
                     <!-- Rodzaj interwencji -->
                     <td class="col-razem-value ${errorClass}">${rodzajRazem}</td>
                     <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.zatrzymanie || 0}"
@@ -3718,18 +3721,19 @@ const WykroczeniaManager = {
                                onchange="WykroczeniaManager.updateField(${row.id}, 'wysokosc_mandatu', this.value)">
                     </td>
                     <td class="checkbox-cell">
-                        <input type="checkbox" ${row.w_czasie_sluzby ? 'checked' : ''} 
+                        <input type="checkbox" ${row.w_czasie_sluzby ? 'checked' : ''}
+                               ${isChildRow ? 'disabled' : ''}
                                onchange="WykroczeniaManager.updateField(${row.id}, 'w_czasie_sluzby', this.checked)">
                     </td>
-                    
+
                     <!-- Pozostałe -->
                     <td>
-                        <select class="wykroczenia-select" onchange="WykroczeniaManager.updateField(${row.id}, 'jzw_prowadzaca', this.value)">
+                        <select class="wykroczenia-select" ${isChildRow ? 'disabled' : ''} onchange="WykroczeniaManager.updateField(${row.id}, 'jzw_prowadzaca', this.value)">
                             ${jzwOptions.map(opt => `<option value="${opt}" ${row.jzw_prowadzaca === opt ? 'selected' : ''}>${opt}</option>`).join('')}
                         </select>
                     </td>
                     <td>
-                        <select class="wykroczenia-select" onchange="WykroczeniaManager.updateField(${row.id}, 'oddzial', this.value)">
+                        <select class="wykroczenia-select" ${isChildRow ? 'disabled' : ''} onchange="WykroczeniaManager.updateField(${row.id}, 'oddzial', this.value)">
                             ${oddzialOptions.map(opt => `<option value="${opt}" ${row.oddzial === opt ? 'selected' : ''}>${opt}</option>`).join('')}
                         </select>
                     </td>
@@ -6697,23 +6701,26 @@ const SankcjeManager = {
                     </td>
                     <td class="col-razem">${rodzajRazem}</td>
                     <td>
-                        <input type="number" 
-                               value="${row.wpm || 0}" 
+                        <input type="number"
+                               value="${row.wpm || 0}"
                                min="0"
+                               ${isChildRow ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'wpm', this.value)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <input type="number" 
-                               value="${row.ppm || 0}" 
+                        <input type="number"
+                               value="${row.ppm || 0}"
                                min="0"
+                               ${isChildRow ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'ppm', this.value)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <input type="number" 
-                               value="${row.pieszy || 0}" 
+                        <input type="number"
+                               value="${row.pieszy || 0}"
                                min="0"
+                               ${isChildRow ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'pieszy', this.value)"
                                class="cell-input-number">
                     </td>
@@ -6724,57 +6731,59 @@ const SankcjeManager = {
                     </td>
                     <td class="col-razem">${sankcjaRazem}</td>
                     <td>
-                        <input type="number" 
-                               value="${row.zatrzymanie_dr || 0}" 
-                               min="0"
-                               onchange="SankcjeManager.updateField(${row.id}, 'zatrzymanie_dr', this.value)"
+                        <input type="number"
+                               value="${row.zatrzymanie_dr || 0}"
+                               min="0" max="1"
+                               onchange="SankcjeManager.updateField(${row.id}, 'zatrzymanie_dr', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <input type="number" 
-                               value="${row.zatrzymanie_pj || 0}" 
-                               min="0"
-                               onchange="SankcjeManager.updateField(${row.id}, 'zatrzymanie_pj', this.value)"
+                        <input type="number"
+                               value="${row.zatrzymanie_pj || 0}"
+                               min="0" max="1"
+                               onchange="SankcjeManager.updateField(${row.id}, 'zatrzymanie_pj', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <input type="checkbox" 
+                        <input type="checkbox"
                                ${row.mandat_bool ? 'checked' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'mandat_bool', this.checked)">
                     </td>
                     <td>
-                        <input type="number" 
-                               value="${row.pouczenie || 0}" 
-                               min="0"
-                               onchange="SankcjeManager.updateField(${row.id}, 'pouczenie', this.value)"
+                        <input type="number"
+                               value="${row.pouczenie || 0}"
+                               min="0" max="1"
+                               onchange="SankcjeManager.updateField(${row.id}, 'pouczenie', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <input type="number" 
-                               value="${row.inne_sankcja || 0}" 
-                               min="0"
-                               onchange="SankcjeManager.updateField(${row.id}, 'inne_sankcja', this.value)"
+                        <input type="number"
+                               value="${row.inne_sankcja || 0}"
+                               min="0" max="1"
+                               onchange="SankcjeManager.updateField(${row.id}, 'inne_sankcja', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <input type="text" 
-                               value="${row.wysokosc_mandatu || ''}" 
+                        <input type="text"
+                               value="${row.wysokosc_mandatu || ''}"
                                placeholder="0 zł"
+                               ${!row.mandat_bool ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'wysokosc_mandatu', this.value)"
                                class="cell-input-small">
                     </td>
                     <td>
                         <input type="checkbox" ${row.w_czasie_sluzby ? 'checked' : ''}
+                               ${isChildRow ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'w_czasie_sluzby', this.checked)">
                     </td>
                     <td>
-                        <select onchange="SankcjeManager.updateField(${row.id}, 'jzw_prowadzaca', this.value)" class="cell-select">
+                        <select ${isChildRow ? 'disabled' : ''} onchange="SankcjeManager.updateField(${row.id}, 'jzw_prowadzaca', this.value)" class="cell-select">
                             <option value="">-</option>
                             ${jzwOptions.map(opt => `<option value="${opt}" ${row.jzw_prowadzaca === opt ? 'selected' : ''}>${opt}</option>`).join('')}
                         </select>
                     </td>
                     <td>
-                        <select onchange="SankcjeManager.updateField(${row.id}, 'oddzial', this.value)" class="cell-select">
+                        <select ${isChildRow ? 'disabled' : ''} onchange="SankcjeManager.updateField(${row.id}, 'oddzial', this.value)" class="cell-select">
                             <option value="">-</option>
                             ${oddzialOptions.map(opt => `<option value="${opt}" ${row.oddzial === opt ? 'selected' : ''}>${opt}</option>`).join('')}
                         </select>
@@ -6787,15 +6796,28 @@ const SankcjeManager = {
     updateField(id, field, value) {
         const row = AppState.sankcjeData.find(r => r.id === id);
         if (row) {
+            // Walidacja 0/1 dla pól sankcji
+            const binaryFields = ['zatrzymanie_dr', 'zatrzymanie_pj', 'pouczenie', 'inne_sankcja'];
+            if (binaryFields.includes(field)) {
+                let numValue = parseInt(value) || 0;
+                if (numValue > 1) numValue = 1;
+                if (numValue < 0) numValue = 0;
+                value = numValue;
+            }
+
             if (field === 'data' && value) {
                 const date = new Date(value);
                 row.data = date.toLocaleDateString('pl-PL');
             } else if (field === 'mandat_bool') {
                 row[field] = value;
+                // Jeśli mandat odznaczony, wyczyść wysokość mandatu
+                if (!value) {
+                    row.wysokosc_mandatu = '';
+                }
             } else {
                 row[field] = value;
             }
-            
+
             // Sync legitymowany z głównego do podwierszy
             if (field === 'legitymowany' && row.isMainRow !== false) {
                 const groupId = row.groupId || row.id;
