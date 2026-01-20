@@ -1587,6 +1587,40 @@ body {
     padding-right: 1.5rem;
 }
 
+/* Styles for other tab filter selects */
+.wkrd-select,
+.sankcje-select,
+.spb-select,
+.pilotaze-select,
+.zdarzenia-select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 0.35rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.75rem;
+    transition: all var(--transition);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239aa3b2' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.3rem center;
+    padding-right: 1.5rem;
+}
+
+.wkrd-select:focus,
+.sankcje-select:focus,
+.spb-select:focus,
+.pilotaze-select:focus,
+.zdarzenia-select:focus {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-color: var(--accent);
+    background: rgba(207, 211, 218, 0.05);
+}
+
 /* Delete button in row */
 .btn-delete-row {
     background: transparent;
