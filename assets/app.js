@@ -5585,17 +5585,6 @@ const SankcjeManager = {
                                 <label class="filter-label">Miejsce stacjonowania:</label>
                                 <select id="sankcjeMiejsceFilter" class="sankcje-select" style="width: 100%; padding: 0.5rem;">
                                     <option value="">Wszystkie</option>
-                                    <option value="Miejscowość A">Miejscowość A</option>
-                                    <option value="Miejscowość B">Miejscowość B</option>
-                                    <option value="Miejscowość C">Miejscowość C</option>
-                                    <option value="Miejscowość D">Miejscowość D</option>
-                                    <option value="Miejscowość E">Miejscowość E</option>
-                                    <option value="Miejscowość F">Miejscowość F</option>
-                                    <option value="Miejscowość G">Miejscowość G</option>
-                                    <option value="Miejscowość H">Miejscowość H</option>
-                                    <option value="Miejscowość I">Miejscowość I</option>
-                                    <option value="Miejscowość J">Miejscowość J</option>
-                                    <option value="Miejscowość K">Miejscowość K</option>
                                 </select>
                             </div>
                             <div class="dropdown-section">
@@ -5614,9 +5603,10 @@ const SankcjeManager = {
                                 <label class="filter-label">Grupa os.:</label>
                                 <select id="sankcjeGrupaFilter" class="sankcje-select" style="width: 100%; padding: 0.5rem;">
                                     <option value="">Wszystkie</option>
-                                    <option value="żołnierz">żołnierz</option>
-                                    <option value="pracownik RON">pracownik RON</option>
-                                    <option value="osoba cywilna">osoba cywilna</option>
+                                    <option value="szeregowy">szeregowy</option>
+                                    <option value="podoficer">podoficer</option>
+                                    <option value="oficer">oficer</option>
+                                    <option value="generał/admirał">generał/admirał</option>
                                 </select>
                             </div>
                             <div class="dropdown-section">
@@ -6139,6 +6129,15 @@ const SankcjeManager = {
             }
         }
 
+        if (miejsceSelect) {
+            for (let i = 1; i <= 9; i++) {
+                const option = document.createElement('option');
+                option.value = `Nazwa ${String(i).padStart(2, '0')}`;
+                option.textContent = `Nazwa ${String(i).padStart(2, '0')}`;
+                miejsceSelect.appendChild(option);
+            }
+        }
+
         toggleBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdown.classList.toggle('hidden');
@@ -6564,7 +6563,7 @@ const SankcjeManager = {
         const miejsceOptions = Array.from({length: 9}, (_, i) => `Nazwa ${String(i + 1).padStart(2, '0')}`);
         const podlegloscOptions = ['WL', 'WOT', 'WS', 'MW', 'ŻW', 'SP'];
         const grupaOptions = ['szeregowy', 'podoficer', 'oficer', 'generał/admirał'];
-        const jzwOptions = ['Elbląg', 'Gdynia', 'Bemowo Piskie', 'Bartoszyce', 'Braniewo', 'Malbork', 'Morąg', 'Giżycko'];
+        const jzwOptions = ['OŻW Elbląg', 'WŻW Bemowo Piskie', 'WŻW Gdynia', 'PŻW Bartoszyce', 'PŻW Braniewo', 'PŻW Malbork', 'PŻW Morąg', 'PŻW Giżycko'];
         const oddzialOptions = ['Elbląg', 'Szczecin', 'Lublin', 'Bydgoszcz', 'Kraków', 'Żagań', 'Warszawa', 'Łódź', 'Mińsk Mazowiecki'];
 
         tbody.innerHTML = dataToRender.map((row, index) => {
@@ -6905,27 +6904,32 @@ const KonwojeManager = createBaseTableManager({
                     
                     <div class="date-filter-wrapper">
                         <button class="btn-secondary" id="toggleKonwojeDateFilterBtn">
-                            <i class="fas fa-calendar-alt"></i> Filtruj daty
+                            <i class="fas fa-calendar-days"></i> Filtruj daty <i class="fas fa-chevron-down"></i>
                             <span id="konwojeDateFilterBadge" class="filter-badge hidden"></span>
                         </button>
-                        
+                        <button class="btn-secondary btn-clear-filter hidden" id="clearKonwojeDateFilterBtn">
+                            <i class="fas fa-times"></i> Wyczyść filtr
+                        </button>
                         <div class="date-filter-dropdown hidden" id="konwojeDateFilterDropdown">
-                            <div class="dropdown-header">
-                                <i class="fas fa-calendar-alt"></i> Filtrowanie po dacie
-                            </div>
-                            <div class="dropdown-body">
-                                <label>Data od:</label>
+                            <div class="dropdown-header">Filtruj według dat</div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Data od:</label>
                                 <input type="date" id="konwojeDateFrom" class="date-input">
-                                <label>Data do:</label>
+                                <label class="filter-label">Data do:</label>
                                 <input type="date" id="konwojeDateTo" class="date-input">
-                                <label>Rodzaj konwoju:</label>
-                                <select id="konwojeRodzajFilter" class="date-input">
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Rodzaj konwoju:</label>
+                                <select id="konwojeRodzajFilter" class="date-input" style="width: 100%; padding: 0.5rem;">
                                     <option value="">Wszystkie</option>
                                     <option value="miejscowy">Miejscowy</option>
                                     <option value="zamiejscowy">Zamiejscowy</option>
                                 </select>
-                                <label>JW prowadząca:</label>
-                                <select id="konwojeJwFilter" class="date-input">
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">JW prowadząca:</label>
+                                <select id="konwojeJwFilter" class="date-input" style="width: 100%; padding: 0.5rem;">
                                     <option value="">Wszystkie</option>
                                     <option value="OŻW Elbląg">OŻW Elbląg</option>
                                     <option value="WŻW Bemowo Piskie">WŻW Bemowo Piskie</option>
@@ -6936,8 +6940,10 @@ const KonwojeManager = createBaseTableManager({
                                     <option value="PŻW Morąg">PŻW Morąg</option>
                                     <option value="PŻW Giżycko">PŻW Giżycko</option>
                                 </select>
-                                <label>Oddział:</label>
-                                <select id="konwojeOddzialFilter" class="date-input">
+                            </div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Oddział:</label>
+                                <select id="konwojeOddzialFilter" class="date-input" style="width: 100%; padding: 0.5rem;">
                                     <option value="">Wszystkie</option>
                                     <option value="Elbląg">Elbląg</option>
                                     <option value="Bydgoszcz">Bydgoszcz</option>
@@ -6948,16 +6954,17 @@ const KonwojeManager = createBaseTableManager({
                                     <option value="Warszawa">Warszawa</option>
                                     <option value="Łódź">Łódź</option>
                                 </select>
-                                <div id="konwojeFilterResultInfo" class="filter-result-info hidden"></div>
-                                <div class="dropdown-actions">
-                                    <button class="btn-secondary btn-sm" id="applyKonwojeDateFilter">
-                                        <i class="fas fa-check"></i> Zastosuj
-                                    </button>
-                                    <button class="btn-secondary btn-sm" id="clearKonwojeDateFilterDropdown">
-                                        <i class="fas fa-times"></i> Wyczyść
-                                    </button>
-                                </div>
                             </div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-actions">
+                                <button class="btn-dropdown" id="applyKonwojeDateFilter">
+                                    <i class="fas fa-search"></i> Filtruj
+                                </button>
+                                <button class="btn-dropdown" id="clearKonwojeDateFilterDropdown">
+                                    <i class="fas fa-times"></i> Wyczyść
+                                </button>
+                            </div>
+                            <div id="konwojeFilterResultInfo" class="filter-result-info hidden"></div>
                         </div>
                     </div>
 
@@ -7034,6 +7041,7 @@ const KonwojeManager = createBaseTableManager({
         const oddzialSelect = document.getElementById('konwojeOddzialFilter');
         const applyBtn = document.getElementById('applyKonwojeDateFilter');
         const clearDropdownBtn = document.getElementById('clearKonwojeDateFilterDropdown');
+        const clearFilterBtn = document.getElementById('clearKonwojeDateFilterBtn');
         const filterBadge = document.getElementById('konwojeDateFilterBadge');
         const filterInfoBar = document.getElementById('konwojeFilterInfoBar');
         const filterResultInfo = document.getElementById('konwojeFilterResultInfo');
@@ -7081,6 +7089,15 @@ const KonwojeManager = createBaseTableManager({
         });
 
         clearDropdownBtn?.addEventListener('click', () => {
+            dateFromInput.value = '';
+            dateToInput.value = '';
+            if (rodzajSelect) rodzajSelect.value = '';
+            if (jwSelect) jwSelect.value = '';
+            if (oddzialSelect) oddzialSelect.value = '';
+            this.clearDateFilter();
+        });
+
+        clearFilterBtn?.addEventListener('click', () => {
             dateFromInput.value = '';
             dateToInput.value = '';
             if (rodzajSelect) rodzajSelect.value = '';
@@ -7204,6 +7221,9 @@ const KonwojeManager = createBaseTableManager({
         }
         filterResultInfo.classList.remove('hidden');
 
+        const clearFilterBtn = document.getElementById('clearKonwojeDateFilterBtn');
+        clearFilterBtn?.classList.remove('hidden');
+
         this.renderRows();
     },
 
@@ -7218,10 +7238,12 @@ const KonwojeManager = createBaseTableManager({
         const filterBadge = document.getElementById('konwojeDateFilterBadge');
         const filterInfoBar = document.getElementById('konwojeFilterInfoBar');
         const filterResultInfo = document.getElementById('konwojeFilterResultInfo');
+        const clearFilterBtn = document.getElementById('clearKonwojeDateFilterBtn');
 
         filterBadge?.classList.add('hidden');
         filterInfoBar?.classList.add('hidden');
         filterResultInfo?.classList.add('hidden');
+        clearFilterBtn?.classList.add('hidden');
 
         this.renderRows();
     },
@@ -9554,18 +9576,18 @@ const SPBManager = createBaseTableManager({
                     
                     <div class="date-filter-wrapper">
                         <button class="btn-secondary" id="toggleSPBDateFilterBtn">
-                            <i class="fas fa-calendar-alt"></i> Filtruj daty
+                            <i class="fas fa-calendar-days"></i> Filtruj daty <i class="fas fa-chevron-down"></i>
                             <span id="spbDateFilterBadge" class="filter-badge hidden"></span>
                         </button>
-                        
+                        <button class="btn-secondary btn-clear-filter hidden" id="clearSPBDateFilterBtn">
+                            <i class="fas fa-times"></i> Wyczyść filtr
+                        </button>
                         <div class="date-filter-dropdown hidden" id="spbDateFilterDropdown">
-                            <div class="dropdown-header">
-                                <i class="fas fa-calendar-alt"></i> Filtrowanie po dacie
-                            </div>
-                            <div class="dropdown-body">
-                                <label>Data od:</label>
+                            <div class="dropdown-header">Filtruj według dat</div>
+                            <div class="dropdown-section">
+                                <label class="filter-label">Data od:</label>
                                 <input type="date" id="spbDateFrom" class="date-input">
-                                <label>Data do:</label>
+                                <label class="filter-label">Data do:</label>
                                 <input type="date" id="spbDateTo" class="date-input">
                             </div>
                             <div class="dropdown-divider"></div>
@@ -9603,9 +9625,10 @@ const SPBManager = createBaseTableManager({
                                 <label class="filter-label">Grupa os.:</label>
                                 <select id="spbGrupaFilter" class="spb-select" style="width: 100%; padding: 0.5rem;">
                                     <option value="">Wszystkie</option>
-                                    <option value="żołnierz">żołnierz</option>
-                                    <option value="pracownik RON">pracownik RON</option>
-                                    <option value="osoba cywilna">osoba cywilna</option>
+                                    <option value="szeregowy">szeregowy</option>
+                                    <option value="podoficer">podoficer</option>
+                                    <option value="oficer">oficer</option>
+                                    <option value="generał/admirał">generał/admirał</option>
                                 </select>
                             </div>
                             <div class="dropdown-section">
@@ -9638,16 +9661,15 @@ const SPBManager = createBaseTableManager({
                                 </select>
                             </div>
                             <div class="dropdown-divider"></div>
-                            <div id="spbFilterResultInfo" class="filter-result-info hidden"></div>
                             <div class="dropdown-actions">
-                                    <button class="btn-secondary btn-sm" id="applySPBDateFilter">
-                                        <i class="fas fa-check"></i> Zastosuj
-                                    </button>
-                                    <button class="btn-secondary btn-sm" id="clearSPBDateFilterDropdown">
-                                        <i class="fas fa-times"></i> Wyczyść
-                                    </button>
-                                </div>
+                                <button class="btn-dropdown" id="applySPBDateFilter">
+                                    <i class="fas fa-search"></i> Filtruj
+                                </button>
+                                <button class="btn-dropdown" id="clearSPBDateFilterDropdown">
+                                    <i class="fas fa-times"></i> Wyczyść
+                                </button>
                             </div>
+                            <div id="spbFilterResultInfo" class="filter-result-info hidden"></div>
                         </div>
                     </div>
                 </div>
