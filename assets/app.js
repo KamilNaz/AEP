@@ -10034,6 +10034,9 @@ const SPBManager = createBaseTableManager({
         }
         filterResultInfo.classList.remove('hidden');
 
+        const clearFilterBtn = document.getElementById('clearSPBDateFilterBtn');
+        clearFilterBtn?.classList.remove('hidden');
+
         this.renderRows();
     },
 
