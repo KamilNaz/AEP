@@ -100,8 +100,11 @@ const ZespolyManager = {
     render() {
         this.loadTeams();
 
-        const mainContent = document.getElementById('mainContent');
-        mainContent.innerHTML = `
+        // Sprawdź czy jesteśmy w kontekście mapy
+        const mapContainer = document.getElementById('teamsInMapContainer');
+        const targetContainer = mapContainer || document.getElementById('mainContent');
+
+        targetContainer.innerHTML = `
             <div class="teams-view">
                 <div class="teams-header">
                     <h1 class="section-title">

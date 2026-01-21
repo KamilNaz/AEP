@@ -1172,6 +1172,70 @@
 }
 
 /* ============================================ */
+/* ICON SELECTOR */
+/* ============================================ */
+.icon-selector {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.icon-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 0.5rem;
+    background: #1a1d29;
+    border: 2px solid #2d3142;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.icon-option:hover {
+    background: #242837;
+    border-color: #a855f7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+}
+
+.icon-option.active {
+    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+    border-color: #a855f7;
+    box-shadow: 0 4px 16px rgba(168, 85, 247, 0.4);
+}
+
+.icon-option i {
+    font-size: 1.5rem;
+    color: #9ca3af;
+    transition: color 0.2s ease;
+}
+
+.icon-option:hover i,
+.icon-option.active i {
+    color: #ffffff;
+}
+
+.icon-option span {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    text-align: center;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.2s ease;
+}
+
+.icon-option:hover span,
+.icon-option.active span {
+    color: #ffffff;
+}
+
+/* ============================================ */
 /* EVENT DETAILS MODAL */
 /* ============================================ */
 .event-details {
