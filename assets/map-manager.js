@@ -353,7 +353,9 @@ const MapManager = {
      * Tworzenie markera dla wydarzenia
      */
     createEventMarker(event) {
-        const icon = this.getIconForType(event.type);
+        // Użyj wybranej ikony lub domyślnej dla typu
+        const iconClass = event.icon || this.getIconClassForType(event.type);
+        const icon = this.createIconFromClass(iconClass, event.type);
 
         const marker = L.marker([event.lat, event.lng], {
             icon: icon,
@@ -390,9 +392,17 @@ const MapManager = {
 
 
     /**
-     * Pobierz ikonę dla typu wydarzenia
+     * Pobierz ikonę dla typu wydarzenia (dla kompatybilności wstecznej)
      */
     getIconForType(type) {
+        const iconClass = this.getIconClassForType(type);
+        return this.createIconFromClass(iconClass, type);
+    },
+
+    /**
+     * Pobierz klasę ikony dla typu wydarzenia
+     */
+    getIconClassForType(type) {
         const icons = {
             'zabezpieczenie': 'fa-shield-halved',
             'mczp': 'fa-location-crosshairs',
@@ -401,7 +411,13 @@ const MapManager = {
             'wykroczenie': 'fa-scale-balanced',
             'inne': 'fa-map-pin'
         };
+        return icons[type] || 'fa-map-pin';
+    },
 
+    /**
+     * Utwórz ikonę z klasy FontAwesome
+     */
+    createIconFromClass(iconClass, type) {
         const colors = {
             'zabezpieczenie': '#10b981',
             'mczp': '#f59e0b',
@@ -411,8 +427,7 @@ const MapManager = {
             'inne': '#6b7280'
         };
 
-        const iconClass = icons[type] || 'fa-map-pin';
-        const color = colors[type] || '#6b7280';
+        const color = colors[type] || '#a855f7';
 
         return L.divIcon({
             html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
@@ -769,6 +784,45 @@ const MapManager = {
                 </div>
 
                 <div class="form-group">
+                    <label>Ikona wydarzenia</label>
+                    <div class="icon-selector">
+                        <div class="icon-option" data-icon="fa-shield-halved" title="Ochrona">
+                            <i class="fas fa-shield-halved"></i>
+                            <span>Ochrona</span>
+                        </div>
+                        <div class="icon-option" data-icon="fa-user-shield" title="Ochrona VIP">
+                            <i class="fas fa-user-shield"></i>
+                            <span>VIP</span>
+                        </div>
+                        <div class="icon-option" data-icon="fa-truck-arrow-right" title="Konwój/Pilotaż">
+                            <i class="fas fa-truck-arrow-right"></i>
+                            <span>Konwój</span>
+                        </div>
+                        <div class="icon-option" data-icon="fa-route" title="Patrolowanie">
+                            <i class="fas fa-route"></i>
+                            <span>Patrol</span>
+                        </div>
+                        <div class="icon-option" data-icon="fa-explosion" title="Pirotechnika">
+                            <i class="fas fa-explosion"></i>
+                            <span>PIRO</span>
+                        </div>
+                        <div class="icon-option" data-icon="fa-car-burst" title="Zdarzenie drogowe">
+                            <i class="fas fa-car-burst"></i>
+                            <span>Wypadek</span>
+                        </div>
+                        <div class="icon-option" data-icon="fa-triangle-exclamation" title="Wykroczenie">
+                            <i class="fas fa-triangle-exclamation"></i>
+                            <span>Wykroczenie</span>
+                        </div>
+                        <div class="icon-option active" data-icon="fa-map-pin" title="Domyślna">
+                            <i class="fas fa-map-pin"></i>
+                            <span>Domyślna</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="mapEventIcon" value="fa-map-pin" />
+                </div>
+
+                <div class="form-group">
                     <label>Współrzędne *</label>
                     <button type="button" class="btn-secondary btn-full" id="selectFromMapBtn" style="margin-bottom: 0.5rem;">
                         <i class="fas fa-map-marker-alt"></i> Wybierz lokalizację z mapy
@@ -827,6 +881,19 @@ const MapManager = {
             </form>
         `);
 
+        // Obsługa selektora ikon
+        document.querySelectorAll('.icon-option').forEach(option => {
+            option.addEventListener('click', () => {
+                // Usuń active z wszystkich opcji
+                document.querySelectorAll('.icon-option').forEach(opt => opt.classList.remove('active'));
+                // Dodaj active do klikniętej
+                option.classList.add('active');
+                // Zapisz wybraną ikonę do hidden input
+                const iconClass = option.dataset.icon;
+                document.getElementById('mapEventIcon').value = iconClass;
+            });
+        });
+
         // Obsługa przycisku "Wybierz z mapy"
         document.getElementById('selectFromMapBtn')?.addEventListener('click', () => {
             // Zapisz dane formularza przed zamknięciem modala
@@ -880,6 +947,7 @@ const MapManager = {
             type: document.getElementById('mapEventType').value,
             status: document.getElementById('mapEventStatus').value,
             name: document.getElementById('mapEventName').value,
+            icon: document.getElementById('mapEventIcon').value || 'fa-map-pin',
             lat: parseFloat(document.getElementById('mapEventLat').value),
             lng: parseFloat(document.getElementById('mapEventLng').value),
             date: document.getElementById('mapEventDate').value || null,

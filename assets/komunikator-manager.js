@@ -66,8 +66,11 @@ const KomunikatorManager = {
     render() {
         this.init();
 
-        const mainContent = document.getElementById('mainContent');
-        mainContent.innerHTML = `
+        // Sprawdź czy jesteśmy w kontekście mapy
+        const mapContainer = document.getElementById('communicatorInMapContainer');
+        const targetContainer = mapContainer || document.getElementById('mainContent');
+
+        targetContainer.innerHTML = `
             <div class="komunikator-view">
                 <!-- Header -->
                 <div class="komunikator-header">
