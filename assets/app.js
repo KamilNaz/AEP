@@ -1479,144 +1479,71 @@ const Router = {
      * @returns {void}
      */
     renderStartPage() {
-        // Pobierz aktualne statystyki z localStorage
-        const stats = this.getDashboardStats();
-        
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
-            <div class="dashboard-start">
-                <!-- Logo i Header -->
-                <div class="dashboard-header">
-                    <div class="logo-section">
-                        <img src="img/logo_Elblag.png" alt="Logo Elbląg" class="dashboard-logo">
-                        <h1 class="dashboard-title">Arkusz Ewidencji Prewencyjnej</h1>
-                        <p class="dashboard-subtitle">System zarządzania działaniami prewencyjnymi</p>
-                    </div>
-                    <div class="datetime-display">
-                        <div class="current-time" id="currentTime">--:--:--</div>
-                        <div class="current-date" id="currentDate">-- ----- ----</div>
-                    </div>
+            <div class="cyber-start-page">
+                <!-- Geometryczne tło -->
+                <div class="cyber-background">
+                    <div class="grid-pattern"></div>
+                    <div class="particles"></div>
+                    <div class="circuit-lines"></div>
                 </div>
 
-                <!-- Wizualizacje danych -->
-                <div class="charts-grid">
-                    <div class="chart-card">
-                        <div class="chart-header">
-                            <h3><i class="fas fa-chart-line"></i> Patrole - ostatnie 7 dni</h3>
+                <!-- Główna zawartość -->
+                <div class="cyber-content">
+                    <!-- Centralne logo -->
+                    <div class="cyber-logo-container">
+                        <div class="cyber-rings">
+                            <div class="ring ring-1"></div>
+                            <div class="ring ring-2"></div>
+                            <div class="ring ring-3"></div>
+                            <div class="ring ring-4"></div>
                         </div>
-                        <canvas id="patrolChart"></canvas>
+                        <div class="logo-hexagon">
+                            <img src="img/logo_Elblag.png" alt="Logo Elbląg" class="cyber-logo-img">
+                        </div>
+                        <div class="cyber-glow"></div>
                     </div>
 
-                    <div class="chart-card">
-                        <div class="chart-header">
-                            <h3><i class="fas fa-chart-pie"></i> Wykroczenia - rozkład typów</h3>
+                    <!-- Tytuł z efektem glitch -->
+                    <h1 class="cyber-title" data-text="ARKUSZ EWIDENCJI PREWENCYJNEJ">
+                        ARKUSZ EWIDENCJI PREWENCYJNEJ
+                    </h1>
+                    <p class="cyber-subtitle">System zarządzania działaniami prewencyjnymi</p>
+
+                    <!-- Dane i czas -->
+                    <div class="cyber-datetime">
+                        <div class="cyber-time-block">
+                            <div class="time-label">CZAS SYSTEMOWY</div>
+                            <div class="current-time" id="currentTime">--:--:--</div>
                         </div>
-                        <canvas id="violationsChart"></canvas>
+                        <div class="cyber-date-block">
+                            <div class="date-label">DATA</div>
+                            <div class="current-date" id="currentDate">-- ----- ----</div>
+                        </div>
                     </div>
 
-                    <div class="chart-card">
-                        <div class="chart-header">
-                            <h3><i class="fas fa-chart-bar"></i> Sankcje PLN - ostatnie 6 miesięcy</h3>
-                        </div>
-                        <canvas id="sanctionsChart"></canvas>
-                    </div>
-
-                    <div class="chart-card">
-                        <div class="chart-header">
-                            <h3><i class="fas fa-tasks"></i> Cele miesięczne - realizacja</h3>
-                        </div>
-                        <div class="goals-container">
-                            <div class="goal-item">
-                                <div class="goal-label">
-                                    <span>Patrole</span>
-                                    <span class="goal-value">${stats.patrole.count}/${stats.patrole.target}</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" data-progress="${stats.patrole.percent}"></div>
-                                </div>
-                                <span class="progress-percent">${stats.patrole.percent}%</span>
-                            </div>
-
-                            <div class="goal-item">
-                                <div class="goal-label">
-                                    <span>Wykroczenia</span>
-                                    <span class="goal-value">${stats.wykroczenia.count}/${stats.wykroczenia.target}</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" data-progress="${stats.wykroczenia.percent}"></div>
-                                </div>
-                                <span class="progress-percent">${stats.wykroczenia.percent}%</span>
-                            </div>
-
-                            <div class="goal-item">
-                                <div class="goal-label">
-                                    <span>Konwoje</span>
-                                    <span class="goal-value">${stats.konwoje.count}/${stats.konwoje.target}</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" data-progress="${stats.konwoje.percent}"></div>
-                                </div>
-                                <span class="progress-percent">${stats.konwoje.percent}%</span>
-                            </div>
-
-                            <div class="goal-item">
-                                <div class="goal-label">
-                                    <span>Zdarzenia</span>
-                                    <span class="goal-value">${stats.zdarzenia.count}/${stats.zdarzenia.target}</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" data-progress="${stats.zdarzenia.percent}"></div>
-                                </div>
-                                <span class="progress-percent">${stats.zdarzenia.percent}%</span>
-                            </div>
+                    <!-- Status systemowy -->
+                    <div class="cyber-status">
+                        <div class="status-indicator">
+                            <span class="status-dot"></span>
+                            <span class="status-text">SYSTEM OPERACYJNY</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Szybki przegląd -->
-                <div class="quick-stats">
-                    <div class="quick-stat-card">
-                        <i class="fas fa-truck"></i>
-                        <div class="quick-stat-content">
-                            <div class="quick-stat-label">Konwoje</div>
-                            <div class="quick-stat-value" data-target="${stats.konwoje.count}">0</div>
-                        </div>
-                    </div>
-                    <div class="quick-stat-card">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <div class="quick-stat-content">
-                            <div class="quick-stat-label">ŚPB</div>
-                            <div class="quick-stat-value" data-target="${stats.spb.count}">0</div>
-                        </div>
-                    </div>
-                    <div class="quick-stat-card">
-                        <i class="fas fa-flag"></i>
-                        <div class="quick-stat-content">
-                            <div class="quick-stat-label">Pilotaże</div>
-                            <div class="quick-stat-value" data-target="${stats.pilotaze.count}">0</div>
-                        </div>
-                    </div>
-                    <div class="quick-stat-card">
-                        <i class="fas fa-car-crash"></i>
-                        <div class="quick-stat-content">
-                            <div class="quick-stat-label">Zdarzenia</div>
-                            <div class="quick-stat-value" data-target="${stats.zdarzenia.count}">0</div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Efekty wizualne -->
+                <div class="scan-line"></div>
             </div>
         `;
-        
+
         AppState.currentSection = null;
-        
+
         // Inicjalizuj zegar
         this.initLiveClock();
-        
-        // Inicjalizuj animacje
-        this.initDashboardAnimations();
-        
-        // Inicjalizuj wykresy
-        this.initCharts();
+
+        // Inicjalizuj animacje cyberpunk
+        this.initCyberAnimations();
     },
 
     getDashboardStats() {
@@ -1683,22 +1610,51 @@ const Router = {
             const now = new Date();
             const timeEl = document.getElementById('currentTime');
             const dateEl = document.getElementById('currentDate');
-            
+
             if (timeEl) {
                 const hours = String(now.getHours()).padStart(2, '0');
                 const minutes = String(now.getMinutes()).padStart(2, '0');
                 const seconds = String(now.getSeconds()).padStart(2, '0');
                 timeEl.textContent = `${hours}:${minutes}:${seconds}`;
             }
-            
+
             if (dateEl) {
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
                 dateEl.textContent = now.toLocaleDateString('pl-PL', options);
             }
         };
-        
+
         updateClock();
         setInterval(updateClock, 1000);
+    },
+
+    initCyberAnimations() {
+        // Generuj particles (kropki w tle)
+        const particlesContainer = document.querySelector('.particles');
+        if (particlesContainer) {
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                particle.style.animationDuration = (5 + Math.random() * 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Dodaj efekt glitch na tytuł
+        const title = document.querySelector('.cyber-title');
+        if (title) {
+            setInterval(() => {
+                if (Math.random() > 0.95) {
+                    title.classList.add('glitch-active');
+                    setTimeout(() => {
+                        title.classList.remove('glitch-active');
+                    }, 200);
+                }
+            }, 1000);
+        }
     },
 
     initDashboardAnimations() {
