@@ -1493,39 +1493,6 @@ const Router = {
                 <div class="cyber-content">
                     <!-- Centralne logo -->
                     <div class="cyber-logo-container">
-                        <!-- Orbitalne segmenty -->
-                        <div class="cyber-orbits">
-                            <svg class="orbit orbit-1" viewBox="0 0 200 200">
-                                <circle cx="100" cy="100" r="95" fill="none" stroke="url(#gradient1)" stroke-width="1"
-                                        stroke-dasharray="15 10" opacity="0.6"/>
-                            </svg>
-                            <svg class="orbit orbit-2" viewBox="0 0 200 200">
-                                <circle cx="100" cy="100" r="80" fill="none" stroke="url(#gradient2)" stroke-width="1.5"
-                                        stroke-dasharray="20 15" opacity="0.7"/>
-                            </svg>
-                            <svg class="orbit orbit-3" viewBox="0 0 200 200">
-                                <circle cx="100" cy="100" r="65" fill="none" stroke="url(#gradient3)" stroke-width="1"
-                                        stroke-dasharray="10 8" opacity="0.8"/>
-                            </svg>
-                            <!-- Gradients -->
-                            <svg width="0" height="0">
-                                <defs>
-                                    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#a855f7;stop-opacity:1" />
-                                        <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
-                                    </linearGradient>
-                                    <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#ec4899;stop-opacity:1" />
-                                        <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
-                                    </linearGradient>
-                                    <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
-                                        <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
-                        </div>
-                        <!-- Centralne logo -->
                         <div class="logo-hexagon">
                             <img src="img/logo_Elblag.png" alt="Logo Elbląg" class="cyber-logo-img">
                         </div>

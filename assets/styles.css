@@ -5084,48 +5084,6 @@ canvas {
     justify-content: center;
 }
 
-/* Orbitalne segmenty - minimalistyczne i kreatywne */
-.cyber-orbits {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-}
-
-.orbit {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-}
-
-.orbit-1 {
-    animation: orbitRotate1 20s linear infinite;
-}
-
-.orbit-2 {
-    animation: orbitRotate2 15s linear infinite reverse;
-}
-
-.orbit-3 {
-    animation: orbitRotate3 25s linear infinite;
-}
-
-@keyframes orbitRotate1 {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes orbitRotate2 {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes orbitRotate3 {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
 /* Hexagon logo */
 .logo-hexagon {
     position: relative;
@@ -5163,38 +5121,71 @@ canvas {
     100% { transform: rotate(-360deg); }
 }
 
-/* Glitch effect na logo - zapętlony co 3s */
+/* Glitch effect na logo - zapętlony co 3s - DRASTYCZNY EFEKT RGB */
 .cyber-logo-img.logo-glitch-active {
-    animation: logoCounterRotate 20s linear infinite, logoGlitch 0.4s linear;
+    animation: logoCounterRotate 20s linear infinite,
+               logoGlitchRGB 0.5s cubic-bezier(.25, .46, .45, .94);
 }
 
-@keyframes logoGlitch {
+@keyframes logoGlitchRGB {
     0% {
+        transform: rotate(0deg) translate(0, 0);
         filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
+    }
+    10% {
+        transform: rotate(0deg) translate(-8px, 0) skew(-10deg);
+        filter: drop-shadow(8px 0 0 #ff0066)
+                drop-shadow(-8px 0 0 #00ffff)
+                blur(1px);
     }
     20% {
-        filter: drop-shadow(2px 0 20px rgba(236, 72, 153, 0.8))
-                drop-shadow(-2px 0 20px rgba(6, 182, 212, 0.8));
-        transform: rotate(0deg) translate(2px, 0);
+        transform: rotate(0deg) translate(5px, 3px) skew(5deg);
+        filter: drop-shadow(-10px 0 0 #ff0066)
+                drop-shadow(10px 0 0 #00ffff)
+                drop-shadow(0 0 30px rgba(168, 85, 247, 0.8));
+    }
+    30% {
+        transform: rotate(0deg) translate(-6px, -2px) skew(-8deg);
+        filter: drop-shadow(12px 0 0 #ff0066)
+                drop-shadow(-12px 0 0 #00ffff)
+                blur(2px);
     }
     40% {
-        filter: drop-shadow(-2px 0 20px rgba(59, 130, 246, 0.8))
-                drop-shadow(2px 0 20px rgba(168, 85, 247, 0.8));
-        transform: rotate(0deg) translate(-2px, 0);
+        transform: rotate(0deg) translate(7px, 0) skew(12deg);
+        filter: drop-shadow(-15px 0 0 #00ffff)
+                drop-shadow(15px 0 0 #ff0066);
+    }
+    50% {
+        transform: rotate(0deg) translate(-10px, 4px);
+        filter: drop-shadow(10px 0 0 #ff0066)
+                drop-shadow(-10px 0 0 #00ffff)
+                blur(3px);
     }
     60% {
-        filter: drop-shadow(3px 0 20px rgba(236, 72, 153, 0.8))
-                drop-shadow(-3px 0 20px rgba(6, 182, 212, 0.8));
-        transform: rotate(0deg) translate(1px, 1px);
+        transform: rotate(0deg) translate(4px, -3px) skew(-15deg);
+        filter: drop-shadow(-8px 0 0 #ff0066)
+                drop-shadow(8px 0 0 #00ffff);
+    }
+    70% {
+        transform: rotate(0deg) translate(-5px, 2px) skew(10deg);
+        filter: drop-shadow(12px 0 0 #00ffff)
+                drop-shadow(-12px 0 0 #ff0066)
+                blur(1px);
     }
     80% {
-        filter: drop-shadow(-1px 0 20px rgba(168, 85, 247, 0.8))
-                drop-shadow(1px 0 20px rgba(236, 72, 153, 0.8));
-        transform: rotate(0deg) translate(-1px, -1px);
+        transform: rotate(0deg) translate(6px, -1px);
+        filter: drop-shadow(-6px 0 0 #ff0066)
+                drop-shadow(6px 0 0 #00ffff);
+    }
+    90% {
+        transform: rotate(0deg) translate(-3px, 1px) skew(-5deg);
+        filter: drop-shadow(5px 0 0 #ff0066)
+                drop-shadow(-5px 0 0 #00ffff)
+                blur(1px);
     }
     100% {
+        transform: rotate(0deg) translate(0, 0);
         filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
-        transform: rotate(0deg);
     }
 }
 
