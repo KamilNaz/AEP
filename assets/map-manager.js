@@ -293,6 +293,7 @@ const MapManager = {
             const description = prompt('Dodaj opis dla tego obszaru/linii:');
             if (description) {
                 layer.bindPopup(description);
+                layer.description = description; // Zapisz opis w warstwie
 
                 // Dodaj stałą etykietę na kształcie (czcionka Oswald, pogrubiona)
                 const bounds = layer.getBounds ? layer.getBounds() : null;
@@ -314,6 +315,26 @@ const MapManager = {
                     }
                 }
             }
+
+            // Zapisz kształty do localStorage
+            this.saveDrawnShapes();
+        });
+
+        // Event dla edycji kształtów
+        this.map.on(L.Draw.Event.EDITED, (e) => {
+            this.saveDrawnShapes();
+        });
+
+        // Event dla usuwania kształtów
+        this.map.on(L.Draw.Event.DELETED, (e) => {
+            const layers = e.layers;
+            layers.eachLayer((layer) => {
+                // Usuń również etykietę jeśli istnieje
+                if (layer.labelMarker) {
+                    this.map.removeLayer(layer.labelMarker);
+                }
+            });
+            this.saveDrawnShapes();
         });
 
         // Wyświetlanie współrzędnych kursora
@@ -325,6 +346,9 @@ const MapManager = {
 
         // Renderuj wszystkie warstwy
         this.renderAllLayers();
+
+        // Załaduj zapisane kształty
+        this.loadDrawnShapes();
     },
 
     /**
@@ -542,6 +566,7 @@ const MapManager = {
             type: document.getElementById('mapEventType')?.value || '',
             status: document.getElementById('mapEventStatus')?.value || '',
             name: document.getElementById('mapEventName')?.value || '',
+            icon: document.getElementById('mapEventIcon')?.value || 'fa-map-pin',
             lat: document.getElementById('mapEventLat')?.value || '',
             lng: document.getElementById('mapEventLng')?.value || '',
             date: document.getElementById('mapEventDate')?.value || '',
@@ -917,12 +942,21 @@ const MapManager = {
             document.getElementById('mapEventType').value = this.savedFormData.type;
             document.getElementById('mapEventStatus').value = this.savedFormData.status;
             document.getElementById('mapEventName').value = this.savedFormData.name;
+            document.getElementById('mapEventIcon').value = this.savedFormData.icon || 'fa-map-pin';
             document.getElementById('mapEventLat').value = this.savedFormData.lat;
             document.getElementById('mapEventLng').value = this.savedFormData.lng;
             document.getElementById('mapEventDate').value = this.savedFormData.date;
             document.getElementById('mapEventUnit').value = this.savedFormData.unit;
             document.getElementById('mapEventLocation').value = this.savedFormData.location;
             document.getElementById('mapEventDescription').value = this.savedFormData.description;
+
+            // Zaktualizuj aktywną ikonę w selectorze
+            const savedIcon = this.savedFormData.icon || 'fa-map-pin';
+            document.querySelectorAll('.icon-option').forEach(opt => opt.classList.remove('active'));
+            const activeOption = document.querySelector(`.icon-option[data-icon="${savedIcon}"]`);
+            if (activeOption) {
+                activeOption.classList.add('active');
+            }
 
             // Wyczyść zapisane dane
             this.savedFormData = null;
@@ -2988,6 +3022,115 @@ const MapManager = {
                 `);
 
                 this.markers.push(marker);
+            }
+        });
+    },
+
+    /**
+     * Zapisz narysowane kształty do localStorage
+     */
+    saveDrawnShapes() {
+        const shapes = [];
+
+        this.drawnItems.eachLayer((layer) => {
+            const shape = {
+                type: null,
+                latlngs: null,
+                description: layer.description || '',
+                style: {
+                    color: layer.options.color || '#3388ff',
+                    fillColor: layer.options.fillColor || '#3388ff',
+                    weight: layer.options.weight || 3,
+                    opacity: layer.options.opacity || 1,
+                    fillOpacity: layer.options.fillOpacity || 0.2
+                }
+            };
+
+            // Określ typ i pobierz współrzędne
+            if (layer instanceof L.Marker) {
+                shape.type = 'marker';
+                shape.latlngs = layer.getLatLng();
+            } else if (layer instanceof L.Circle) {
+                shape.type = 'circle';
+                shape.latlngs = layer.getLatLng();
+                shape.radius = layer.getRadius();
+            } else if (layer instanceof L.Polygon) {
+                shape.type = 'polygon';
+                shape.latlngs = layer.getLatLngs();
+            } else if (layer instanceof L.Polyline) {
+                shape.type = 'polyline';
+                shape.latlngs = layer.getLatLngs();
+            } else if (layer instanceof L.Rectangle) {
+                shape.type = 'rectangle';
+                shape.latlngs = layer.getLatLngs();
+            }
+
+            if (shape.type) {
+                shapes.push(shape);
+            }
+        });
+
+        Utils.saveToLocalStorage('aep_map_shapes', shapes);
+    },
+
+    /**
+     * Załaduj narysowane kształty z localStorage
+     */
+    loadDrawnShapes() {
+        const shapes = Utils.loadFromLocalStorage('aep_map_shapes') || [];
+
+        shapes.forEach(shape => {
+            let layer = null;
+
+            try {
+                switch (shape.type) {
+                    case 'marker':
+                        layer = L.marker(shape.latlngs);
+                        break;
+                    case 'circle':
+                        layer = L.circle(shape.latlngs, {
+                            radius: shape.radius,
+                            ...shape.style
+                        });
+                        break;
+                    case 'polygon':
+                        layer = L.polygon(shape.latlngs, shape.style);
+                        break;
+                    case 'polyline':
+                        layer = L.polyline(shape.latlngs, shape.style);
+                        break;
+                    case 'rectangle':
+                        layer = L.rectangle(shape.latlngs, shape.style);
+                        break;
+                }
+
+                if (layer) {
+                    layer.description = shape.description;
+                    this.drawnItems.addLayer(layer);
+
+                    // Przywróć popup i etykietę jeśli istnieje opis
+                    if (shape.description) {
+                        layer.bindPopup(shape.description);
+
+                        // Odtwórz etykietę
+                        const bounds = layer.getBounds ? layer.getBounds() : null;
+                        if (bounds) {
+                            const center = bounds.getCenter();
+                            this.addPermanentLabel(center, shape.description, layer);
+                        } else if (layer.getLatLng) {
+                            const center = layer.getLatLng();
+                            this.addPermanentLabel(center, shape.description, layer);
+                        } else if (layer.getLatLngs) {
+                            const latlngs = layer.getLatLngs();
+                            if (latlngs.length > 0) {
+                                const center = this.calculatePolylineCenter(latlngs);
+                                this.addPermanentLabel(center, shape.description, layer);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Błąd podczas ładowania kształtu:', error);
             }
         });
     }
