@@ -293,6 +293,26 @@ const MapManager = {
             const description = prompt('Dodaj opis dla tego obszaru/linii:');
             if (description) {
                 layer.bindPopup(description);
+
+                // Dodaj stałą etykietę na kształcie (czcionka Oswald, pogrubiona)
+                const bounds = layer.getBounds ? layer.getBounds() : null;
+                if (bounds) {
+                    // Dla kształtów z bounds (rectangle, polygon, circle)
+                    const center = bounds.getCenter();
+                    this.addPermanentLabel(center, description, layer);
+                } else if (layer.getLatLng) {
+                    // Dla pojedynczych punktów (marker, circle)
+                    const center = layer.getLatLng();
+                    this.addPermanentLabel(center, description, layer);
+                } else if (layer.getLatLngs) {
+                    // Dla linii (polyline)
+                    const latlngs = layer.getLatLngs();
+                    if (latlngs.length > 0) {
+                        // Oblicz środek linii
+                        const center = this.calculatePolylineCenter(latlngs);
+                        this.addPermanentLabel(center, description, layer);
+                    }
+                }
             }
         });
 
@@ -500,6 +520,88 @@ const MapManager = {
     },
 
     /**
+     * Zapisz dane formularza przed wyborem z mapy
+     */
+    saveFormDataBeforeMapSelect() {
+        this.savedFormData = {
+            type: document.getElementById('mapEventType')?.value || '',
+            status: document.getElementById('mapEventStatus')?.value || '',
+            name: document.getElementById('mapEventName')?.value || '',
+            lat: document.getElementById('mapEventLat')?.value || '',
+            lng: document.getElementById('mapEventLng')?.value || '',
+            date: document.getElementById('mapEventDate')?.value || '',
+            unit: document.getElementById('mapEventUnit')?.value || '',
+            location: document.getElementById('mapEventLocation')?.value || '',
+            description: document.getElementById('mapEventDescription')?.value || ''
+        };
+    },
+
+    /**
+     * Dodaj stałą etykietę na kształcie
+     */
+    addPermanentLabel(latlng, text, parentLayer) {
+        const labelIcon = L.divIcon({
+            className: 'shape-label',
+            html: `<div style="
+                font-family: 'Oswald', sans-serif;
+                font-weight: 700;
+                font-size: 14px;
+                color: #1e293b;
+                background: rgba(255, 255, 255, 0.95);
+                padding: 4px 12px;
+                border-radius: 4px;
+                border: 2px solid #a855f7;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                white-space: nowrap;
+                text-align: center;
+                pointer-events: none;
+            ">${text}</div>`,
+            iconSize: null,
+            iconAnchor: null
+        });
+
+        const labelMarker = L.marker(latlng, {
+            icon: labelIcon,
+            interactive: false
+        }).addTo(this.map);
+
+        // Przechowuj referencję do etykiety w warstwie
+        parentLayer.labelMarker = labelMarker;
+
+        // Usuń etykietę gdy warstwa zostanie usunięta
+        this.drawnItems.on('layerremove', (e) => {
+            if (e.layer === parentLayer && parentLayer.labelMarker) {
+                this.map.removeLayer(parentLayer.labelMarker);
+            }
+        });
+    },
+
+    /**
+     * Oblicz środek linii (polyline)
+     */
+    calculatePolylineCenter(latlngs) {
+        let totalLat = 0;
+        let totalLng = 0;
+        let count = 0;
+
+        const addPoints = (points) => {
+            points.forEach(point => {
+                if (Array.isArray(point)) {
+                    addPoints(point); // Rekurencja dla zagnieżdżonych tablic
+                } else {
+                    totalLat += point.lat;
+                    totalLng += point.lng;
+                    count++;
+                }
+            });
+        };
+
+        addPoints(latlngs);
+
+        return L.latLng(totalLat / count, totalLng / count);
+    },
+
+    /**
      * Włącz tryb wyboru lokalizacji na mapie
      */
     enableMapClickMode() {
@@ -511,12 +613,23 @@ const MapManager = {
         // Obsługa kliknięcia na mapie
         this.mapClickHandler = (e) => {
             this.placeTemporaryMarker(e.latlng);
+            // Wyłącz tryb kliknięcia
+            this.disableMapClickMode();
+            // Przywróć modal z zapisanymi danymi
+            setTimeout(() => {
+                this.showAddEventModal();
+                // Wypełnij współrzędne
+                if (document.getElementById('mapEventLat') && document.getElementById('mapEventLng')) {
+                    document.getElementById('mapEventLat').value = e.latlng.lat.toFixed(5);
+                    document.getElementById('mapEventLng').value = e.latlng.lng.toFixed(5);
+                }
+            }, 300);
         };
 
         this.map.on('click', this.mapClickHandler);
 
         // Informacja dla użytkownika
-        this.showToast('Kliknij na mapie aby wybrać lokalizację');
+        this.showToast('Kliknij na mapie aby wybrać lokalizację', 'info');
     },
 
     /**
@@ -716,6 +829,13 @@ const MapManager = {
 
         // Obsługa przycisku "Wybierz z mapy"
         document.getElementById('selectFromMapBtn')?.addEventListener('click', () => {
+            // Zapisz dane formularza przed zamknięciem modala
+            this.saveFormDataBeforeMapSelect();
+
+            // Zamknij modal
+            Modal.hide();
+
+            // Włącz tryb wyboru lokalizacji
             this.enableMapClickMode();
         });
 
@@ -724,6 +844,22 @@ const MapManager = {
             e.preventDefault();
             this.saveNewEvent();
         });
+
+        // Przywróć zapisane dane formularza (jeśli istnieją)
+        if (this.savedFormData) {
+            document.getElementById('mapEventType').value = this.savedFormData.type;
+            document.getElementById('mapEventStatus').value = this.savedFormData.status;
+            document.getElementById('mapEventName').value = this.savedFormData.name;
+            document.getElementById('mapEventLat').value = this.savedFormData.lat;
+            document.getElementById('mapEventLng').value = this.savedFormData.lng;
+            document.getElementById('mapEventDate').value = this.savedFormData.date;
+            document.getElementById('mapEventUnit').value = this.savedFormData.unit;
+            document.getElementById('mapEventLocation').value = this.savedFormData.location;
+            document.getElementById('mapEventDescription').value = this.savedFormData.description;
+
+            // Wyczyść zapisane dane
+            this.savedFormData = null;
+        }
     },
 
     /**
@@ -2250,6 +2386,15 @@ const MapManager = {
                     <i class="fas fa-search"></i>
                 </div>
 
+                <div class="units-actions" style="margin-bottom: 1rem; display: flex; gap: 0.5rem;">
+                    <button class="btn-secondary" onclick="MapManager.selectAllUnits()" style="flex: 1;">
+                        <i class="fas fa-check-double"></i> Zaznacz wszystkie
+                    </button>
+                    <button class="btn-secondary" onclick="MapManager.deselectAllUnits()" style="flex: 1;">
+                        <i class="fas fa-times"></i> Odznacz wszystkie
+                    </button>
+                </div>
+
                 <div class="units-list" id="unitsList">
                     ${units.map(unit => `
                         <div class="unit-item" data-name="${unit.name.toLowerCase()}" data-address="${unit.address.toLowerCase()}">
@@ -2299,6 +2444,28 @@ const MapManager = {
                 item.style.display = 'none';
             }
         });
+    },
+
+    /**
+     * Zaznacz wszystkie jednostki
+     */
+    selectAllUnits() {
+        const checkboxes = document.querySelectorAll('.unit-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        this.showToast('Wszystkie jednostki zaznaczone');
+    },
+
+    /**
+     * Odznacz wszystkie jednostki
+     */
+    deselectAllUnits() {
+        const checkboxes = document.querySelectorAll('.unit-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        this.showToast('Wszystkie jednostki odznaczone');
     },
 
     /**
