@@ -5084,60 +5084,46 @@ canvas {
     justify-content: center;
 }
 
-/* Pierścienie */
-.cyber-rings {
+/* Orbitalne segmenty - minimalistyczne i kreatywne */
+.cyber-orbits {
     position: absolute;
     width: 100%;
     height: 100%;
 }
 
-.ring {
+.orbit {
     position: absolute;
-    border-radius: 50%;
-    border: 2px solid;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: ringPulse 4s ease-in-out infinite;
-}
-
-.ring-1 {
     width: 100%;
     height: 100%;
-    border-color: rgba(168, 85, 247, 0.4);
-    animation-delay: 0s;
+    top: 0;
+    left: 0;
 }
 
-.ring-2 {
-    width: 85%;
-    height: 85%;
-    border-color: rgba(236, 72, 153, 0.4);
-    animation-delay: 0.5s;
+.orbit-1 {
+    animation: orbitRotate1 20s linear infinite;
 }
 
-.ring-3 {
-    width: 70%;
-    height: 70%;
-    border-color: rgba(59, 130, 246, 0.4);
-    animation-delay: 1s;
+.orbit-2 {
+    animation: orbitRotate2 15s linear infinite reverse;
 }
 
-.ring-4 {
-    width: 55%;
-    height: 55%;
-    border-color: rgba(6, 182, 212, 0.4);
-    animation-delay: 1.5s;
+.orbit-3 {
+    animation: orbitRotate3 25s linear infinite;
 }
 
-@keyframes ringPulse {
-    0%, 100% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: translate(-50%, -50%) scale(1.1);
-        opacity: 0.6;
-    }
+@keyframes orbitRotate1 {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes orbitRotate2 {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes orbitRotate3 {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* Hexagon logo */
@@ -5169,11 +5155,47 @@ canvas {
     height: auto;
     filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
     animation: logoCounterRotate 20s linear infinite;
+    position: relative;
 }
 
 @keyframes logoCounterRotate {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(-360deg); }
+}
+
+/* Glitch effect na logo - zapętlony co 3s */
+.cyber-logo-img.logo-glitch-active {
+    animation: logoCounterRotate 20s linear infinite, logoGlitch 0.4s linear;
+}
+
+@keyframes logoGlitch {
+    0% {
+        filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
+    }
+    20% {
+        filter: drop-shadow(2px 0 20px rgba(236, 72, 153, 0.8))
+                drop-shadow(-2px 0 20px rgba(6, 182, 212, 0.8));
+        transform: rotate(0deg) translate(2px, 0);
+    }
+    40% {
+        filter: drop-shadow(-2px 0 20px rgba(59, 130, 246, 0.8))
+                drop-shadow(2px 0 20px rgba(168, 85, 247, 0.8));
+        transform: rotate(0deg) translate(-2px, 0);
+    }
+    60% {
+        filter: drop-shadow(3px 0 20px rgba(236, 72, 153, 0.8))
+                drop-shadow(-3px 0 20px rgba(6, 182, 212, 0.8));
+        transform: rotate(0deg) translate(1px, 1px);
+    }
+    80% {
+        filter: drop-shadow(-1px 0 20px rgba(168, 85, 247, 0.8))
+                drop-shadow(1px 0 20px rgba(236, 72, 153, 0.8));
+        transform: rotate(0deg) translate(-1px, -1px);
+    }
+    100% {
+        filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
+        transform: rotate(0deg);
+    }
 }
 
 .cyber-glow {
@@ -5198,6 +5220,7 @@ canvas {
 
 /* Tytuł z efektem glitch */
 .cyber-title {
+    font-family: 'Oswald', sans-serif;
     font-size: 2.5rem;
     font-weight: 700;
     color: #fff;
@@ -5205,7 +5228,7 @@ canvas {
     letter-spacing: 4px;
     margin-bottom: 1rem;
     position: relative;
-    text-shadow: 
+    text-shadow:
         0 0 10px rgba(168, 85, 247, 0.7),
         0 0 20px rgba(168, 85, 247, 0.5),
         0 0 30px rgba(168, 85, 247, 0.3);
@@ -5253,6 +5276,7 @@ canvas {
 }
 
 .cyber-subtitle {
+    font-family: 'Oswald', sans-serif;
     font-size: 1.1rem;
     color: var(--muted);
     letter-spacing: 2px;
@@ -5278,6 +5302,7 @@ canvas {
 
 .time-label,
 .date-label {
+    font-family: 'Oswald', sans-serif;
     font-size: 0.7rem;
     color: #a855f7;
     letter-spacing: 2px;
@@ -5335,30 +5360,11 @@ canvas {
 }
 
 .status-text {
+    font-family: 'Oswald', sans-serif;
     color: #22c55e;
     font-size: 0.85rem;
     letter-spacing: 1px;
     text-transform: uppercase;
-}
-
-/* Scan line effect */
-.scan-line {
-    position: absolute;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(168, 85, 247, 0.8) 50%, 
-        transparent 100%);
-    top: 0;
-    animation: scan 4s linear infinite;
-    z-index: 20;
-    pointer-events: none;
-}
-
-@keyframes scan {
-    0% { top: 0; }
-    100% { top: 100%; }
 }
 
 /* Responsive */
