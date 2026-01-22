@@ -278,6 +278,9 @@ const SettingsManager = {
         this.settings.theme = theme;
         this.applyTheme();
 
+        // Zapisz ustawienia do localStorage
+        Utils.saveToLocalStorage('aep_settings', this.settings);
+
         // Aktualizuj UI
         document.querySelectorAll('.theme-option').forEach(opt => {
             opt.classList.remove('active');

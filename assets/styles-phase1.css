@@ -3,6 +3,163 @@
    Dark Mode, KPI Cards, Top Insights
    ============================================ */
 
+/* ============================================
+   CSS VARIABLES - THEME COLORS
+   ============================================ */
+:root {
+    /* Dark Theme (default) */
+    --bg-primary: #0f1117;
+    --bg-secondary: #1a1d29;
+    --bg-tertiary: #2d3142;
+    --bg-card: linear-gradient(135deg, #1a1d29 0%, #0f1117 100%);
+    --bg-hover: #242837;
+
+    --text-primary: #e5e7eb;
+    --text-secondary: #9ca3af;
+    --text-tertiary: #6b7280;
+
+    --border-primary: #2d3142;
+    --border-secondary: rgba(107, 114, 128, 0.2);
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.5);
+
+    /* Accent colors (same for both themes) */
+    --color-purple: #a855f7;
+    --color-purple-dark: #7c3aed;
+    --color-success: #10b981;
+    --color-error: #ef4444;
+    --color-warning: #f59e0b;
+    --color-info: #3b82f6;
+}
+
+/* Light Theme */
+[data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    --bg-card: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+    --bg-hover: #f3f4f6;
+
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #6b7280;
+
+    --border-primary: #e5e7eb;
+    --border-secondary: rgba(229, 231, 235, 0.8);
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Apply theme variables to common elements */
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.sidebar {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+}
+
+.main-content {
+    background: var(--bg-primary);
+}
+
+.card,
+.settings-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-purple) 0%, var(--color-purple-dark) 100%);
+}
+
+input,
+select,
+textarea,
+.settings-input,
+.settings-select,
+.settings-textarea {
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.settings-input::placeholder,
+.settings-textarea::placeholder {
+    color: var(--text-tertiary) !important;
+}
+
+.nav-item {
+    color: var(--text-secondary);
+}
+
+.nav-item:hover,
+.nav-item.active {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.section-title,
+.settings-card-header h2 {
+    color: var(--text-primary);
+}
+
+.section-subtitle,
+.settings-description {
+    color: var(--text-secondary);
+}
+
+/* Light theme specific overrides */
+[data-theme="light"] .sidebar {
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .header {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .card,
+[data-theme="light"] .settings-card {
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+}
+
+[data-theme="light"] .btn-secondary:hover {
+    background: var(--bg-hover);
+}
+
+[data-theme="light"] .theme-option {
+    background: var(--bg-tertiary);
+    border-color: var(--border-primary);
+}
+
+[data-theme="light"] .settings-card-header {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-primary);
+}
+
+[data-theme="light"] .theme-label {
+    color: var(--text-primary);
+}
+
 /* === TOP INSIGHTS SECTION === */
 .top-insights-section {
     background: linear-gradient(135deg, rgba(75, 85, 99, 0.1), rgba(55, 65, 81, 0.05));
