@@ -34,24 +34,24 @@
     --color-info: #3b82f6;
 }
 
-/* Light Theme - Soft/Muted version (nie razi w oczy) */
+/* Light Theme - Dark Grey version (bardzo stonowany, prawie ciemny) */
 [data-theme="light"] {
-    --bg-primary: #e8eaed;          /* Stonowana jasna szarość zamiast czystej bieli */
-    --bg-secondary: #d5d8dc;         /* Nieco ciemniejsza */
-    --bg-tertiary: #c8cacd;          /* Jeszcze ciemniejsza dla kontrastu */
-    --bg-card: linear-gradient(135deg, #e8eaed 0%, #d5d8dc 100%);
-    --bg-hover: #d0d3d6;
+    --bg-primary: #b8bbc0;          /* Ciemna szarość */
+    --bg-secondary: #a8abb0;         /* Jeszcze ciemniejsza */
+    --bg-tertiary: #989ba0;          /* Prawie grafitowa */
+    --bg-card: linear-gradient(135deg, #b8bbc0 0%, #a8abb0 100%);
+    --bg-hover: #a0a3a8;
 
-    --text-primary: #2c3e50;         /* Stonowany ciemny zamiast czarnego */
-    --text-secondary: #546e7a;       /* Bardziej miękki */
-    --text-tertiary: #78909c;        /* Jeszcze jaśniejszy */
+    --text-primary: #e8eaed;         /* Jasny tekst (odwrócony kontrast) */
+    --text-secondary: #d0d3d6;       /* Jaśniejszy */
+    --text-tertiary: #b8bbc0;        /* Jeszcze jaśniejszy */
 
-    --border-primary: #b0b3b8;       /* Wyraźniejsze obramowania */
-    --border-secondary: rgba(176, 179, 184, 0.6);
+    --border-primary: #888b90;       /* Ciemniejsze obramowania */
+    --border-secondary: rgba(136, 139, 144, 0.6);
 
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
-    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.18);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 /* Apply theme variables to common elements */
@@ -4288,7 +4288,7 @@ input:checked + .toggle-slider:before {
 }
 
 .theme-light {
-    background: #e8eaed;  /* Stonowana jasna szarość */
+    background: #b8bbc0;  /* Ciemna szarość */
 }
 
 .theme-preview-header {
@@ -4304,8 +4304,8 @@ input:checked + .toggle-slider:before {
 }
 
 .theme-light .theme-preview-header {
-    background: #d5d8dc;  /* Stonowany header */
-    border-bottom: 1px solid #b0b3b8;
+    background: #a8abb0;  /* Ciemny header */
+    border-bottom: 1px solid #888b90;
 }
 
 .theme-preview-sidebar {
@@ -4321,8 +4321,8 @@ input:checked + .toggle-slider:before {
 }
 
 .theme-light .theme-preview-sidebar {
-    background: #d5d8dc;  /* Stonowany sidebar */
-    border-right: 1px solid #b0b3b8;
+    background: #a8abb0;  /* Ciemny sidebar */
+    border-right: 1px solid #888b90;
 }
 
 .theme-preview-content {
@@ -4338,7 +4338,7 @@ input:checked + .toggle-slider:before {
 }
 
 .theme-light .theme-preview-content {
-    background: #c8cacd;  /* Stonowany content */
+    background: #989ba0;  /* Grafitowy content */
 }
 
 .theme-label {
