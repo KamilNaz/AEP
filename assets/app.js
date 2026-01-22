@@ -78,6 +78,12 @@ const SECTIONS = [
         id: 'audyt',
         title: 'Log zmian / Audyt',
         columns: ['Timestamp', 'Użytkownik', 'Akcja', 'Moduł', 'Rekord ID', 'Przed zmianą', 'Po zmianie', 'IP', 'Status', 'Szczegóły']
+    },
+    {
+        id: 'ustawienia',
+        title: 'Ustawienia',
+        isCustomView: true,
+        columns: []
     }
 ];
 
@@ -2017,6 +2023,8 @@ const Router = {
             CalendarManager.render();
         } else if (section.id === 'mapa') {
             MapManager.render();
+        } else if (section.id === 'ustawienia') {
+            SettingsManager.render();
         } else {
             const savedData = Utils.loadFromLocalStorage(`aep_data_${section.id}`);
             AppState.currentData = savedData || Utils.generateTestData(section.columns, 25);
@@ -11584,46 +11592,46 @@ const CalendarManager = {
 };
 
 // ============================================
-// HEADER ACTIONS
+// HEADER ACTIONS (REMOVED - buttons no longer exist in header)
 // ============================================
-const HeaderActions = {
-    init() {
-        document.getElementById('importBtn')?.addEventListener('click', () => this.showImportModal());
-        document.getElementById('exportBtn')?.addEventListener('click', () => this.showExportModal());
-        document.getElementById('settingsBtn')?.addEventListener('click', () => this.showSettingsModal());
-
-        const globalSearch = document.getElementById('globalSearch');
-        if (globalSearch) {
-            globalSearch.addEventListener('input', Utils.debounce((e) => {
-                if (AppState.currentSection && !AppState.currentSection.isCustomView) {
-                    TableManager.filterData(e.target.value);
-                }
-            }, 300));
-        }
-    },
-
-    showImportModal() {
-        // Jeśli jesteśmy w sekcji Wykroczenia - użyj dedykowanego importu
-        if (AppState.currentSection && AppState.currentSection.id === 'wykroczenia') {
-            WykroczeniaManager.importJSON();
-        } else {
-            Modal.show('Import danych', `<p>Funkcja importu danych będzie dostępna wkrótce.</p>`);
-        }
-    },
-
-    showExportModal() {
-        // Jeśli jesteśmy w sekcji Wykroczenia - użyj dedykowanego exportu
-        if (AppState.currentSection && AppState.currentSection.id === 'wykroczenia') {
-            WykroczeniaManager.openExportModal();
-        } else {
-            Modal.show('Eksport danych', `<p>Funkcja eksportu danych będzie dostępna wkrótce.</p>`);
-        }
-    },
-
-    showSettingsModal() {
-        Modal.show('Ustawienia', `<p>Panel ustawień systemu będzie dostępny wkrótce.</p>`);
-    }
-};
+// const HeaderActions = {
+//     init() {
+//         document.getElementById('importBtn')?.addEventListener('click', () => this.showImportModal());
+//         document.getElementById('exportBtn')?.addEventListener('click', () => this.showExportModal());
+//         document.getElementById('settingsBtn')?.addEventListener('click', () => this.showSettingsModal());
+//
+//         const globalSearch = document.getElementById('globalSearch');
+//         if (globalSearch) {
+//             globalSearch.addEventListener('input', Utils.debounce((e) => {
+//                 if (AppState.currentSection && !AppState.currentSection.isCustomView) {
+//                     TableManager.filterData(e.target.value);
+//                 }
+//             }, 300));
+//         }
+//     },
+//
+//     showImportModal() {
+//         // Jeśli jesteśmy w sekcji Wykroczenia - użyj dedykowanego importu
+//         if (AppState.currentSection && AppState.currentSection.id === 'wykroczenia') {
+//             WykroczeniaManager.importJSON();
+//         } else {
+//             Modal.show('Import danych', `<p>Funkcja importu danych będzie dostępna wkrótce.</p>`);
+//         }
+//     },
+//
+//     showExportModal() {
+//         // Jeśli jesteśmy w sekcji Wykroczenia - użyj dedykowanego exportu
+//         if (AppState.currentSection && AppState.currentSection.id === 'wykroczenia') {
+//             WykroczeniaManager.openExportModal();
+//         } else {
+//             Modal.show('Eksport danych', `<p>Funkcja eksportu danych będzie dostępna wkrótce.</p>`);
+//         }
+//     },
+//
+//     showSettingsModal() {
+//         Modal.show('Ustawienia', `<p>Panel ustawień systemu będzie dostępny wkrótce.</p>`);
+//     }
+// };
 
 // ============================================
 // MODAL
@@ -11678,7 +11686,8 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Initializing AEP System...');
     Router.init();
     Sidebar.init();
-    HeaderActions.init();
+    // HeaderActions.init(); // REMOVED - buttons no longer exist
+    SettingsManager.init(); // Initialize Settings Manager
     Modal.init();
     console.log('✅ AEP System initialized successfully');
 });
