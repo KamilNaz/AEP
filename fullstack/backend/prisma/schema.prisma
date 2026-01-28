@@ -1,0 +1,424 @@
+// AEP - Arkusz Ewidencji Prewencyjnej
+// Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// UŻYTKOWNICY I AUTENTYKACJA
+// ============================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(USER)
+  unit      String?  // Jednostka
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacje
+  patrole      Patrol[]
+  wykroczenia  Wykroczenie[]
+  wkrd         WKRD[]
+  sankcje      Sankcja[]
+  konwoje      Konwoj[]
+  spb          SPB[]
+  pilotaze     Pilotaz[]
+  zdarzenia    Zdarzenie[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  VIEWER
+}
+
+// ============================================
+// PATROLE
+// ============================================
+
+model Patrol {
+  id                String   @id @default(cuid())
+  data              DateTime // Data
+  nrJw              String?  // Nr JW
+  nazwaJw           String?  // Nazwa JW
+  miejsce           String?  // Miejsce
+  podleglosc        String?  // Podległość (WL/MON/INNY)
+  grupa             String?  // Grupa (żołnierz/prac. wojska/os. cywilna)
+  jzwProwadzaca     String?  // JZW prowadząca
+  oddzial           String?  // Oddział ŻW
+  rejon             String?  // Rejon
+  rodzajPatrolu     String?  // Rodzaj patrolu
+  trasa             String?  // Trasa
+  cel               String?  // Cel
+  skladPatrolu      String?  // Skład patrolu
+  pojazd            String?  // Pojazd
+  czasRozpoczecia   String?  // Czas rozpoczęcia
+  czasZakonczenia   String?  // Czas zakończenia
+  liczbaCzynnosci   Int?     @default(0) // Liczba czynności
+  status            String?  // Status
+  uwagi             String?  // Uwagi
+
+  // Pola sumowane (RAZEM)
+  razemLegitymowanie         Int @default(0)
+  razemPouczenie             Int @default(0)
+  razemNotatka               Int @default(0)
+  razemZatrzymanie           Int @default(0)
+  razemKontrola              Int @default(0)
+  razemInterwencja           Int @default(0)
+  razemInne                  Int @default(0)
+
+  // Metadane
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  user      User?    @relation(fields: [createdBy], references: [id])
+
+  @@map("patrole")
+}
+
+// ============================================
+// WYKROCZENIA
+// ============================================
+
+model Wykroczenie {
+  id            String   @id @default(cuid())
+  data          DateTime // Data
+  jednostka     String?  // Jednostka
+  rodzaj        String?  // Rodzaj
+  artykul       String?  // Art.
+  miejsce       String?  // Miejsce
+  sprawca       String?  // Sprawca
+  pesel         String?  // PESEL
+  srodekPrawny  String?  // Środek prawny
+  mandat        Decimal? // Mandat
+  punkty        Int?     // Pkt.
+  pojazd        String?  // Pojazd
+  nrRej         String?  // Nr rej.
+  swiadkowie    String?  // Świadkowie
+  opis          String?  // Opis
+  dowody        String?  // Dowody
+  funkcjonariusz String? // Funkcjon.
+  nrNotatki     String?  // Nr notatki
+  zalaczniki    String?  // Załączniki
+  status        String?  // Status
+  operator      String?  // Operator
+
+  // Pola dodatkowe
+  nrJw          String?
+  nazwaJw       String?
+  podleglosc    String?
+  grupa         String?
+  jzwProwadzaca String?
+  oddzial       String?
+
+  // Metadane
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  user      User?    @relation(fields: [createdBy], references: [id])
+
+  @@map("wykroczenia")
+}
+
+// ============================================
+// WKRD - Wykrywanie Przestępstw
+// ============================================
+
+model WKRD {
+  id                String   @id @default(cuid())
+  data              DateTime
+  nrJw              String?
+  nazwaJw           String?
+  miejsce           String?
+  podleglosc        String?
+  grupa             String?
+  jzwProwadzaca     String?
+  oddzial           String?
+  rodzajSprawy      String?
+  nrSprawy          String?
+  kwalifikacja      String?
+  pokrzywdzony      String?
+  podejrzany        String?
+  opisCzynu         String?
+  czynnosci         String?
+  status            String?
+  uwagi             String?
+
+  // Pola boolean
+  wszczecie         Boolean @default(false)
+  umorzenie         Boolean @default(false)
+  zawieszenie       Boolean @default(false)
+  akt               Boolean @default(false)
+  zatrzymaniePodejrzanego Boolean @default(false)
+
+  // Metadane
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  user      User?    @relation(fields: [createdBy], references: [id])
+
+  @@map("wkrd")
+}
+
+// ============================================
+// SANKCJE
+// ============================================
+
+model Sankcja {
+  id                String   @id @default(cuid())
+  data              DateTime
+  nrJw              String?
+  nazwaJw           String?
+  miejsce           String?
+  podleglosc        String?
+  grupa             String?
+  jzwProwadzaca     String?
+  oddzial           String?
+  rodzajSankcji     String?
+  podstawaPrawna    String?
+  osoba             String?
+  stopien           String?
+  jednostkaOsoby    String?
+  wysokoscKary      Decimal?
+  dataWykonania     DateTime?
+  status            String?
+  uwagi             String?
+
+  // Pola boolean - typy sankcji
+  mandat            Boolean @default(false)
+  wniosekOUkaranie  Boolean @default(false)
+  wpisDoDokumentow  Boolean @default(false)
+  zatrzymaniePojazdu Boolean @default(false)
+  zatrzymanieDokumentu Boolean @default(false)
+
+  // Metadane
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  user      User?    @relation(fields: [createdBy], references: [id])
+
+  @@map("sankcje")
+}
+
+// ============================================
+// KONWOJE
+// ============================================
+
+model Konwoj {
+  id              String   @id @default(cuid())
+  data            DateTime
+  godzRozpoczecia String?
+  godzZakonczenia String?
+  oznaczenie      String?
+  trasa           String?
+  pojazdy         String?
+  eskortowani     String?
+  celKonwoju      String?
+  dowodca         String?
+  sklad           String?
+  uwagi           String?
+  status          String?
+
+  // Metadane
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  user      User?    @relation(fields: [createdBy], references: [id])
+
+  @@map("konwoje")
+}
+
+// ============================================
+// SPB - Środki Przymusu Bezpośredniego
+// ============================================
+
+model SPB {
+  id                String   @id @default(cuid())
+  data              DateTime
+  nrJw              String?
+  nazwaJw           String?
+  miejsce           String?
+  podleglosc        String?
+  grupa             String?
+  jzwProwadzaca     String?
+  oddzial           String?
+  rodzajSrodka      String?
+  podstawaPrawna    String?
+  okolicznosci      String?
+  osobaWobecKtorej  String?
+  skutki            String?
+  funkcjonariusz    String?
+  nrNotatki         String?
+  status            String?
+  uwagi             String?
+
+  // Rodzaje środków
+  silaFizyczna      Boolean @default(false)
+  kajdanki          Boolean @default(false)
+  palkaSluzbowaMultifunkcyjna Boolean @default(false)
+  chemiczneSrodki   Boolean @default(false)
+  paralizator       Boolean @default(false)
+  bronPalna         Boolean @default(false)
+  inne              Boolean @default(false)
+
+  // Metadane
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  user      User?    @relation(fields: [createdBy], references: [id])
+
+  @@map("spb")
+}
+
+// ============================================
+// PILOTAŻE
+// ============================================
+
+model Pilotaz {
+  id              String   @id @default(cuid())
+  data            DateTime
+  godzRozpoczecia String?
+  godzZakonczenia String?
+  oznaczenie      String?
+  trasa           String?
+  pojazdPilotowany String?
+  nrRej           String?
+  kierowca        String?
+  celPodrozy      String?
+  funkcjonariusze String?
+  uwagi           String?
+  status          String?
+
+  // Metadane
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  user      User?    @relation(fields: [createdBy], references: [id])
+
+  @@map("pilotaze")
+}
+
+// ============================================
+// ZDARZENIA DROGOWE
+// ============================================
+
+model Zdarzenie {
+  id                String   @id @default(cuid())
+  data              DateTime
+  godzina           String?
+  nrJw              String?
+  nazwaJw           String?
+  miejsce           String?
+  podleglosc        String?
+  grupa             String?
+  jzwProwadzaca     String?
+  oddzial           String?
+  rodzajZdarzenia   String?
+  okolicznosci      String?
+  uczestnicyOpis    String?
+  pojazdy           String?
+  poszkodowani      Int?     @default(0)
+  ranni             Int?     @default(0)
+  zabici            Int?     @default(0)
+  szkodyMaterialne  String?
+  czynnosci         String?
+  funkcjonariusz    String?
+  nrNotatki         String?
+  status            String?
+  uwagi             String?
+
+  // Typy zdarzeń
+  kolizja           Boolean @default(false)
+  wypadek           Boolean @default(false)
+  katastrofa        Boolean @default(false)
+
+  // Metadane
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  user      User?    @relation(fields: [createdBy], references: [id])
+
+  @@map("zdarzenia")
+}
+
+// ============================================
+// KALENDARZ
+// ============================================
+
+model KalendarzEvent {
+  id            String   @id @default(cuid())
+  data          DateTime
+  godzina       String?
+  wydarzenie    String
+  typ           String?
+  jednostka     String?
+  odpowiedzialny String?
+  lokalizacja   String?
+  opis          String?
+  status        String?
+  priorytet     String?
+
+  // Metadane
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("kalendarz")
+}
+
+// ============================================
+// MAPA ZDARZEŃ
+// ============================================
+
+model MapEvent {
+  id            String   @id @default(cuid())
+  data          DateTime
+  czas          String?
+  typZdarzenia  String?
+  lokalizacja   String?
+  wspolrzedne   String?  // Format: "lat,lng"
+  lat           Float?
+  lng           Float?
+  jednostka     String?
+  status        String?
+  priorytet     String?
+  notatki       String?
+
+  // Metadane
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("map_events")
+}
+
+// ============================================
+// LOG ZMIAN / AUDYT
+// ============================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  akcja       String   // CREATE, UPDATE, DELETE
+  modul       String   // patrole, wykroczenia, etc.
+  rekordId    String?
+  przedZmiana Json?
+  poZmianie   Json?
+  ip          String?
+  userAgent   String?
+  szczegoly   String?
+
+  @@map("audit_logs")
+}
