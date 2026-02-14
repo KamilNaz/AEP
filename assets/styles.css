@@ -1578,6 +1578,14 @@ body {
     background: rgba(207, 211, 218, 0.05);
 }
 
+.patrole-input-number:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(75, 85, 99, 0.3);
+    border-color: rgba(156, 163, 175, 0.3);
+    color: rgba(156, 163, 175, 0.6);
+}
+
 .patrole-select {
     cursor: pointer;
     appearance: none;

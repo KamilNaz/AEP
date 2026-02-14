@@ -2709,12 +2709,16 @@ const PatroleManager = {
 
         tbody.innerHTML = AppState.patroleData.map((row, index) => {
             const lp = index + 1;
-            const rodzajRazem = (row.interwen || 0) + (row.pieszych || 0) + (row.wodnych || 0) + 
+            const rodzajRazem = (row.interwen || 0) + (row.pieszych || 0) + (row.wodnych || 0) +
                                (row.zmot || 0) + (row.wkrd || 0);
-            const wspoldzRazem = (row.policja || 0) + (row.sg || 0) + (row.sop || 0) + 
+            const wspoldzRazem = (row.policja || 0) + (row.sg || 0) + (row.sop || 0) +
                                 (row.sok || 0) + (row.inne || 0);
 
             const isSelected = AppState.patroleSelectedRows.has(row.id);
+
+            // Pobierz disabled states dla walidacji
+            const patrolDisabled = this.getPatrolTypeDisabledStates(row);
+            const coopDisabled = this.getCooperationDisabledStates(row);
 
             // Check filters
             let isVisible = true;
@@ -2763,14 +2767,20 @@ const PatroleManager = {
                     </td>
                     <td class="col-razem-value">${rodzajRazem}</td>
                     <td><input type="number" class="patrole-input-number" value="${row.interwen || ''}" placeholder="0"
+                           min="0" max="1"
+                           ${patrolDisabled.interwen ? 'disabled' : ''}
                            onchange="PatroleManager.updateField(${row.id}, 'interwen', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.pieszych || ''}" placeholder="0"
+                           ${patrolDisabled.pieszych ? 'disabled' : ''}
                            onchange="PatroleManager.updateField(${row.id}, 'pieszych', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.wodnych || ''}" placeholder="0"
+                           ${patrolDisabled.wodnych ? 'disabled' : ''}
                            onchange="PatroleManager.updateField(${row.id}, 'wodnych', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.zmot || ''}" placeholder="0"
+                           ${patrolDisabled.zmot ? 'disabled' : ''}
                            onchange="PatroleManager.updateField(${row.id}, 'zmot', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.wkrd || ''}" placeholder="0"
+                           ${patrolDisabled.wkrd ? 'disabled' : ''}
                            onchange="PatroleManager.updateField(${row.id}, 'wkrd', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.zand || ''}" placeholder="0"
                            onchange="PatroleManager.updateField(${row.id}, 'zand', parseInt(this.value) || 0)"></td>
@@ -2780,14 +2790,19 @@ const PatroleManager = {
                            onchange="PatroleManager.updateField(${row.id}, 'motorowek', parseInt(this.value) || 0)"></td>
                     <td class="col-razem-value">${wspoldzRazem}</td>
                     <td><input type="number" class="patrole-input-number" value="${row.policja || ''}" placeholder="0"
+                           ${coopDisabled.policja ? 'disabled' : ''}
                            onchange="PatroleManager.updateField(${row.id}, 'policja', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.sg || ''}" placeholder="0"
+                           ${coopDisabled.sg ? 'disabled' : ''}
                            onchange="PatroleManager.updateField(${row.id}, 'sg', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.sop || ''}" placeholder="0"
+                           ${coopDisabled.sop ? 'disabled' : ''}
                            onchange="PatroleManager.updateField(${row.id}, 'sop', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.sok || ''}" placeholder="0"
+                           ${coopDisabled.sok ? 'disabled' : ''}
                            onchange="PatroleManager.updateField(${row.id}, 'sok', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.inne || ''}" placeholder="0"
+                           ${coopDisabled.inne ? 'disabled' : ''}
                            onchange="PatroleManager.updateField(${row.id}, 'inne', parseInt(this.value) || 0)"></td>
                     <td>
                         <select class="patrole-select" onchange="PatroleManager.updateField(${row.id}, 'jwProwadzaca', this.value)">
@@ -2821,6 +2836,100 @@ const PatroleManager = {
         return dateStr;
     },
 
+    /**
+     * Waliduje reguły dla rodzajów patroli
+     * - Interw. max 1 na dzień
+     * - Maksymalnie 2 rodzaje (zawsze Interw. + 1 inny)
+     * @param {Object} row - Wiersz danych
+     * @returns {Object} - Obiekt z disabled states dla każdego pola
+     */
+    getPatrolTypeDisabledStates(row) {
+        const disabled = {
+            interwen: false,
+            pieszych: false,
+            wodnych: false,
+            zmot: false,
+            wkrd: false
+        };
+
+        // Policz ile rodzajów patroli jest wybranych (wartość > 0)
+        const selectedTypes = [];
+        const patrolTypes = ['interwen', 'pieszych', 'wodnych', 'zmot', 'wkrd'];
+
+        patrolTypes.forEach(type => {
+            if ((row[type] || 0) > 0) {
+                selectedTypes.push(type);
+            }
+        });
+
+        // REGUŁA 1: Jeśli wybrano już 2 rodzaje, zablokuj pozostałe
+        if (selectedTypes.length >= 2) {
+            patrolTypes.forEach(type => {
+                if (!selectedTypes.includes(type)) {
+                    disabled[type] = true;
+                }
+            });
+        }
+
+        // REGUŁA 2: Interw. max 1 - ograniczenie w renderowaniu (max="1")
+
+        return disabled;
+    },
+
+    /**
+     * Waliduje reguły dla współdziałania
+     * - Współdziałanie tylko dla nie-interwencyjnych (Piesz., Wodn., Zmot., WKRD)
+     * - Maksymalnie 1 współdziałanie
+     * @param {Object} row - Wiersz danych
+     * @returns {Object} - Obiekt z disabled states dla pól współdziałania
+     */
+    getCooperationDisabledStates(row) {
+        const disabled = {
+            policja: false,
+            sg: false,
+            sop: false,
+            sok: false,
+            inne: false
+        };
+
+        // REGUŁA 1: Współdziałanie tylko jeśli jest patrol nie-interwencyjny
+        const hasNonInterwPatrol = (row.pieszych || 0) > 0 ||
+                                     (row.wodnych || 0) > 0 ||
+                                     (row.zmot || 0) > 0 ||
+                                     (row.wkrd || 0) > 0;
+
+        if (!hasNonInterwPatrol) {
+            // Zablokuj wszystkie współdziałania
+            disabled.policja = true;
+            disabled.sg = true;
+            disabled.sop = true;
+            disabled.sok = true;
+            disabled.inne = true;
+            return disabled;
+        }
+
+        // REGUŁA 2: Maksymalnie 1 współdziałanie
+        const cooperationTypes = ['policja', 'sg', 'sop', 'sok', 'inne'];
+        const selectedCooperation = [];
+
+        cooperationTypes.forEach(type => {
+            if ((row[type] || 0) > 0) {
+                selectedCooperation.push(type);
+            }
+        });
+
+        // Jeśli wybrano już 1, zablokuj pozostałe
+        if (selectedCooperation.length >= 1) {
+            cooperationTypes.forEach(type => {
+                if (!selectedCooperation.includes(type)) {
+                    disabled[type] = true;
+                }
+            });
+        }
+
+        return disabled;
+    },
+
     updateField(id, field, value) {
         const row = AppState.patroleData.find(r => r.id === id);
         if (row) {
@@ -2832,6 +2941,24 @@ const PatroleManager = {
                 row.month = this.getMonthFromDate(polishDate);
             } else {
                 row[field] = value;
+            }
+
+            // Jeśli zmieniono rodzaj patrolu, sprawdź czy trzeba wyczyścić współdziałanie
+            const patrolTypes = ['pieszych', 'wodnych', 'zmot', 'wkrd'];
+            if (patrolTypes.includes(field)) {
+                const hasNonInterwPatrol = (row.pieszych || 0) > 0 ||
+                                             (row.wodnych || 0) > 0 ||
+                                             (row.zmot || 0) > 0 ||
+                                             (row.wkrd || 0) > 0;
+
+                // Jeśli nie ma już żadnego nie-interwencyjnego patrolu, wyczyść współdziałanie
+                if (!hasNonInterwPatrol) {
+                    row.policja = 0;
+                    row.sg = 0;
+                    row.sop = 0;
+                    row.sok = 0;
+                    row.inne = 0;
+                }
             }
 
             // Auto-oblicz pola RAZEM używając CalculationEngine
