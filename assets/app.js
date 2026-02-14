@@ -14,6 +14,12 @@ const SECTIONS = [
         columns: []
     },
     {
+        id: 'sankcje',
+        title: 'Sankcje',
+        isCustomView: true,
+        columns: []
+    },
+    {
         id: 'wykroczenia',
         title: 'Wykroczenia',
         columns: ['Data', 'Jednostka', 'Rodzaj', 'Art.', 'Miejsce', 'Sprawca', 'PESEL', 'Środek prawny', 'Mandat', 'Pkt.', 'Pojazd', 'Nr rej.', 'Świadkowie', 'Opis', 'Dowody', 'Funkcjon.', 'Nr notatki', 'Załączniki', 'Status', 'Operator']
@@ -21,12 +27,6 @@ const SECTIONS = [
     {
         id: 'wkrd',
         title: 'WKRD',
-        isCustomView: true,
-        columns: []
-    },
-    {
-        id: 'sankcje',
-        title: 'Sankcje',
         isCustomView: true,
         columns: []
     },
