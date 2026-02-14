@@ -2838,8 +2838,9 @@ const PatroleManager = {
 
     /**
      * Waliduje reguły dla rodzajów patroli
-     * - Interw. max 1 na dzień
-     * - Maksymalnie 2 rodzaje (zawsze Interw. + 1 inny)
+     * - Interw. max 1 NA DATĘ (sprawdza inne wiersze z tą samą datą)
+     * - Jeśli jest już Interw. na tę datę: MAX 1 rodzaj (bez Interw.)
+     * - Jeśli brak Interw. na tę datę: MAX 2 rodzaje (Interw. + 1 inny)
      * @param {Object} row - Wiersz danych
      * @returns {Object} - Obiekt z disabled states dla każdego pola
      */
@@ -2852,6 +2853,18 @@ const PatroleManager = {
             wkrd: false
         };
 
+        // REGUŁA NOWA: Sprawdź czy na tę samą datę istnieje INNY wiersz z Interw. > 0
+        const hasInterwOnThisDate = AppState.patroleData.some(r =>
+            r.id !== row.id &&                    // Inny wiersz (nie bieżący)
+            r.date === row.date &&                // Ta sama data
+            (r.interwen || 0) > 0                 // Ma patrol interwencyjny
+        );
+
+        // Jeśli jest już Interw. na tę datę, zablokuj pole "Interw."
+        if (hasInterwOnThisDate) {
+            disabled.interwen = true;
+        }
+
         // Policz ile rodzajów patroli jest wybranych (wartość > 0)
         const selectedTypes = [];
         const patrolTypes = ['interwen', 'pieszych', 'wodnych', 'zmot', 'wkrd'];
@@ -2862,16 +2875,22 @@ const PatroleManager = {
             }
         });
 
-        // REGUŁA 1: Jeśli wybrano już 2 rodzaje, zablokuj pozostałe
-        if (selectedTypes.length >= 2) {
+        // REGUŁA: Limit rodzajów patroli
+        let maxAllowedTypes = 2; // Domyślnie: max 2 rodzaje (Interw. + 1 inny)
+
+        // Jeśli pole "Interw." jest zablokowane (bo jest już na tę datę), MAX 1 rodzaj
+        if (hasInterwOnThisDate) {
+            maxAllowedTypes = 1;
+        }
+
+        // Jeśli wybrano już maksymalną liczbę rodzajów, zablokuj pozostałe
+        if (selectedTypes.length >= maxAllowedTypes) {
             patrolTypes.forEach(type => {
                 if (!selectedTypes.includes(type)) {
                     disabled[type] = true;
                 }
             });
         }
-
-        // REGUŁA 2: Interw. max 1 - ograniczenie w renderowaniu (max="1")
 
         return disabled;
     },
