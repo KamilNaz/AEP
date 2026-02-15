@@ -851,6 +851,13 @@ const AUTO_CALCULATE_CONFIG = {
             sources: ['wpm', 'ppm', 'pieszy', 'pasazer']
         },
         {
+            target: 'przyczyna_razem',
+            sources: ['pod_wplywem_alk', 'nie_zapiecie_pasow', 'telefon_podczas_jazdy',
+                     'nie_stosowanie_znakow', 'nie_zabezpieczony_ladunek', 'brak_dokumentow',
+                     'wyposazenie_pojazdu', 'nie_korzystanie_swiatel', 'parkowanie_niedozwolone',
+                     'niesprawnosci_techniczne', 'inne_przyczyna']
+        },
+        {
             target: 'sankcja_razem',
             sources: ['zatrzymanie_dr', 'zatrzymanie_pj', 'pouczenie', 'inne_sankcja'],
             includeBooleans: ['mandat_bool']
@@ -5953,21 +5960,6 @@ const SankcjeManager = {
         'szer. Marek Kurek', 'st.szer. Stanisław Kubiak', 'kpr. Mariusz Kwiatkowski', 'plut. Dariusz Baranowski', 'sierż. Jacek Urbański'
     ],
 
-    przyczynaOptions: [
-        'Niezapięte pasy bezpieczeństwa',
-        'Przekroczenie prędkości',
-        'Jazda pod wpływem alkoholu',
-        'Brak dokumentów pojazdu',
-        'Niesprawne oświetlenie pojazdu',
-        'Brak przeglądu technicznego',
-        'Używanie telefonu podczas jazdy',
-        'Parkowanie w miejscu niedozwolonym',
-        'Przejazd na czerwonym świetle',
-        'Niewłaściwe zachowanie pieszego',
-        'Zakłócanie porządku publicznego',
-        'Inne'
-    ],
-
     currentEditingRowId: null,
 
     openPrzyczynaModal(rowId) {
@@ -6076,7 +6068,18 @@ const SankcjeManager = {
             ppm: 0,
             pieszy: 0,
             pasazer: 0,
-            przyczyna: '',
+            przyczyna_razem: 0,
+            pod_wplywem_alk: 0,
+            nie_zapiecie_pasow: 0,
+            telefon_podczas_jazdy: 0,
+            nie_stosowanie_znakow: 0,
+            nie_zabezpieczony_ladunek: 0,
+            brak_dokumentow: 0,
+            wyposazenie_pojazdu: 0,
+            nie_korzystanie_swiatel: 0,
+            parkowanie_niedozwolone: 0,
+            niesprawnosci_techniczne: 0,
+            inne_przyczyna: 0,
             sankcja_razem: 0,
             zatrzymanie_dr: 0,
             zatrzymanie_pj: 0,
@@ -6090,7 +6093,7 @@ const SankcjeManager = {
             jzw_prowadzaca: sourceRow.jzw_prowadzaca,
             oddzial: sourceRow.oddzial
         };
-        
+
         if (!sourceRow.groupId) sourceRow.groupId = sourceRow.id;
         if (sourceRow.isMainRow === undefined) sourceRow.isMainRow = true;
         
@@ -6529,7 +6532,18 @@ const SankcjeManager = {
             ppm: 0,
             pieszy: 0,
             pasazer: 0,
-            przyczyna: '',
+            przyczyna_razem: 0,
+            pod_wplywem_alk: 0,
+            nie_zapiecie_pasow: 0,
+            telefon_podczas_jazdy: 0,
+            nie_stosowanie_znakow: 0,
+            nie_zabezpieczony_ladunek: 0,
+            brak_dokumentow: 0,
+            wyposazenie_pojazdu: 0,
+            nie_korzystanie_swiatel: 0,
+            parkowanie_niedozwolone: 0,
+            niesprawnosci_techniczne: 0,
+            inne_przyczyna: 0,
             sankcja_razem: 0,
             zatrzymanie_dr: 0,
             zatrzymanie_pj: 0,
@@ -6819,6 +6833,16 @@ const SankcjeManager = {
             
             const month = this.getMonthFromDate(row.data);
 
+            // Przyczyna tags
+            const przyczynyFields = Object.keys(this.przyczynaTagsMap);
+            const activePrzyczyny = przyczynyFields.filter(field => row[field] === 1);
+            const przyczynyTags = activePrzyczyny.map(field =>
+                `<span class="przyczyna-tag" title="${this.przyczynaTagsMap[field]}">
+                    ${this.przyczynaTagsMap[field]}
+                    <i class="fas fa-times" onclick="SankcjeManager.removePrzyczynaTag(${row.id}, '${field}')"></i>
+                </span>`
+            ).join(' ');
+
             // Walidacja Rodzaj pojazdu - 1 wybrany → 3 disabled
             const vehicleDisabled = this.getVehicleTypeDisabledStates(row);
 
@@ -6933,10 +6957,9 @@ const SankcjeManager = {
                                class="cell-input-number">
                     </td>
                     <td class="col-przyczyna">
-                        <select onchange="SankcjeManager.updateField(${row.id}, 'przyczyna', this.value)" class="cell-select">
-                            <option value="">-</option>
-                            ${this.przyczynaOptions.map(opt => `<option value="${opt}" ${row.przyczyna === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                        </select>
+                        <button class="btn-select-przyczyna" onclick="SankcjeManager.openPrzyczynaModal(${row.id})">
+                            <i class="fas fa-edit"></i> ${przyczynyTags || 'Wybierz'}
+                        </button>
                     </td>
                     <td class="col-razem">${sankcjaRazem}</td>
                     <td>
