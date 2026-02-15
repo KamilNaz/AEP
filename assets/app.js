@@ -616,7 +616,7 @@ const VALIDATION_RULES = {
         ]
     },
     sankcje: {
-        required: ['data', 'nr_jw', 'nazwa_jw', 'miejsce', 'podleglosc', 'grupa', 'jzw_prowadzaca', 'oddzial'],
+        required: [],  // Usuń required - pozwól zapisać nawet puste wiersze
         dependencies: [
             {
                 name: 'przyczyna_sankcja',
