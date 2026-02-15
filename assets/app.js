@@ -848,14 +848,7 @@ const AUTO_CALCULATE_CONFIG = {
     sankcje: [
         {
             target: 'rodzaj_razem',
-            sources: ['wpm', 'ppm', 'pieszy']
-        },
-        {
-            target: 'przyczyna_razem',
-            sources: ['pod_wplywem_alk', 'nie_zapiecie_pasow', 'telefon_podczas_jazdy',
-                     'nie_stosowanie_znakow', 'nie_zabezpieczony_ladunek', 'brak_dokumentow',
-                     'wyposazenie_pojazdu', 'nie_korzystanie_swiatel', 'parkowanie_niedozwolone',
-                     'niesprawnosci_techniczne', 'inne_przyczyna']
+            sources: ['wpm', 'ppm', 'pieszy', 'pasazer']
         },
         {
             target: 'sankcja_razem',
@@ -5739,10 +5732,9 @@ const SankcjeManager = {
                                 <label class="filter-label">Grupa os.:</label>
                                 <select id="sankcjeGrupaFilter" class="sankcje-select" style="width: 100%; padding: 0.5rem;">
                                     <option value="">Wszystkie</option>
-                                    <option value="szeregowy">szeregowy</option>
-                                    <option value="podoficer">podoficer</option>
-                                    <option value="oficer">oficer</option>
-                                    <option value="generał/admirał">generał/admirał</option>
+                                    <option value="żołnierz">żołnierz</option>
+                                    <option value="pracownik RON">pracownik RON</option>
+                                    <option value="osoba cywilna">osoba cywilna</option>
                                 </select>
                             </div>
                             <div class="dropdown-section">
@@ -5809,10 +5801,12 @@ const SankcjeManager = {
                                     <th rowspan="2">Podległość RSZ</th>
                                     <th rowspan="2">Grupa osobowa</th>
                                     <th rowspan="2">Legitymowany</th>
-                                    <th colspan="4" class="group-header">Rodzaj pojazdu</th>
+                                    <th colspan="5" class="group-header">Rodzaj pojazdu</th>
                                     <th rowspan="2" class="col-przyczyna">Przyczyna</th>
                                     <th colspan="6" class="group-header">Sankcja</th>
                                     <th rowspan="2">Wysokość mandatu (zł)</th>
+                                    <th rowspan="2">Pkt. karne</th>
+                                    <th rowspan="2">Wystawił</th>
                                     <th rowspan="2">W czasie służby</th>
                                     <th rowspan="2">JŻW Prowadząca</th>
                                     <th rowspan="2">Oddział</th>
@@ -5822,6 +5816,7 @@ const SankcjeManager = {
                                     <th>WPM</th>
                                     <th>PPM</th>
                                     <th>Pieszy</th>
+                                    <th>Pasażer</th>
                                     <th class="col-razem">RAZEM</th>
                                     <th>Zatrz. DR</th>
                                     <th>Zatrz. PJ</th>
@@ -5831,7 +5826,7 @@ const SankcjeManager = {
                                 </tr>
                             </thead>
                             <tbody id="sankcjeTableBody">
-                                <tr><td colspan="28" class="empty-message">Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.</td></tr>
+                                <tr><td colspan="31" class="empty-message">Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -5945,6 +5940,34 @@ const SankcjeManager = {
         inne_przyczyna: 'Inne'
     },
 
+    zolnierzOptions: [
+        'szer. Jan Kowalski', 'st.szer. Piotr Nowak', 'kpr. Andrzej Wiśniewski', 'plut. Krzysztof Wójcik', 'sierż. Michał Kamiński',
+        'szer. Tomasz Lewandowski', 'st.szer. Jakub Zieliński', 'kpr. Paweł Szymański', 'plut. Marcin Woźniak', 'sierż. Adam Dąbrowski',
+        'szer. Łukasz Kozłowski', 'st.szer. Mateusz Jankowski', 'kpr. Wojciech Mazur', 'plut. Robert Krawczyk', 'sierż. Damian Piotrowski',
+        'szer. Bartosz Grabowski', 'st.szer. Grzegorz Pawlak', 'kpr. Kamil Michalski', 'plut. Rafał Zając', 'sierż. Mariusz Król',
+        'szer. Sebastian Wróbel', 'st.szer. Artur Jabłoński', 'kpr. Dawid Majewski', 'plut. Maciej Olszewski', 'sierż. Filip Stępień',
+        'szer. Patryk Jaworski', 'st.szer. Daniel Malinowski', 'kpr. Hubert Pawłowski', 'plut. Kacper Witkowski', 'sierż. Dominik Walczak',
+        'szer. Szymon Adamczyk', 'st.szer. Błażej Sikora', 'kpr. Adrian Baran', 'plut. Igor Rutkowski', 'sierż. Oskar Górski',
+        'szer. Karol Dudek', 'st.szer. Marian Bąk', 'kpr. Norbert Lis', 'plut. Emil Szewczyk', 'sierż. Konrad Sokołowski',
+        'szer. Tadeusz Maciejewski', 'st.szer. Jarosław Kalinowski', 'kpr. Radosław Wysocki', 'plut. Zbigniew Adamski', 'sierż. Przemysław Czarnecki',
+        'szer. Marek Kurek', 'st.szer. Stanisław Kubiak', 'kpr. Mariusz Kwiatkowski', 'plut. Dariusz Baranowski', 'sierż. Jacek Urbański'
+    ],
+
+    przyczynaOptions: [
+        'Niezapięte pasy bezpieczeństwa',
+        'Przekroczenie prędkości',
+        'Jazda pod wpływem alkoholu',
+        'Brak dokumentów pojazdu',
+        'Niesprawne oświetlenie pojazdu',
+        'Brak przeglądu technicznego',
+        'Używanie telefonu podczas jazdy',
+        'Parkowanie w miejscu niedozwolonym',
+        'Przejazd na czerwonym świetle',
+        'Niewłaściwe zachowanie pieszego',
+        'Zakłócanie porządku publicznego',
+        'Inne'
+    ],
+
     currentEditingRowId: null,
 
     openPrzyczynaModal(rowId) {
@@ -6052,17 +6075,8 @@ const SankcjeManager = {
             wpm: 0,
             ppm: 0,
             pieszy: 0,
-            pod_wplywem_alk: 0,
-            nie_zapiecie_pasow: 0,
-            telefon_podczas_jazdy: 0,
-            nie_stosowanie_znakow: 0,
-            nie_zabezpieczony_ladunek: 0,
-            brak_dokumentow: 0,
-            wyposazenie_pojazdu: 0,
-            nie_korzystanie_swiatel: 0,
-            parkowanie_niedozwolone: 0,
-            niesprawnosci_techniczne: 0,
-            inne_przyczyna: 0,
+            pasazer: 0,
+            przyczyna: '',
             sankcja_razem: 0,
             zatrzymanie_dr: 0,
             zatrzymanie_pj: 0,
@@ -6070,6 +6084,8 @@ const SankcjeManager = {
             pouczenie: 0,
             inne_sankcja: 0,
             wysokosc_mandatu: '',
+            pkt_karne: 0,
+            wystawil: '',
             w_czasie_sluzby: sourceRow.w_czasie_sluzby,
             jzw_prowadzaca: sourceRow.jzw_prowadzaca,
             oddzial: sourceRow.oddzial
@@ -6512,18 +6528,8 @@ const SankcjeManager = {
             wpm: 0,
             ppm: 0,
             pieszy: 0,
-            przyczyna_razem: 0,
-            pod_wplywem_alk: 0,
-            nie_zapiecie_pasow: 0,
-            telefon_podczas_jazdy: 0,
-            nie_stosowanie_znakow: 0,
-            nie_zabezpieczony_ladunek: 0,
-            brak_dokumentow: 0,
-            wyposazenie_pojazdu: 0,
-            nie_korzystanie_swiatel: 0,
-            parkowanie_niedozwolone: 0,
-            niesprawnosci_techniczne: 0,
-            inne_przyczyna: 0,
+            pasazer: 0,
+            przyczyna: '',
             sankcja_razem: 0,
             zatrzymanie_dr: 0,
             zatrzymanie_pj: 0,
@@ -6531,6 +6537,8 @@ const SankcjeManager = {
             pouczenie: 0,
             inne_sankcja: 0,
             wysokosc_mandatu: '',
+            pkt_karne: 0,
+            wystawil: '',
             w_czasie_sluzby: false,
             jzw_prowadzaca: 'OŻW Elbląg',
             oddzial: 'Elbląg'
@@ -6608,6 +6616,90 @@ const SankcjeManager = {
         }
     },
 
+    /**
+     * Synchronizuje rekordy z Sankcje do Wykroczenia
+     * Tworzy nowy rekord w Wykroczenia dla każdego rekordu w Sankcje (tylko główne wiersze)
+     */
+    syncToWykroczenia() {
+        // Tylko główne wiersze, nie podwiersze
+        const mainRows = AppState.sankcjeData.filter(r => r.isMainRow !== false);
+
+        mainRows.forEach(sankcjaRow => {
+            // Sprawdź czy już istnieje rekord w Wykroczenia dla tej sankcji
+            // (możemy sprawdzić po dacie + nr_jw + nazwa_jw + legitymowany)
+            const exists = AppState.wykroczeniaData.some(w =>
+                w.data === sankcjaRow.data &&
+                w.nr_jw === sankcjaRow.nr_jw &&
+                w.nazwa_jw === sankcjaRow.nazwa_jw &&
+                w.legitymowany === sankcjaRow.legitymowany
+            );
+
+            if (exists) return; // Skip if already synced
+
+            // Utwórz nowy ID dla Wykroczenia
+            const newId = AppState.wykroczeniaData.length > 0 ?
+                Math.max(...AppState.wykroczeniaData.map(r => r.id)) + 1 : 1;
+
+            // Mapowanie z Sankcje → Wykroczenia
+            const newWykroczenieRow = {
+                id: newId,
+                isMainRow: true,
+                groupId: newId,
+                parentId: null,
+
+                // Kopiuj podstawowe dane
+                data: sankcjaRow.data,
+                nr_jw: sankcjaRow.nr_jw,
+                nazwa_jw: sankcjaRow.nazwa_jw,
+                miejsce: sankcjaRow.miejsce,
+                podleglosc: sankcjaRow.podleglosc,
+                grupa: sankcjaRow.grupa,
+                legitymowany: sankcjaRow.legitymowany,
+
+                // Podstawa interwencji - PUSTE (użytkownik wypełnia ręcznie)
+                nar_ubiorcz: 0,
+                inne_nar: 0,
+                nar_kk: 0,
+                wykr_porzadek: 0,
+                wykr_bezp: 0,
+                nar_dyscyplina: 0,
+                nar_bron: 0,
+                nar_ochr_zdr: 0,
+                nar_zakwat: 0,
+                pozostale: 0,
+
+                // Stan - PUSTE
+                stan_razem: 0,
+                pod_wplywem_alk: 0,
+                nietrzezwy: 0,
+                pod_wplywem_srod: 0,
+
+                // Rodzaj interwencji - mapuj sankcje
+                rodzaj_razem: 0,
+                zatrzymanie: 0,
+                doprowadzenie: 0,
+                wylegitymowanie: 0,
+                pouczenie: sankcjaRow.pouczenie || 0,
+                mandat_bool: sankcjaRow.mandat_bool || false,
+
+                // Inne pola - PUSTE
+                wysokosc_mandatu: sankcjaRow.wysokosc_mandatu || '',
+                w_czasie_sluzby: false, // PUSTE jak w wymaganiach
+                jzw_prowadzaca: '', // PUSTE
+                oddzial: '' // PUSTE
+            };
+
+            // Oblicz rodzaj_razem
+            CalculationEngine.calculate('wykroczenia', newWykroczenieRow);
+
+            // Dodaj do Wykroczenia
+            AppState.wykroczeniaData.push(newWykroczenieRow);
+        });
+
+        // Zapisz Wykroczenia
+        Utils.saveToLocalStorage('aep_data_wykroczenia', AppState.wykroczeniaData);
+    },
+
     saveDraft() {
         const errorCount = this.countValidationErrors();
         if (errorCount > 0) {
@@ -6615,9 +6707,12 @@ const SankcjeManager = {
             return;
         }
 
+        // Synchronizuj do Wykroczenia przed zapisaniem
+        this.syncToWykroczenia();
+
         const success = Utils.saveToLocalStorage('aep_data_sankcje', AppState.sankcjeData);
         if (success) {
-            alert('Arkusz zapisany pomyślnie');
+            alert('Arkusz zapisany pomyślnie\n\nRekordy zostały zsynchronizowane do Wykroczenia');
         } else {
             alert('Błąd podczas zapisywania');
         }
@@ -6632,7 +6727,7 @@ const SankcjeManager = {
         if (!tbody) return;
 
         if (AppState.sankcjeData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="28" class="empty-message">Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="31" class="empty-message">Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.</td></tr>';
             return;
         }
 
@@ -6690,7 +6785,7 @@ const SankcjeManager = {
         }
 
         if (dataToRender.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="28" class="empty-message">Brak danych spełniających kryteria filtra dat.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="31" class="empty-message">Brak danych spełniających kryteria filtra dat.</td></tr>';
             return;
         }
 
@@ -6698,7 +6793,7 @@ const SankcjeManager = {
         const nazwaJWOptions = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'];
         const miejsceOptions = Array.from({length: 9}, (_, i) => `Nazwa ${String(i + 1).padStart(2, '0')}`);
         const podlegloscOptions = ['WL', 'WOT', 'WS', 'MW', 'ŻW', 'SP'];
-        const grupaOptions = ['szeregowy', 'podoficer', 'oficer', 'generał/admirał'];
+        const grupaOptions = ['żołnierz', 'pracownik RON', 'osoba cywilna'];
         const jzwOptions = ['OŻW Elbląg', 'WŻW Bemowo Piskie', 'WŻW Gdynia', 'PŻW Bartoszyce', 'PŻW Braniewo', 'PŻW Malbork', 'PŻW Morąg', 'PŻW Giżycko'];
         const oddzialOptions = ['Elbląg', 'Szczecin', 'Lublin', 'Bydgoszcz', 'Kraków', 'Żagań', 'Warszawa', 'Łódź', 'Mińsk Mazowiecki'];
 
@@ -6716,23 +6811,16 @@ const SankcjeManager = {
             const groupClass = currentGroupIndex % 2 === 0 ? 'row-group-a' : 'row-group-b';
             
             // RAZEM - suma dla całej grupy (główny + podwiersze)
-            const rodzajRazem = groupRows.reduce((sum, r) => 
-                sum + (parseInt(r.wpm) || 0) + (parseInt(r.ppm) || 0) + (parseInt(r.pieszy) || 0), 0);
+            const rodzajRazem = groupRows.reduce((sum, r) =>
+                sum + (parseInt(r.wpm) || 0) + (parseInt(r.ppm) || 0) + (parseInt(r.pieszy) || 0) + (parseInt(r.pasazer) || 0), 0);
             const sankcjaRazem = groupRows.reduce((sum, r) => 
                 sum + (parseInt(r.zatrzymanie_dr) || 0) + (parseInt(r.zatrzymanie_pj) || 0) + 
                 (r.mandat_bool ? 1 : 0) + (parseInt(r.pouczenie) || 0) + (parseInt(r.inne_sankcja) || 0), 0);
             
             const month = this.getMonthFromDate(row.data);
-            
-            // Przyczyna tags
-            const przyczynyFields = Object.keys(this.przyczynaTagsMap);
-            const activePrzyczyny = przyczynyFields.filter(field => row[field] === 1);
-            const przyczynyTags = activePrzyczyny.map(field => 
-                `<span class="przyczyna-tag" title="${this.przyczynaTagsMap[field]}">
-                    ${this.przyczynaTagsMap[field]}
-                    <i class="fas fa-times" onclick="SankcjeManager.removePrzyczynaTag(${row.id}, '${field}')"></i>
-                </span>`
-            ).join(' ');
+
+            // Walidacja Rodzaj pojazdu - 1 wybrany → 3 disabled
+            const vehicleDisabled = this.getVehicleTypeDisabledStates(row);
 
             const rowTypeClass = isChildRow ? 'child-row' : 'main-row';
 
@@ -6816,7 +6904,7 @@ const SankcjeManager = {
                         <input type="number"
                                value="${row.wpm || 0}"
                                min="0"
-                               ${isChildRow ? 'disabled' : ''}
+                               ${isChildRow || vehicleDisabled.wpm ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'wpm', this.value)"
                                class="cell-input-number">
                     </td>
@@ -6824,7 +6912,7 @@ const SankcjeManager = {
                         <input type="number"
                                value="${row.ppm || 0}"
                                min="0"
-                               ${isChildRow ? 'disabled' : ''}
+                               ${isChildRow || vehicleDisabled.ppm ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'ppm', this.value)"
                                class="cell-input-number">
                     </td>
@@ -6832,20 +6920,30 @@ const SankcjeManager = {
                         <input type="number"
                                value="${row.pieszy || 0}"
                                min="0"
-                               ${isChildRow ? 'disabled' : ''}
+                               ${isChildRow || vehicleDisabled.pieszy ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'pieszy', this.value)"
                                class="cell-input-number">
                     </td>
+                    <td>
+                        <input type="number"
+                               value="${row.pasazer || 0}"
+                               min="0"
+                               ${isChildRow || vehicleDisabled.pasazer ? 'disabled' : ''}
+                               onchange="SankcjeManager.updateField(${row.id}, 'pasazer', this.value)"
+                               class="cell-input-number">
+                    </td>
                     <td class="col-przyczyna">
-                        <button class="btn-select-przyczyna" onclick="SankcjeManager.openPrzyczynaModal(${row.id})">
-                            <i class="fas fa-edit"></i> ${przyczynyTags || 'Wybierz'}
-                        </button>
+                        <select onchange="SankcjeManager.updateField(${row.id}, 'przyczyna', this.value)" class="cell-select">
+                            <option value="">-</option>
+                            ${this.przyczynaOptions.map(opt => `<option value="${opt}" ${row.przyczyna === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                        </select>
                     </td>
                     <td class="col-razem">${sankcjaRazem}</td>
                     <td>
                         <input type="number"
                                value="${row.zatrzymanie_dr || 0}"
                                min="0" max="1"
+                               ${isChildRow ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'zatrzymanie_dr', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
@@ -6853,18 +6951,21 @@ const SankcjeManager = {
                         <input type="number"
                                value="${row.zatrzymanie_pj || 0}"
                                min="0" max="1"
+                               ${isChildRow ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'zatrzymanie_pj', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
                     <td>
                         <input type="checkbox"
                                ${row.mandat_bool ? 'checked' : ''}
+                               ${isChildRow ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'mandat_bool', this.checked)">
                     </td>
                     <td>
                         <input type="number"
                                value="${row.pouczenie || 0}"
                                min="0" max="1"
+                               ${isChildRow ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'pouczenie', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
@@ -6872,6 +6973,7 @@ const SankcjeManager = {
                         <input type="number"
                                value="${row.inne_sankcja || 0}"
                                min="0" max="1"
+                               ${isChildRow ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'inne_sankcja', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
@@ -6882,6 +6984,20 @@ const SankcjeManager = {
                                ${!row.mandat_bool ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'wysokosc_mandatu', this.value)"
                                class="cell-input-small">
+                    </td>
+                    <td>
+                        <input type="number"
+                               value="${row.pkt_karne || 0}"
+                               min="0"
+                               max="100"
+                               onchange="SankcjeManager.updateField(${row.id}, 'pkt_karne', parseInt(this.value) || 0)"
+                               class="cell-input-number">
+                    </td>
+                    <td>
+                        <select onchange="SankcjeManager.updateField(${row.id}, 'wystawil', this.value)" class="cell-select">
+                            <option value="">-</option>
+                            ${this.zolnierzOptions.map(opt => `<option value="${opt}" ${row.wystawil === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                        </select>
                     </td>
                     <td>
                         <input type="checkbox" ${row.w_czasie_sluzby ? 'checked' : ''}
@@ -6905,6 +7021,34 @@ const SankcjeManager = {
         }).join('');
     },
 
+    /**
+     * Sprawdza które rodzaje pojazdu powinny być disabled
+     * Reguła: jeśli 1 rodzaj wybrany (wartość > 0), pozostałe 3 disabled
+     */
+    getVehicleTypeDisabledStates(row) {
+        const disabled = {
+            wpm: false,
+            ppm: false,
+            pieszy: false,
+            pasazer: false
+        };
+
+        // Sprawdź ile rodzajów jest wybranych (wartość > 0)
+        const vehicleTypes = ['wpm', 'ppm', 'pieszy', 'pasazer'];
+        const selectedTypes = vehicleTypes.filter(type => (row[type] || 0) > 0);
+
+        // Jeśli już wybrany 1 rodzaj, zablokuj pozostałe
+        if (selectedTypes.length >= 1) {
+            vehicleTypes.forEach(type => {
+                if (!selectedTypes.includes(type)) {
+                    disabled[type] = true;
+                }
+            });
+        }
+
+        return disabled;
+    },
+
     updateField(id, field, value) {
         const row = AppState.sankcjeData.find(r => r.id === id);
         if (row) {
@@ -6913,6 +7057,14 @@ const SankcjeManager = {
             if (binaryFields.includes(field)) {
                 let numValue = parseInt(value) || 0;
                 if (numValue > 1) numValue = 1;
+                if (numValue < 0) numValue = 0;
+                value = numValue;
+            }
+
+            // Walidacja 0-100 dla pkt_karne
+            if (field === 'pkt_karne') {
+                let numValue = parseInt(value) || 0;
+                if (numValue > 100) numValue = 100;
                 if (numValue < 0) numValue = 0;
                 value = numValue;
             }
@@ -8814,7 +8966,7 @@ const ZdarzeniaManager = createBaseTableManager({
         const nazwaJWOptions = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
         const miejsceOptions = Array.from({length: 30}, (_, i) => `Miejsce ${i + 1}`);
         const podlegloscOptions = ['WL', 'WOT', 'MW', 'WSpec.', 'ŻW', 'SP'];
-        const grupaOptions = ['szeregowy', 'podoficer', 'oficer', 'generał/admirał'];
+        const grupaOptions = ['żołnierz', 'pracownik RON', 'osoba cywilna'];
         const jzwOptions = ['OŻW Elbląg', 'WŻW Bemowo Piskie', 'WŻW Gdynia', 'PŻW Bartoszyce', 'PŻW Braniewo', 'PŻW Giżycko', 'PŻW Malbork', 'PŻW Morąg'];
         const oddzialOptions = ['Elbląg', 'Szczecin', 'Lublin', 'Bydgoszcz', 'Kraków', 'Żagań', 'Warszawa', 'Łódź', 'Mińsk Mazowiecki'];
 
