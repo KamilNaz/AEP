@@ -10569,6 +10569,60 @@ const SPBManager = createBaseTableManager({
         }
     },
 
+    /**
+     * Sprawdza które pola "Podczas służby patrolowej" powinny być disabled
+     * Reguła: gdy 1 pole wybrane (wartość = 1), pozostałe 2 disabled
+     */
+    getPatrolServiceDisabledStates: function(row) {
+        const disabled = {
+            zatrzymania: false,
+            doprowadzenia: false,
+            inne_patrol: false
+        };
+
+        // Sprawdź ile pól jest wybranych (wartość = 1)
+        const patrolFields = ['zatrzymania', 'doprowadzenia', 'inne_patrol'];
+        const selectedFields = patrolFields.filter(field => (row[field] || 0) === 1);
+
+        // Jeśli już wybrane 1 pole, zablokuj pozostałe
+        if (selectedFields.length >= 1) {
+            patrolFields.forEach(field => {
+                if (!selectedFields.includes(field)) {
+                    disabled[field] = true;
+                }
+            });
+        }
+
+        return disabled;
+    },
+
+    updateField: function(id, field, value) {
+        const row = AppState.spbData.find(r => r.id === id);
+        if (!row) return;
+
+        // Obsługa daty
+        if (field === 'data' && value) {
+            const date = new Date(value);
+            row.data = date.toLocaleDateString('pl-PL');
+        } else {
+            row[field] = value;
+        }
+
+        // Auto-czyszczenie innych pól "Podczas służby patrolowej"
+        const patrolFields = ['zatrzymania', 'doprowadzenia', 'inne_patrol'];
+        if (patrolFields.includes(field) && value === 1) {
+            // Jeśli ustawiono pole na 1, wyzeruj pozostałe dwa
+            patrolFields.forEach(f => {
+                if (f !== field) {
+                    row[f] = 0;
+                }
+            });
+        }
+
+        this.renderRows();
+        this.autoSave();
+    },
+
     renderRows: function() {
         const tbody = document.getElementById('spbTableBody');
         if (!tbody) return;
@@ -10630,6 +10684,9 @@ const SPBManager = createBaseTableManager({
         tbody.innerHTML = dataToRender.map((row, index) => {
             const isSelected = AppState.spbSelectedRows.has(row.id);
             const month = this.getMonthFromDate(row.data);
+
+            // Walidacja Podczas służby patrolowej - 1 wybrane → 2 disabled
+            const patrolDisabled = this.getPatrolServiceDisabledStates(row);
 
             return `
                 <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
@@ -10695,19 +10752,25 @@ const SPBManager = createBaseTableManager({
                         </select>
                     </td>
                     <td class="col-binary">
-                        <select class="cell-select-binary" onchange="SPBManager.updateField(${row.id}, 'zatrzymania', parseInt(this.value))">
+                        <select class="cell-select-binary"
+                                ${patrolDisabled.zatrzymania ? 'disabled' : ''}
+                                onchange="SPBManager.updateField(${row.id}, 'zatrzymania', parseInt(this.value))">
                             <option value="0" ${row.zatrzymania === 0 ? 'selected' : ''}>0</option>
                             <option value="1" ${row.zatrzymania === 1 ? 'selected' : ''}>1</option>
                         </select>
                     </td>
                     <td class="col-binary">
-                        <select class="cell-select-binary" onchange="SPBManager.updateField(${row.id}, 'doprowadzenia', parseInt(this.value))">
+                        <select class="cell-select-binary"
+                                ${patrolDisabled.doprowadzenia ? 'disabled' : ''}
+                                onchange="SPBManager.updateField(${row.id}, 'doprowadzenia', parseInt(this.value))">
                             <option value="0" ${row.doprowadzenia === 0 ? 'selected' : ''}>0</option>
                             <option value="1" ${row.doprowadzenia === 1 ? 'selected' : ''}>1</option>
                         </select>
                     </td>
                     <td class="col-binary">
-                        <select class="cell-select-binary" onchange="SPBManager.updateField(${row.id}, 'inne_patrol', parseInt(this.value))">
+                        <select class="cell-select-binary"
+                                ${patrolDisabled.inne_patrol ? 'disabled' : ''}
+                                onchange="SPBManager.updateField(${row.id}, 'inne_patrol', parseInt(this.value))">
                             <option value="0" ${row.inne_patrol === 0 ? 'selected' : ''}>0</option>
                             <option value="1" ${row.inne_patrol === 1 ? 'selected' : ''}>1</option>
                         </select>
