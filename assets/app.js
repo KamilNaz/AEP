@@ -9318,6 +9318,8 @@ const PilotazeManager = createBaseTableManager({
         zmotoryzowany: 0,
         wkrd: 0,
         ilosc_zw: 0,
+        otwierajacy: '',
+        zamykajacy: '',
         wpm: 0,
         jzw: 'OŻW Elbląg',
         oddzial: 'Elbląg'
@@ -9442,6 +9444,7 @@ const PilotazeManager = createBaseTableManager({
                                 <th colspan="3" class="col-group-header">Wojska</th>
                                 <th colspan="3" class="col-group-header">Rodzaj patrolu</th>
                                 <th rowspan="2" class="col-number">Ilość żołnierzy ŻW</th>
+                                <th rowspan="2" class="col-text">Kto realizował</th>
                                 <th rowspan="2" class="col-number">WPM</th>
                                 <th rowspan="2" class="col-select">JŻW wykonująca czynność</th>
                                 <th rowspan="2" class="col-select">Oddział</th>
@@ -9464,6 +9467,54 @@ const PilotazeManager = createBaseTableManager({
                 <div class="bottom-scrollbar" id="bottomScrollbar">
                     <div class="bottom-scrollbar-content"></div>
                 </div>
+
+                <!-- Modal: Kto realizował -->
+                <div id="ktoRealizowalModal" class="modal-overlay" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>KTO REALIZOWAŁ CZYNNOŚĆ</h3>
+                            <span class="modal-close" id="ktoRealizowalModalClose">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="modal-field">
+                                <label for="ktoRealizowalOtwierajacy" class="modal-label">Otwierający:</label>
+                                <select id="ktoRealizowalOtwierajacy" class="cell-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">-- Wybierz --</option>
+                                    <option value="szer. Jan Kowalski">szer. Jan Kowalski</option>
+                                    <option value="szer. Piotr Nowak">szer. Piotr Nowak</option>
+                                    <option value="st. szer. Tomasz Wiśniewski">st. szer. Tomasz Wiśniewski</option>
+                                    <option value="st. szer. Marcin Lewandowski">st. szer. Marcin Lewandowski</option>
+                                    <option value="kpr. Adam Zieliński">kpr. Adam Zieliński</option>
+                                    <option value="kpr. Krzysztof Kamiński">kpr. Krzysztof Kamiński</option>
+                                    <option value="st. kpr. Marek Wójcik">st. kpr. Marek Wójcik</option>
+                                    <option value="st. kpr. Paweł Kowalczyk">st. kpr. Paweł Kowalczyk</option>
+                                    <option value="sierż. Grzegorz Mazur">sierż. Grzegorz Mazur</option>
+                                    <option value="sierż. Andrzej Woźniak">sierż. Andrzej Woźniak</option>
+                                </select>
+                            </div>
+                            <div class="modal-field" style="margin-top: 1rem;">
+                                <label for="ktoRealizowalZamykajacy" class="modal-label">Zamykający:</label>
+                                <select id="ktoRealizowalZamykajacy" class="cell-select" style="width: 100%; padding: 0.5rem;">
+                                    <option value="">-- Wybierz --</option>
+                                    <option value="szer. Daniel Kaczmarek">szer. Daniel Kaczmarek</option>
+                                    <option value="szer. Michał Nowicki">szer. Michał Nowicki</option>
+                                    <option value="st. szer. Jakub Wojciechowski">st. szer. Jakub Wojciechowski</option>
+                                    <option value="st. szer. Łukasz Kwiatkowski">st. szer. Łukasz Kwiatkowski</option>
+                                    <option value="kpr. Bartosz Krawczyk">kpr. Bartosz Krawczyk</option>
+                                    <option value="kpr. Damian Piotrowski">kpr. Damian Piotrowski</option>
+                                    <option value="st. kpr. Kamil Grabowski">st. kpr. Kamil Grabowski</option>
+                                    <option value="st. kpr. Mateusz Pawlak">st. kpr. Mateusz Pawlak</option>
+                                    <option value="sierż. Robert Michalski">sierż. Robert Michalski</option>
+                                    <option value="sierż. Sebastian Król">sierż. Sebastian Król</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" id="ktoRealizowalModalCancel">Anuluj</button>
+                            <button class="btn-primary" id="ktoRealizowalModalConfirm">Zatwierdź</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -9471,6 +9522,18 @@ const PilotazeManager = createBaseTableManager({
         document.getElementById('savePilotazeDraft')?.addEventListener('click', () => this.saveDraft());
         document.getElementById('clearPilotazeData')?.addEventListener('click', () => this.clearSelected());
         document.getElementById('selectAllPilotaze')?.addEventListener('change', (e) => this.toggleSelectAll(e.target.checked));
+
+        // Event listeners dla modalu "Kto realizował"
+        document.getElementById('ktoRealizowalModalClose')?.addEventListener('click', () => this.closeKtoRealizowalModal());
+        document.getElementById('ktoRealizowalModalCancel')?.addEventListener('click', () => this.closeKtoRealizowalModal());
+        document.getElementById('ktoRealizowalModalConfirm')?.addEventListener('click', () => this.saveKtoRealizowal());
+
+        // Zamknij modal po kliknięciu w tło
+        document.getElementById('ktoRealizowalModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'ktoRealizowalModal') {
+                this.closeKtoRealizowalModal();
+            }
+        });
 
         this.initDateFilter();
         this.renderRows();
@@ -9738,7 +9801,7 @@ const PilotazeManager = createBaseTableManager({
         if (!tbody) return;
 
         if (AppState.pilotazeData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="14" class="empty-message">Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="15" class="empty-message">Brak danych. Kliknij "+ Dodaj wiersz" aby rozpocząć.</td></tr>';
             return;
         }
 
@@ -9785,6 +9848,9 @@ const PilotazeManager = createBaseTableManager({
             const wojskaRazem = (parseInt(row.wlasne) || 0) + (parseInt(row.sojusznicze) || 0);
             const patrolRazem = (parseInt(row.zmotoryzowany) || 0) + (parseInt(row.wkrd) || 0);
 
+            // Sprawdź które pola Wojska mają być zablokowane
+            const wojskaDisabled = this.getWojskaDisabledStates(row);
+
             return `
                 <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
                     <td class="col-sticky-left col-lp">${index + 1}</td>
@@ -9803,19 +9869,21 @@ const PilotazeManager = createBaseTableManager({
                     </td>
                     <td class="col-number col-razem">${wojskaRazem}</td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.wlasne || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.wlasne || ''}"
                                placeholder="0"
                                min="0"
+                               ${wojskaDisabled.wlasne ? 'disabled' : ''}
                                onchange="PilotazeManager.updateField(${row.id}, 'wlasne', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.sojusznicze || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.sojusznicze || ''}"
                                placeholder="0"
                                min="0"
+                               ${wojskaDisabled.sojusznicze ? 'disabled' : ''}
                                onchange="PilotazeManager.updateField(${row.id}, 'sojusznicze', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number col-razem">${patrolRazem}</td>
@@ -9836,17 +9904,20 @@ const PilotazeManager = createBaseTableManager({
                                onchange="PilotazeManager.updateField(${row.id}, 'wkrd', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.ilosc_zw || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.ilosc_zw || ''}"
                                placeholder="0"
                                min="0"
                                onchange="PilotazeManager.updateField(${row.id}, 'ilosc_zw', parseInt(this.value) || 0)">
                     </td>
+                    <td class="col-text" style="cursor: pointer; text-align: center;" onclick="PilotazeManager.openKtoRealizowalModal(${row.id})">
+                        ${this.formatKtoRealizowal(row.otwierajacy, row.zamykajacy)}
+                    </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.wpm || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.wpm || ''}"
                                placeholder="0"
                                min="0"
                                onchange="PilotazeManager.updateField(${row.id}, 'wpm', parseInt(this.value) || 0)">
@@ -9872,6 +9943,134 @@ const PilotazeManager = createBaseTableManager({
         
         // Aktualizuj scrollbar po każdej zmianie danych
         this.syncScrollbars();
+    },
+
+    getWojskaDisabledStates: function(row) {
+        const disabled = {
+            wlasne: false,
+            sojusznicze: false
+        };
+
+        if ((row.wlasne || 0) > 0) {
+            disabled.sojusznicze = true;
+        }
+
+        if ((row.sojusznicze || 0) > 0) {
+            disabled.wlasne = true;
+        }
+
+        return disabled;
+    },
+
+    updateField: function(id, field, value) {
+        const row = AppState.pilotazeData.find(r => r.id === id);
+        if (!row) return;
+
+        if (field === 'data' && value) {
+            const date = new Date(value);
+            row.data = date.toLocaleDateString('pl-PL');
+        } else {
+            row[field] = value;
+        }
+
+        // Auto-czyszczenie przeciwnego pola Wojska
+        if (field === 'wlasne' && value > 0) {
+            row.sojusznicze = 0;
+        } else if (field === 'sojusznicze' && value > 0) {
+            row.wlasne = 0;
+        }
+
+        this.renderRows();
+        this.autoSave();
+    },
+
+    formatKtoRealizowal: function(otwierajacy, zamykajacy) {
+        // Wyciągnij nazwiska z pełnych nazw (np. "szer. Jan Kowalski" -> "Kowalski")
+        const getSurname = (fullName) => {
+            if (!fullName || fullName.trim() === '') return '';
+            const parts = fullName.trim().split(' ');
+            return parts[parts.length - 1]; // Ostatnie słowo to nazwisko
+        };
+
+        const surnameOtw = getSurname(otwierajacy);
+        const surnameZam = getSurname(zamykajacy);
+
+        if (surnameOtw && surnameZam) {
+            return `${surnameOtw} / ${surnameZam}`;
+        } else if (surnameOtw) {
+            return surnameOtw;
+        } else if (surnameZam) {
+            return surnameZam;
+        } else {
+            return '<span style="color: var(--muted);">—</span>';
+        }
+    },
+
+    openKtoRealizowalModal: function(rowId) {
+        const row = AppState.pilotazeData.find(r => r.id === rowId);
+        if (!row) return;
+
+        // Zachowaj ID edytowanego wiersza
+        this.currentKtoRealizowalRowId = rowId;
+
+        // Załaduj istniejące wartości
+        const selectOtwierajacy = document.getElementById('ktoRealizowalOtwierajacy');
+        const selectZamykajacy = document.getElementById('ktoRealizowalZamykajacy');
+
+        if (selectOtwierajacy) {
+            selectOtwierajacy.value = row.otwierajacy || '';
+        }
+        if (selectZamykajacy) {
+            selectZamykajacy.value = row.zamykajacy || '';
+        }
+
+        // Pokaż modal
+        const modal = document.getElementById('ktoRealizowalModal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    },
+
+    closeKtoRealizowalModal: function() {
+        const modal = document.getElementById('ktoRealizowalModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        this.currentKtoRealizowalRowId = null;
+    },
+
+    saveKtoRealizowal: function() {
+        const rowId = this.currentKtoRealizowalRowId;
+        if (!rowId) return;
+
+        const row = AppState.pilotazeData.find(r => r.id === rowId);
+        if (!row) return;
+
+        const selectOtwierajacy = document.getElementById('ktoRealizowalOtwierajacy');
+        const selectZamykajacy = document.getElementById('ktoRealizowalZamykajacy');
+
+        const otwierajacy = selectOtwierajacy?.value || '';
+        const zamykajacy = selectZamykajacy?.value || '';
+
+        // WALIDACJA (Step 4): Oba pola wymagane
+        if (!otwierajacy || !zamykajacy) {
+            alert('Oba pola są wymagane!\n\nMusisz wybrać zarówno Otwierającego jak i Zamykającego.');
+            return;
+        }
+
+        // WALIDACJA (Step 4): Ta sama osoba nie może pełnić obu ról
+        if (otwierajacy === zamykajacy) {
+            alert('Ta sama osoba nie może pełnić obu ról.');
+            return;
+        }
+
+        // Zapisz wartości
+        row.otwierajacy = otwierajacy;
+        row.zamykajacy = zamykajacy;
+
+        this.closeKtoRealizowalModal();
+        this.renderRows();
+        this.autoSave();
     }
     }
 });
