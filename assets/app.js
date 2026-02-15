@@ -9851,6 +9851,9 @@ const PilotazeManager = createBaseTableManager({
             // Sprawdź które pola Wojska mają być zablokowane
             const wojskaDisabled = this.getWojskaDisabledStates(row);
 
+            // Sprawdź które pola Rodzaj patrolu mają być zablokowane
+            const patrolDisabled = this.getPatrolTypeDisabledStates(row);
+
             return `
                 <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
                     <td class="col-sticky-left col-lp">${index + 1}</td>
@@ -9888,19 +9891,21 @@ const PilotazeManager = createBaseTableManager({
                     </td>
                     <td class="col-number col-razem">${patrolRazem}</td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.zmotoryzowany || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.zmotoryzowany || ''}"
                                placeholder="0"
                                min="0"
+                               ${patrolDisabled.zmotoryzowany ? 'disabled' : ''}
                                onchange="PilotazeManager.updateField(${row.id}, 'zmotoryzowany', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.wkrd || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.wkrd || ''}"
                                placeholder="0"
                                min="0"
+                               ${patrolDisabled.wkrd ? 'disabled' : ''}
                                onchange="PilotazeManager.updateField(${row.id}, 'wkrd', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -9962,6 +9967,23 @@ const PilotazeManager = createBaseTableManager({
         return disabled;
     },
 
+    getPatrolTypeDisabledStates: function(row) {
+        const disabled = {
+            zmotoryzowany: false,
+            wkrd: false
+        };
+
+        if ((row.zmotoryzowany || 0) > 0) {
+            disabled.wkrd = true;
+        }
+
+        if ((row.wkrd || 0) > 0) {
+            disabled.zmotoryzowany = true;
+        }
+
+        return disabled;
+    },
+
     updateField: function(id, field, value) {
         const row = AppState.pilotazeData.find(r => r.id === id);
         if (!row) return;
@@ -9978,6 +10000,13 @@ const PilotazeManager = createBaseTableManager({
             row.sojusznicze = 0;
         } else if (field === 'sojusznicze' && value > 0) {
             row.wlasne = 0;
+        }
+
+        // Auto-czyszczenie przeciwnego pola Rodzaj patrolu
+        if (field === 'zmotoryzowany' && value > 0) {
+            row.wkrd = 0;
+        } else if (field === 'wkrd' && value > 0) {
+            row.zmotoryzowany = 0;
         }
 
         this.renderRows();
