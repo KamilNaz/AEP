@@ -6822,6 +6822,9 @@ const SankcjeManager = {
             // Walidacja Rodzaj pojazdu - 1 wybrany → 3 disabled
             const vehicleDisabled = this.getVehicleTypeDisabledStates(row);
 
+            // Walidacja Sankcja - 1 wybrana → 4 disabled
+            const sankcjaDisabled = this.getSankcjaDisabledStates(row);
+
             const rowTypeClass = isChildRow ? 'child-row' : 'main-row';
 
             return `
@@ -6942,7 +6945,7 @@ const SankcjeManager = {
                         <input type="number"
                                value="${row.zatrzymanie_dr || 0}"
                                min="0" max="1"
-                               ${isChildRow ? 'disabled' : ''}
+                               ${sankcjaDisabled.zatrzymanie_dr ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'zatrzymanie_dr', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
@@ -6950,21 +6953,21 @@ const SankcjeManager = {
                         <input type="number"
                                value="${row.zatrzymanie_pj || 0}"
                                min="0" max="1"
-                               ${isChildRow ? 'disabled' : ''}
+                               ${sankcjaDisabled.zatrzymanie_pj ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'zatrzymanie_pj', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
                     <td>
                         <input type="checkbox"
                                ${row.mandat_bool ? 'checked' : ''}
-                               ${isChildRow ? 'disabled' : ''}
+                               ${sankcjaDisabled.mandat_bool ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'mandat_bool', this.checked)">
                     </td>
                     <td>
                         <input type="number"
                                value="${row.pouczenie || 0}"
                                min="0" max="1"
-                               ${isChildRow ? 'disabled' : ''}
+                               ${sankcjaDisabled.pouczenie ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'pouczenie', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
@@ -6972,7 +6975,7 @@ const SankcjeManager = {
                         <input type="number"
                                value="${row.inne_sankcja || 0}"
                                min="0" max="1"
-                               ${isChildRow ? 'disabled' : ''}
+                               ${sankcjaDisabled.inne_sankcja ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'inne_sankcja', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
@@ -6989,11 +6992,12 @@ const SankcjeManager = {
                                value="${row.pkt_karne || 0}"
                                min="0"
                                max="100"
+                               ${!row.mandat_bool ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'pkt_karne', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <select onchange="SankcjeManager.updateField(${row.id}, 'wystawil', this.value)" class="cell-select">
+                        <select ${!row.mandat_bool ? 'disabled' : ''} onchange="SankcjeManager.updateField(${row.id}, 'wystawil', this.value)" class="cell-select">
                             <option value="">-</option>
                             ${this.zolnierzOptions.map(opt => `<option value="${opt}" ${row.wystawil === opt ? 'selected' : ''}>${opt}</option>`).join('')}
                         </select>
@@ -7039,6 +7043,40 @@ const SankcjeManager = {
         // Jeśli już wybrany 1 rodzaj, zablokuj pozostałe
         if (selectedTypes.length >= 1) {
             vehicleTypes.forEach(type => {
+                if (!selectedTypes.includes(type)) {
+                    disabled[type] = true;
+                }
+            });
+        }
+
+        return disabled;
+    },
+
+    /**
+     * Sprawdza które pola Sankcja powinny być disabled
+     * Reguła: jeśli 1 sankcja wybrana (wartość > 0 lub true), pozostałe 4 disabled
+     */
+    getSankcjaDisabledStates(row) {
+        const disabled = {
+            zatrzymanie_dr: false,
+            zatrzymanie_pj: false,
+            mandat_bool: false,
+            pouczenie: false,
+            inne_sankcja: false
+        };
+
+        // Sprawdź które sankcje są wybrane
+        const sankcjeTypes = ['zatrzymanie_dr', 'zatrzymanie_pj', 'mandat_bool', 'pouczenie', 'inne_sankcja'];
+        const selectedTypes = sankcjeTypes.filter(type => {
+            if (type === 'mandat_bool') {
+                return row[type] === true;
+            }
+            return (row[type] || 0) > 0;
+        });
+
+        // Jeśli już wybrana 1 sankcja, zablokuj pozostałe
+        if (selectedTypes.length >= 1) {
+            sankcjeTypes.forEach(type => {
                 if (!selectedTypes.includes(type)) {
                     disabled[type] = true;
                 }
