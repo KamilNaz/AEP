@@ -3885,6 +3885,14 @@ canvas {
     background: rgba(207, 211, 218, 0.05);
 }
 
+.spb-table .cell-select-binary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(75, 85, 99, 0.3);
+    border-color: rgba(156, 163, 175, 0.3);
+    color: rgba(156, 163, 175, 0.6);
+}
+
 /* Kolumna modal button */
 .spb-table .col-modal-btn {
     min-width: 200px;
@@ -4258,6 +4266,14 @@ canvas {
     outline-offset: 2px;
     border-color: var(--accent);
     background: rgba(207, 211, 218, 0.05);
+}
+
+.zdarzenia-table .cell-select-binary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(75, 85, 99, 0.3);
+    border-color: rgba(156, 163, 175, 0.3);
+    color: rgba(156, 163, 175, 0.6);
 }
 
 .przyczyna-chips-container,
