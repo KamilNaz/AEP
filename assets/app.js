@@ -9088,6 +9088,26 @@ const ZdarzeniaManager = createBaseTableManager({
 
 // ============================================
 
+    getRodzajZdarzeniaDisabledStates(row) {
+        const disabled = { wypadek: false, kolizja: false };
+        const types = ['wypadek', 'kolizja'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
+    },
+
+    getRodzajPojazdZdarzeniaDisabledStates(row) {
+        const disabled = { wpm: false, ppm: false };
+        const types = ['wpm', 'ppm'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
+    },
+
     renderRows: function() {
         const tbody = document.getElementById('zdarzeniaTableBody');
         if (!tbody) return;
@@ -9160,6 +9180,10 @@ const ZdarzeniaManager = createBaseTableManager({
             const zdarzenieRazem = (parseInt(row.wypadek) || 0) + (parseInt(row.kolizja) || 0);
             const pojazdRazem = (parseInt(row.wpm) || 0) + (parseInt(row.ppm) || 0);
 
+            // Wzajemne blokowanie pól
+            const zdarzenieDisabled = this.getRodzajZdarzeniaDisabledStates(row);
+            const pojazdDisabled = this.getRodzajPojazdZdarzeniaDisabledStates(row);
+
             return `
                 <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
                     <td class="col-sticky-left col-lp">${index + 1}</td>
@@ -9208,35 +9232,40 @@ const ZdarzeniaManager = createBaseTableManager({
                     </td>
                     <td class="col-number col-razem">${zdarzenieRazem}</td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.wypadek || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.wypadek || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
+                               ${zdarzenieDisabled.wypadek ? 'disabled' : ''}
                                onchange="ZdarzeniaManager.updateField(${row.id}, 'wypadek', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.kolizja || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.kolizja || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
+                               ${zdarzenieDisabled.kolizja ? 'disabled' : ''}
                                onchange="ZdarzeniaManager.updateField(${row.id}, 'kolizja', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number col-razem">${pojazdRazem}</td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.wpm || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.wpm || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
+                               ${pojazdDisabled.wpm ? 'disabled' : ''}
                                onchange="ZdarzeniaManager.updateField(${row.id}, 'wpm', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.ppm || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.ppm || ''}"
                                placeholder="0"
+                               min="0" max="1"
+                               ${pojazdDisabled.ppm ? 'disabled' : ''}
                                min="0"
                                onchange="ZdarzeniaManager.updateField(${row.id}, 'ppm', parseInt(this.value) || 0)">
                     </td>
@@ -11008,6 +11037,16 @@ const SPBManager = createBaseTableManager({
 
         this.renderRows();
         this.autoSave();
+    },
+
+    getPatrolServiceDisabledStates(row) {
+        const disabled = { zatrzymania: false, doprowadzenia: false, inne_patrol: false };
+        const types = ['zatrzymania', 'doprowadzenia', 'inne_patrol'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
     },
 
     renderRows: function() {
