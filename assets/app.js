@@ -6631,87 +6631,66 @@ const SankcjeManager = {
     },
 
     /**
-     * Synchronizuje rekordy z Sankcje do Wykroczenia
-     * Tworzy nowy rekord w Wykroczenia dla każdego rekordu w Sankcje (tylko główne wiersze)
+     * Synchronizuje dane z Sankcje do WKRD
+     * Tworzy/aktualizuje wiersz w WKRD na podstawie danych z Sankcje (tylko WPM i PPM)
      */
-    syncToWykroczenia() {
-        // Tylko główne wiersze, nie podwiersze
-        const mainRows = AppState.sankcjeData.filter(r => r.isMainRow !== false);
+    syncToWKRD(sankcjaRowId) {
+        const sankcjaRow = AppState.sankcjeData.find(r => r.id === sankcjaRowId);
+        if (!sankcjaRow) return;
 
-        mainRows.forEach(sankcjaRow => {
-            // Sprawdź czy już istnieje rekord w Wykroczenia dla tej sankcji
-            // (możemy sprawdzić po dacie + nr_jw + nazwa_jw + legitymowany)
-            const exists = AppState.wykroczeniaData.some(w =>
-                w.data === sankcjaRow.data &&
-                w.nr_jw === sankcjaRow.nr_jw &&
-                w.nazwa_jw === sankcjaRow.nazwa_jw &&
-                w.legitymowany === sankcjaRow.legitymowany
-            );
+        // Tylko główne wiersze
+        if (sankcjaRow.isMainRow === false) return;
 
-            if (exists) return; // Skip if already synced
+        // Tylko jeśli WPM > 0 lub PPM > 0
+        const wpm = parseInt(sankcjaRow.wpm) || 0;
+        const ppm = parseInt(sankcjaRow.ppm) || 0;
+        if (wpm === 0 && ppm === 0) {
+            // Jeśli nie ma WPM ani PPM, usuń powiązany wiersz WKRD jeśli istnieje
+            const existingWkrdRow = AppState.wkrdData.find(w => w.sankcjeId === sankcjaRowId);
+            if (existingWkrdRow) {
+                AppState.wkrdData = AppState.wkrdData.filter(w => w.id !== existingWkrdRow.id);
+                Utils.saveToLocalStorage('aep_data_wkrd', AppState.wkrdData);
+            }
+            return;
+        }
 
-            // Utwórz nowy ID dla Wykroczenia
-            const newId = AppState.wykroczeniaData.length > 0 ?
-                Math.max(...AppState.wykroczeniaData.map(r => r.id)) + 1 : 1;
+        // Sprawdź czy już istnieje wiersz w WKRD dla tej sankcji
+        let wkrdRow = AppState.wkrdData.find(w => w.sankcjeId === sankcjaRowId);
 
-            // Mapowanie z Sankcje → Wykroczenia
-            const newWykroczenieRow = {
+        if (wkrdRow) {
+            // Aktualizuj istniejący wiersz
+            wkrdRow.wpm = wpm;
+            wkrdRow.ppm = ppm;
+            // Auto-oblicz RAZEM
+            CalculationEngine.calculate('wkrd', wkrdRow);
+        } else {
+            // Utwórz nowy wiersz w WKRD
+            const newId = AppState.wkrdData.length > 0 ?
+                Math.max(...AppState.wkrdData.map(r => r.id)) + 1 : 1;
+
+            const newWkrdRow = {
                 id: newId,
-                isMainRow: true,
-                groupId: newId,
-                parentId: null,
-
-                // Kopiuj podstawowe dane
-                data: sankcjaRow.data,
-                nr_jw: sankcjaRow.nr_jw,
-                nazwa_jw: sankcjaRow.nazwa_jw,
-                miejsce: sankcjaRow.miejsce,
-                podleglosc: sankcjaRow.podleglosc,
-                grupa: sankcjaRow.grupa,
-                legitymowany: sankcjaRow.legitymowany,
-
-                // Podstawa interwencji - PUSTE (użytkownik wypełnia ręcznie)
-                nar_ubiorcz: 0,
-                inne_nar: 0,
-                nar_kk: 0,
-                wykr_porzadek: 0,
-                wykr_bezp: 0,
-                nar_dyscyplina: 0,
-                nar_bron: 0,
-                nar_ochr_zdr: 0,
-                nar_zakwat: 0,
+                sankcjeId: sankcjaRowId, // Powiązanie z wierszem Sankcje
+                data: sankcjaRow.data || '',
+                nr_jw: '',
+                nazwa_jw: '',
+                miejsce: '',
+                podleglosc: '',
+                razem: 0,
+                wpm: wpm,
+                ppm: ppm,
                 pozostale: 0,
-
-                // Stan - PUSTE
-                stan_razem: 0,
-                pod_wplywem_alk: 0,
-                nietrzezwy: 0,
-                pod_wplywem_srod: 0,
-
-                // Rodzaj interwencji - mapuj sankcje
-                rodzaj_razem: 0,
-                zatrzymanie: 0,
-                doprowadzenie: 0,
-                wylegitymowanie: 0,
-                pouczenie: sankcjaRow.pouczenie || 0,
-                mandat_bool: sankcjaRow.mandat_bool || false,
-
-                // Inne pola - PUSTE
-                wysokosc_mandatu: sankcjaRow.wysokosc_mandatu || '',
-                w_czasie_sluzby: false, // PUSTE jak w wymaganiach
-                jzw_prowadzaca: '', // PUSTE
-                oddzial: '' // PUSTE
+                oddzial: ''
             };
 
-            // Oblicz rodzaj_razem
-            CalculationEngine.calculate('wykroczenia', newWykroczenieRow);
+            // Auto-oblicz RAZEM
+            CalculationEngine.calculate('wkrd', newWkrdRow);
 
-            // Dodaj do Wykroczenia
-            AppState.wykroczeniaData.push(newWykroczenieRow);
-        });
+            AppState.wkrdData.push(newWkrdRow);
+        }
 
-        // Zapisz Wykroczenia
-        Utils.saveToLocalStorage('aep_data_wykroczenia', AppState.wykroczeniaData);
+        // Zapisz WKRD
+        Utils.saveToLocalStorage('aep_data_wkrd', AppState.wkrdData);
     },
 
     saveDraft() {
@@ -6721,12 +6700,9 @@ const SankcjeManager = {
             return;
         }
 
-        // Synchronizuj do Wykroczenia przed zapisaniem
-        this.syncToWykroczenia();
-
         const success = Utils.saveToLocalStorage('aep_data_sankcje', AppState.sankcjeData);
         if (success) {
-            alert('Arkusz zapisany pomyślnie\n\nRekordy zostały zsynchronizowane do Wykroczenia');
+            alert('Arkusz zapisany pomyślnie');
         } else {
             alert('Błąd podczas zapisywania');
         }
@@ -7137,6 +7113,11 @@ const SankcjeManager = {
 
             // Auto-oblicz pola RAZEM używając CalculationEngine
             CalculationEngine.calculate('sankcje', row);
+
+            // Synchronizuj do WKRD jeśli zmieniono WPM lub PPM
+            if (field === 'wpm' || field === 'ppm') {
+                this.syncToWKRD(id);
+            }
 
             this.renderRows();
             this.updateToolbarState();
