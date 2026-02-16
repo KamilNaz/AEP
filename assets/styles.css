@@ -1586,6 +1586,42 @@ body {
     color: rgba(156, 163, 175, 0.6);
 }
 
+/* Disabled styles for all input types across all modules */
+.cell-input-number:disabled,
+.cell-input:disabled,
+.cell-input-date:disabled,
+.cell-input-small:disabled,
+.wykroczenia-input-number:disabled,
+.wykroczenia-input-date:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(75, 85, 99, 0.3);
+    border-color: rgba(156, 163, 175, 0.3);
+    color: rgba(156, 163, 175, 0.6);
+}
+
+/* Disabled styles for all select types across all modules */
+.cell-select:disabled,
+.wykroczenia-select:disabled,
+.patrole-select:disabled,
+.pilotaze-select:disabled,
+.sankcje-select:disabled,
+.spb-select:disabled,
+.wkrd-select:disabled,
+.zdarzenia-select:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(75, 85, 99, 0.3);
+    border-color: rgba(156, 163, 175, 0.3);
+    color: rgba(156, 163, 175, 0.6);
+}
+
+/* Disabled checkboxes */
+input[type="checkbox"]:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 .patrole-select {
     cursor: pointer;
     appearance: none;
