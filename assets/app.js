@@ -3722,6 +3722,10 @@ const WykroczeniaManager = {
             const hasValidationError = !validation.valid;
             const errorClass = hasValidationError ? 'wykroczenia-validation-error' : '';
 
+            // Wzajemne blokowanie pól
+            const stanDisabled = this.getStanDisabledStates(row);
+            const rodzajDisabled = this.getRodzajInterwencjiDisabledStates(row);
+
             return `
                 <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''} ${groupClass} ${rowTypeClass}">
                     <td class="col-lp-value">
@@ -3803,27 +3807,32 @@ const WykroczeniaManager = {
                     <!-- Stan -->
                     <td class="col-razem-value">${stanRazem}</td>
                     <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pod_wplywem_alk || 0}"
-                           ${isChildRow ? 'disabled' : ''}
+                           ${stanDisabled.pod_wplywem_alk ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pod_wplywem_alk', parseInt(this.value) || 0)"></td>
                     <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.nietrzezwy || 0}"
-                           ${isChildRow ? 'disabled' : ''}
+                           ${stanDisabled.nietrzezwy ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'nietrzezwy', parseInt(this.value) || 0)"></td>
                     <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pod_wplywem_srod || 0}"
-                           ${isChildRow ? 'disabled' : ''}
+                           ${stanDisabled.pod_wplywem_srod ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pod_wplywem_srod', parseInt(this.value) || 0)"></td>
 
                     <!-- Rodzaj interwencji -->
                     <td class="col-razem-value ${errorClass}">${rodzajRazem}</td>
                     <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.zatrzymanie || 0}"
+                           ${rodzajDisabled.zatrzymanie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'zatrzymanie', parseInt(this.value) || 0)"></td>
                     <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.doprowadzenie || 0}"
+                           ${rodzajDisabled.doprowadzenie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'doprowadzenie', parseInt(this.value) || 0)"></td>
                     <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.wylegitymowanie || 0}"
+                           ${rodzajDisabled.wylegitymowanie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'wylegitymowanie', parseInt(this.value) || 0)"></td>
                     <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pouczenie || 0}"
+                           ${rodzajDisabled.pouczenie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pouczenie', parseInt(this.value) || 0)"></td>
                     <td class="checkbox-cell ${errorClass}">
                         <input type="checkbox" ${row.mandat_bool ? 'checked' : ''}
+                               ${rodzajDisabled.mandat_bool ? 'disabled' : ''}
                                onchange="WykroczeniaManager.updateField(${row.id}, 'mandat_bool', this.checked)">
                     </td>
                     <td>
@@ -3855,6 +3864,63 @@ const WykroczeniaManager = {
 
         this.updateClearButtonState();
         this.updateToolbarState();
+    },
+
+    /**
+     * Sprawdza które pola Stan powinny być disabled
+     * Reguła: jeśli 1 stan wybrany (wartość > 0), pozostałe 2 disabled
+     */
+    getStanDisabledStates(row) {
+        const disabled = {
+            pod_wplywem_alk: false,
+            nietrzezwy: false,
+            pod_wplywem_srod: false
+        };
+
+        const stanTypes = ['pod_wplywem_alk', 'nietrzezwy', 'pod_wplywem_srod'];
+        const selectedTypes = stanTypes.filter(type => (row[type] || 0) > 0);
+
+        if (selectedTypes.length >= 1) {
+            stanTypes.forEach(type => {
+                if (!selectedTypes.includes(type)) {
+                    disabled[type] = true;
+                }
+            });
+        }
+
+        return disabled;
+    },
+
+    /**
+     * Sprawdza które pola Rodzaj interwencji powinny być disabled
+     * Reguła: jeśli 1 rodzaj wybrany (wartość > 0 lub true), pozostałe 4 disabled
+     */
+    getRodzajInterwencjiDisabledStates(row) {
+        const disabled = {
+            zatrzymanie: false,
+            doprowadzenie: false,
+            wylegitymowanie: false,
+            pouczenie: false,
+            mandat_bool: false
+        };
+
+        const rodzajTypes = ['zatrzymanie', 'doprowadzenie', 'wylegitymowanie', 'pouczenie', 'mandat_bool'];
+        const selectedTypes = rodzajTypes.filter(type => {
+            if (type === 'mandat_bool') {
+                return row[type] === true;
+            }
+            return (row[type] || 0) > 0;
+        });
+
+        if (selectedTypes.length >= 1) {
+            rodzajTypes.forEach(type => {
+                if (!selectedTypes.includes(type)) {
+                    disabled[type] = true;
+                }
+            });
+        }
+
+        return disabled;
     },
 
     addRow() {
@@ -5423,9 +5489,12 @@ const WKRDManager = {
         tbody.innerHTML = dataToRender.map((row, index) => {
             const lp = index + 1;
             const isSelected = AppState.wkrdSelectedRows.has(row.id);
-            
-            const razem = (parseInt(row.wpm) || 0) + (parseInt(row.ppm) || 0);
+
+            const razem = (parseInt(row.wpm) || 0) + (parseInt(row.ppm) || 0) + (parseInt(row.pozostale) || 0);
             const month = this.getMonthFromDate(row.data);
+
+            // Wzajemne blokowanie pól Pojazdy
+            const pojazdyDisabled = this.getPojazdyDisabledStates(row);
 
             return `
                 <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
@@ -5469,23 +5538,26 @@ const WKRDManager = {
                     </td>
                     <td class="col-razem">${razem}</td>
                     <td>
-                        <input type="number" 
-                               value="${row.wpm || 0}" 
+                        <input type="number"
+                               value="${row.wpm || 0}"
                                min="0"
+                               ${pojazdyDisabled.wpm ? 'disabled' : ''}
                                onchange="WKRDManager.updateField(${row.id}, 'wpm', this.value)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <input type="number" 
-                               value="${row.ppm || 0}" 
+                        <input type="number"
+                               value="${row.ppm || 0}"
                                min="0"
+                               ${pojazdyDisabled.ppm ? 'disabled' : ''}
                                onchange="WKRDManager.updateField(${row.id}, 'ppm', this.value)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <input type="number" 
-                               value="${row.pozostale || 0}" 
+                        <input type="number"
+                               value="${row.pozostale || 0}"
                                min="0"
+                               ${pojazdyDisabled.pozostale ? 'disabled' : ''}
                                onchange="WKRDManager.updateField(${row.id}, 'pozostale', this.value)"
                                class="cell-input-number">
                     </td>
@@ -5501,6 +5573,31 @@ const WKRDManager = {
         
         // Aktualizuj scrollbar po każdej zmianie danych
         this.syncScrollbars();
+    },
+
+    /**
+     * Sprawdza które pola Pojazdy powinny być disabled
+     * Reguła: jeśli 1 typ wybrany (wartość > 0), pozostałe 2 disabled
+     */
+    getPojazdyDisabledStates(row) {
+        const disabled = {
+            wpm: false,
+            ppm: false,
+            pozostale: false
+        };
+
+        const pojazdyTypes = ['wpm', 'ppm', 'pozostale'];
+        const selectedTypes = pojazdyTypes.filter(type => (row[type] || 0) > 0);
+
+        if (selectedTypes.length >= 1) {
+            pojazdyTypes.forEach(type => {
+                if (!selectedTypes.includes(type)) {
+                    disabled[type] = true;
+                }
+            });
+        }
+
+        return disabled;
     },
 
     addRow() {
@@ -6822,6 +6919,9 @@ const SankcjeManager = {
             // Walidacja Rodzaj pojazdu - 1 wybrany → 3 disabled
             const vehicleDisabled = this.getVehicleTypeDisabledStates(row);
 
+            // Walidacja Sankcja - 1 wybrana → 4 disabled
+            const sankcjaDisabled = this.getSankcjaDisabledStates(row);
+
             const rowTypeClass = isChildRow ? 'child-row' : 'main-row';
 
             return `
@@ -6942,7 +7042,7 @@ const SankcjeManager = {
                         <input type="number"
                                value="${row.zatrzymanie_dr || 0}"
                                min="0" max="1"
-                               ${isChildRow ? 'disabled' : ''}
+                               ${sankcjaDisabled.zatrzymanie_dr ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'zatrzymanie_dr', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
@@ -6950,21 +7050,21 @@ const SankcjeManager = {
                         <input type="number"
                                value="${row.zatrzymanie_pj || 0}"
                                min="0" max="1"
-                               ${isChildRow ? 'disabled' : ''}
+                               ${sankcjaDisabled.zatrzymanie_pj ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'zatrzymanie_pj', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
                     <td>
                         <input type="checkbox"
                                ${row.mandat_bool ? 'checked' : ''}
-                               ${isChildRow ? 'disabled' : ''}
+                               ${sankcjaDisabled.mandat_bool ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'mandat_bool', this.checked)">
                     </td>
                     <td>
                         <input type="number"
                                value="${row.pouczenie || 0}"
                                min="0" max="1"
-                               ${isChildRow ? 'disabled' : ''}
+                               ${sankcjaDisabled.pouczenie ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'pouczenie', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
@@ -6972,7 +7072,7 @@ const SankcjeManager = {
                         <input type="number"
                                value="${row.inne_sankcja || 0}"
                                min="0" max="1"
-                               ${isChildRow ? 'disabled' : ''}
+                               ${sankcjaDisabled.inne_sankcja ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'inne_sankcja', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
@@ -6989,11 +7089,12 @@ const SankcjeManager = {
                                value="${row.pkt_karne || 0}"
                                min="0"
                                max="100"
+                               ${!row.mandat_bool ? 'disabled' : ''}
                                onchange="SankcjeManager.updateField(${row.id}, 'pkt_karne', parseInt(this.value) || 0)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <select onchange="SankcjeManager.updateField(${row.id}, 'wystawil', this.value)" class="cell-select">
+                        <select ${!row.mandat_bool ? 'disabled' : ''} onchange="SankcjeManager.updateField(${row.id}, 'wystawil', this.value)" class="cell-select">
                             <option value="">-</option>
                             ${this.zolnierzOptions.map(opt => `<option value="${opt}" ${row.wystawil === opt ? 'selected' : ''}>${opt}</option>`).join('')}
                         </select>
@@ -7039,6 +7140,40 @@ const SankcjeManager = {
         // Jeśli już wybrany 1 rodzaj, zablokuj pozostałe
         if (selectedTypes.length >= 1) {
             vehicleTypes.forEach(type => {
+                if (!selectedTypes.includes(type)) {
+                    disabled[type] = true;
+                }
+            });
+        }
+
+        return disabled;
+    },
+
+    /**
+     * Sprawdza które pola Sankcja powinny być disabled
+     * Reguła: jeśli 1 sankcja wybrana (wartość > 0 lub true), pozostałe 4 disabled
+     */
+    getSankcjaDisabledStates(row) {
+        const disabled = {
+            zatrzymanie_dr: false,
+            zatrzymanie_pj: false,
+            mandat_bool: false,
+            pouczenie: false,
+            inne_sankcja: false
+        };
+
+        // Sprawdź które sankcje są wybrane
+        const sankcjeTypes = ['zatrzymanie_dr', 'zatrzymanie_pj', 'mandat_bool', 'pouczenie', 'inne_sankcja'];
+        const selectedTypes = sankcjeTypes.filter(type => {
+            if (type === 'mandat_bool') {
+                return row[type] === true;
+            }
+            return (row[type] || 0) > 0;
+        });
+
+        // Jeśli już wybrana 1 sankcja, zablokuj pozostałe
+        if (selectedTypes.length >= 1) {
+            sankcjeTypes.forEach(type => {
                 if (!selectedTypes.includes(type)) {
                     disabled[type] = true;
                 }
@@ -7675,8 +7810,13 @@ const KonwojeManager = createBaseTableManager({
             const rodzajRazem = (parseInt(row.miejscowy) || 0) + (parseInt(row.zamiejscowy) || 0);
             const zleceniodawcaRazem = (parseInt(row.prokuratura) || 0) + (parseInt(row.sad) || 0) + 
                                        (parseInt(row.wlasne) || 0) + (row.jzw && row.jzw !== '' ? 1 : 0);
-            const coKonwojowanoRazem = (parseInt(row.dokumenty) || 0) + (parseInt(row.osoby) || 0) + 
+            const coKonwojowanoRazem = (parseInt(row.dokumenty) || 0) + (parseInt(row.osoby) || 0) +
                                         (parseInt(row.przedmioty) || 0);
+
+            // Wzajemne blokowanie pól
+            const rodzajDisabled = this.getRodzajKonwojuDisabledStates(row);
+            const zleceniodawcaDisabled = this.getZleceniodawcaDisabledStates(row);
+            const coKonwojowanoDisabled = this.getCoKonwojowanoDisabledStates(row);
 
             return `
                 <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
@@ -7701,6 +7841,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.miejscowy || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${rodzajDisabled.miejscowy ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'miejscowy', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7709,6 +7850,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.zamiejscowy || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${rodzajDisabled.zamiejscowy ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'zamiejscowy', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7734,6 +7876,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.prokuratura || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${zleceniodawcaDisabled.prokuratura ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'prokuratura', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7742,6 +7885,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.sad || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${zleceniodawcaDisabled.sad ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'sad', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7750,6 +7894,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.wlasne || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${zleceniodawcaDisabled.wlasne ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'wlasne', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7765,6 +7910,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.dokumenty || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${coKonwojowanoDisabled.dokumenty ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'dokumenty', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7773,6 +7919,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.osoby || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${coKonwojowanoDisabled.osoby ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'osoby', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7781,6 +7928,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.przedmioty || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${coKonwojowanoDisabled.przedmioty ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'przedmioty', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-select">
@@ -7801,6 +7949,36 @@ const KonwojeManager = createBaseTableManager({
         if (clearBtn) {
             clearBtn.disabled = AppState.konwojeData.length === 0;
         }
+    },
+
+    getRodzajKonwojuDisabledStates(row) {
+        const disabled = { miejscowy: false, zamiejscowy: false };
+        const types = ['miejscowy', 'zamiejscowy'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
+    },
+
+    getZleceniodawcaDisabledStates(row) {
+        const disabled = { prokuratura: false, sad: false, wlasne: false };
+        const types = ['prokuratura', 'sad', 'wlasne'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
+    },
+
+    getCoKonwojowanoDisabledStates(row) {
+        const disabled = { dokumenty: false, osoby: false, przedmioty: false };
+        const types = ['dokumenty', 'osoby', 'przedmioty'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
     },
 
     updateField(id, field, value) {
@@ -8910,6 +9088,26 @@ const ZdarzeniaManager = createBaseTableManager({
 
 // ============================================
 
+    getRodzajZdarzeniaDisabledStates(row) {
+        const disabled = { wypadek: false, kolizja: false };
+        const types = ['wypadek', 'kolizja'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
+    },
+
+    getRodzajPojazdZdarzeniaDisabledStates(row) {
+        const disabled = { wpm: false, ppm: false };
+        const types = ['wpm', 'ppm'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
+    },
+
     renderRows: function() {
         const tbody = document.getElementById('zdarzeniaTableBody');
         if (!tbody) return;
@@ -8982,6 +9180,10 @@ const ZdarzeniaManager = createBaseTableManager({
             const zdarzenieRazem = (parseInt(row.wypadek) || 0) + (parseInt(row.kolizja) || 0);
             const pojazdRazem = (parseInt(row.wpm) || 0) + (parseInt(row.ppm) || 0);
 
+            // Wzajemne blokowanie pól
+            const zdarzenieDisabled = this.getRodzajZdarzeniaDisabledStates(row);
+            const pojazdDisabled = this.getRodzajPojazdZdarzeniaDisabledStates(row);
+
             return `
                 <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
                     <td class="col-sticky-left col-lp">${index + 1}</td>
@@ -9030,35 +9232,40 @@ const ZdarzeniaManager = createBaseTableManager({
                     </td>
                     <td class="col-number col-razem">${zdarzenieRazem}</td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.wypadek || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.wypadek || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
+                               ${zdarzenieDisabled.wypadek ? 'disabled' : ''}
                                onchange="ZdarzeniaManager.updateField(${row.id}, 'wypadek', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.kolizja || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.kolizja || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
+                               ${zdarzenieDisabled.kolizja ? 'disabled' : ''}
                                onchange="ZdarzeniaManager.updateField(${row.id}, 'kolizja', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number col-razem">${pojazdRazem}</td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.wpm || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.wpm || ''}"
                                placeholder="0"
-                               min="0"
+                               min="0" max="1"
+                               ${pojazdDisabled.wpm ? 'disabled' : ''}
                                onchange="ZdarzeniaManager.updateField(${row.id}, 'wpm', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
-                        <input type="number" 
-                               class="cell-input-number" 
-                               value="${row.ppm || ''}" 
+                        <input type="number"
+                               class="cell-input-number"
+                               value="${row.ppm || ''}"
                                placeholder="0"
+                               min="0" max="1"
+                               ${pojazdDisabled.ppm ? 'disabled' : ''}
                                min="0"
                                onchange="ZdarzeniaManager.updateField(${row.id}, 'ppm', parseInt(this.value) || 0)">
                     </td>
@@ -10830,6 +11037,16 @@ const SPBManager = createBaseTableManager({
 
         this.renderRows();
         this.autoSave();
+    },
+
+    getPatrolServiceDisabledStates(row) {
+        const disabled = { zatrzymania: false, doprowadzenia: false, inne_patrol: false };
+        const types = ['zatrzymania', 'doprowadzenia', 'inne_patrol'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
     },
 
     renderRows: function() {
