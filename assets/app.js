@@ -3722,6 +3722,10 @@ const WykroczeniaManager = {
             const hasValidationError = !validation.valid;
             const errorClass = hasValidationError ? 'wykroczenia-validation-error' : '';
 
+            // Wzajemne blokowanie pól
+            const stanDisabled = this.getStanDisabledStates(row);
+            const rodzajDisabled = this.getRodzajInterwencjiDisabledStates(row);
+
             return `
                 <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''} ${groupClass} ${rowTypeClass}">
                     <td class="col-lp-value">
@@ -3803,27 +3807,32 @@ const WykroczeniaManager = {
                     <!-- Stan -->
                     <td class="col-razem-value">${stanRazem}</td>
                     <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pod_wplywem_alk || 0}"
-                           ${isChildRow ? 'disabled' : ''}
+                           ${stanDisabled.pod_wplywem_alk ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pod_wplywem_alk', parseInt(this.value) || 0)"></td>
                     <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.nietrzezwy || 0}"
-                           ${isChildRow ? 'disabled' : ''}
+                           ${stanDisabled.nietrzezwy ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'nietrzezwy', parseInt(this.value) || 0)"></td>
                     <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pod_wplywem_srod || 0}"
-                           ${isChildRow ? 'disabled' : ''}
+                           ${stanDisabled.pod_wplywem_srod ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pod_wplywem_srod', parseInt(this.value) || 0)"></td>
 
                     <!-- Rodzaj interwencji -->
                     <td class="col-razem-value ${errorClass}">${rodzajRazem}</td>
                     <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.zatrzymanie || 0}"
+                           ${rodzajDisabled.zatrzymanie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'zatrzymanie', parseInt(this.value) || 0)"></td>
                     <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.doprowadzenie || 0}"
+                           ${rodzajDisabled.doprowadzenie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'doprowadzenie', parseInt(this.value) || 0)"></td>
                     <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.wylegitymowanie || 0}"
+                           ${rodzajDisabled.wylegitymowanie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'wylegitymowanie', parseInt(this.value) || 0)"></td>
                     <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pouczenie || 0}"
+                           ${rodzajDisabled.pouczenie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pouczenie', parseInt(this.value) || 0)"></td>
                     <td class="checkbox-cell ${errorClass}">
                         <input type="checkbox" ${row.mandat_bool ? 'checked' : ''}
+                               ${rodzajDisabled.mandat_bool ? 'disabled' : ''}
                                onchange="WykroczeniaManager.updateField(${row.id}, 'mandat_bool', this.checked)">
                     </td>
                     <td>
@@ -3855,6 +3864,63 @@ const WykroczeniaManager = {
 
         this.updateClearButtonState();
         this.updateToolbarState();
+    },
+
+    /**
+     * Sprawdza które pola Stan powinny być disabled
+     * Reguła: jeśli 1 stan wybrany (wartość > 0), pozostałe 2 disabled
+     */
+    getStanDisabledStates(row) {
+        const disabled = {
+            pod_wplywem_alk: false,
+            nietrzezwy: false,
+            pod_wplywem_srod: false
+        };
+
+        const stanTypes = ['pod_wplywem_alk', 'nietrzezwy', 'pod_wplywem_srod'];
+        const selectedTypes = stanTypes.filter(type => (row[type] || 0) > 0);
+
+        if (selectedTypes.length >= 1) {
+            stanTypes.forEach(type => {
+                if (!selectedTypes.includes(type)) {
+                    disabled[type] = true;
+                }
+            });
+        }
+
+        return disabled;
+    },
+
+    /**
+     * Sprawdza które pola Rodzaj interwencji powinny być disabled
+     * Reguła: jeśli 1 rodzaj wybrany (wartość > 0 lub true), pozostałe 4 disabled
+     */
+    getRodzajInterwencjiDisabledStates(row) {
+        const disabled = {
+            zatrzymanie: false,
+            doprowadzenie: false,
+            wylegitymowanie: false,
+            pouczenie: false,
+            mandat_bool: false
+        };
+
+        const rodzajTypes = ['zatrzymanie', 'doprowadzenie', 'wylegitymowanie', 'pouczenie', 'mandat_bool'];
+        const selectedTypes = rodzajTypes.filter(type => {
+            if (type === 'mandat_bool') {
+                return row[type] === true;
+            }
+            return (row[type] || 0) > 0;
+        });
+
+        if (selectedTypes.length >= 1) {
+            rodzajTypes.forEach(type => {
+                if (!selectedTypes.includes(type)) {
+                    disabled[type] = true;
+                }
+            });
+        }
+
+        return disabled;
     },
 
     addRow() {
