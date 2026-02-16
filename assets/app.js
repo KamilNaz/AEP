@@ -7810,8 +7810,13 @@ const KonwojeManager = createBaseTableManager({
             const rodzajRazem = (parseInt(row.miejscowy) || 0) + (parseInt(row.zamiejscowy) || 0);
             const zleceniodawcaRazem = (parseInt(row.prokuratura) || 0) + (parseInt(row.sad) || 0) + 
                                        (parseInt(row.wlasne) || 0) + (row.jzw && row.jzw !== '' ? 1 : 0);
-            const coKonwojowanoRazem = (parseInt(row.dokumenty) || 0) + (parseInt(row.osoby) || 0) + 
+            const coKonwojowanoRazem = (parseInt(row.dokumenty) || 0) + (parseInt(row.osoby) || 0) +
                                         (parseInt(row.przedmioty) || 0);
+
+            // Wzajemne blokowanie pól
+            const rodzajDisabled = this.getRodzajKonwojuDisabledStates(row);
+            const zleceniodawcaDisabled = this.getZleceniodawcaDisabledStates(row);
+            const coKonwojowanoDisabled = this.getCoKonwojowanoDisabledStates(row);
 
             return `
                 <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
@@ -7836,6 +7841,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.miejscowy || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${rodzajDisabled.miejscowy ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'miejscowy', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7844,6 +7850,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.zamiejscowy || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${rodzajDisabled.zamiejscowy ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'zamiejscowy', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7869,6 +7876,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.prokuratura || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${zleceniodawcaDisabled.prokuratura ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'prokuratura', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7877,6 +7885,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.sad || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${zleceniodawcaDisabled.sad ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'sad', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7885,6 +7894,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.wlasne || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${zleceniodawcaDisabled.wlasne ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'wlasne', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7900,6 +7910,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.dokumenty || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${coKonwojowanoDisabled.dokumenty ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'dokumenty', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7908,6 +7919,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.osoby || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${coKonwojowanoDisabled.osoby ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'osoby', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-number">
@@ -7916,6 +7928,7 @@ const KonwojeManager = createBaseTableManager({
                                value="${row.przedmioty || ''}"
                                placeholder="0"
                                min="0" max="1"
+                               ${coKonwojowanoDisabled.przedmioty ? 'disabled' : ''}
                                onchange="KonwojeManager.updateField(${row.id}, 'przedmioty', parseInt(this.value) || 0)">
                     </td>
                     <td class="col-select">
@@ -7936,6 +7949,36 @@ const KonwojeManager = createBaseTableManager({
         if (clearBtn) {
             clearBtn.disabled = AppState.konwojeData.length === 0;
         }
+    },
+
+    getRodzajKonwojuDisabledStates(row) {
+        const disabled = { miejscowy: false, zamiejscowy: false };
+        const types = ['miejscowy', 'zamiejscowy'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
+    },
+
+    getZleceniodawcaDisabledStates(row) {
+        const disabled = { prokuratura: false, sad: false, wlasne: false };
+        const types = ['prokuratura', 'sad', 'wlasne'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
+    },
+
+    getCoKonwojowanoDisabledStates(row) {
+        const disabled = { dokumenty: false, osoby: false, przedmioty: false };
+        const types = ['dokumenty', 'osoby', 'przedmioty'];
+        const selected = types.filter(t => (row[t] || 0) > 0);
+        if (selected.length >= 1) {
+            types.forEach(t => { if (!selected.includes(t)) disabled[t] = true; });
+        }
+        return disabled;
     },
 
     updateField(id, field, value) {
