@@ -5489,9 +5489,12 @@ const WKRDManager = {
         tbody.innerHTML = dataToRender.map((row, index) => {
             const lp = index + 1;
             const isSelected = AppState.wkrdSelectedRows.has(row.id);
-            
-            const razem = (parseInt(row.wpm) || 0) + (parseInt(row.ppm) || 0);
+
+            const razem = (parseInt(row.wpm) || 0) + (parseInt(row.ppm) || 0) + (parseInt(row.pozostale) || 0);
             const month = this.getMonthFromDate(row.data);
+
+            // Wzajemne blokowanie pól Pojazdy
+            const pojazdyDisabled = this.getPojazdyDisabledStates(row);
 
             return `
                 <tr data-id="${row.id}" class="${isSelected ? 'selected' : ''}">
@@ -5535,23 +5538,26 @@ const WKRDManager = {
                     </td>
                     <td class="col-razem">${razem}</td>
                     <td>
-                        <input type="number" 
-                               value="${row.wpm || 0}" 
+                        <input type="number"
+                               value="${row.wpm || 0}"
                                min="0"
+                               ${pojazdyDisabled.wpm ? 'disabled' : ''}
                                onchange="WKRDManager.updateField(${row.id}, 'wpm', this.value)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <input type="number" 
-                               value="${row.ppm || 0}" 
+                        <input type="number"
+                               value="${row.ppm || 0}"
                                min="0"
+                               ${pojazdyDisabled.ppm ? 'disabled' : ''}
                                onchange="WKRDManager.updateField(${row.id}, 'ppm', this.value)"
                                class="cell-input-number">
                     </td>
                     <td>
-                        <input type="number" 
-                               value="${row.pozostale || 0}" 
+                        <input type="number"
+                               value="${row.pozostale || 0}"
                                min="0"
+                               ${pojazdyDisabled.pozostale ? 'disabled' : ''}
                                onchange="WKRDManager.updateField(${row.id}, 'pozostale', this.value)"
                                class="cell-input-number">
                     </td>
@@ -5567,6 +5573,31 @@ const WKRDManager = {
         
         // Aktualizuj scrollbar po każdej zmianie danych
         this.syncScrollbars();
+    },
+
+    /**
+     * Sprawdza które pola Pojazdy powinny być disabled
+     * Reguła: jeśli 1 typ wybrany (wartość > 0), pozostałe 2 disabled
+     */
+    getPojazdyDisabledStates(row) {
+        const disabled = {
+            wpm: false,
+            ppm: false,
+            pozostale: false
+        };
+
+        const pojazdyTypes = ['wpm', 'ppm', 'pozostale'];
+        const selectedTypes = pojazdyTypes.filter(type => (row[type] || 0) > 0);
+
+        if (selectedTypes.length >= 1) {
+            pojazdyTypes.forEach(type => {
+                if (!selectedTypes.includes(type)) {
+                    disabled[type] = true;
+                }
+            });
+        }
+
+        return disabled;
     },
 
     addRow() {
