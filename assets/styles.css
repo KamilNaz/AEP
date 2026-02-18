@@ -3889,8 +3889,10 @@ canvas {
     opacity: 0.4;
     cursor: not-allowed;
     background: rgba(75, 85, 99, 0.3);
+    background-image: none;
     border-color: rgba(156, 163, 175, 0.3);
     color: rgba(156, 163, 175, 0.6);
+    padding-right: 0.2rem;
 }
 
 /* Kolumna modal button */
@@ -4272,8 +4274,10 @@ canvas {
     opacity: 0.4;
     cursor: not-allowed;
     background: rgba(75, 85, 99, 0.3);
+    background-image: none;
     border-color: rgba(156, 163, 175, 0.3);
     color: rgba(156, 163, 175, 0.6);
+    padding-right: 0.2rem;
 }
 
 .przyczyna-chips-container,
