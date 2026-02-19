@@ -3720,8 +3720,8 @@ const WykroczeniaManager = {
             // Dla podwierszy: Stan RAZEM = 0 (zablokowane), Rodzaj interwencji RAZEM = 0 lub 1
             // Dla wiersza głównego: RAZEM = własne pola + wkład z każdego podwiersza (1 za podwiersz z wybraną interwencją)
             const displayStanRazem = isChildRow ? 0 : stanRazem;
-            const subrowsRodzajSum = groupRows
-                .filter(r => r.isMainRow === false)
+            const subrowsRodzajSum = isChildRow ? 0 : groupRows
+                .filter(r => r.id !== row.id)
                 .reduce((sum, r) => {
                     const subSum = (r.zatrzymanie || 0) + (r.doprowadzenie || 0) + (r.wylegitymowanie || 0) +
                                    (r.pouczenie || 0) + (r.mandat_bool ? 1 : 0);
