@@ -55,17 +55,18 @@ const TabularExporter = {
                 {label: 'Data', rowspan: 2},
                 {label: 'Rodzaj Patrolu', colspan: 6},
                 {label: 'Ilość', colspan: 3},
-                {label: 'Współdziałanie', colspan: 6},
+                {label: 'Współdziałanie', colspan: 8},
                 {label: 'JW Prow.', rowspan: 2},
                 {label: 'Oddz. ŻW', rowspan: 2}
             ],
             subheaders: [
                 'RAZ', 'Int.', 'Pie.', 'Wod.', 'Zmo.', 'WKR',  // Rodzaj Patrolu
                 'Żand', 'WPM', 'Mot.',  // Ilość
-                'RAZ', 'Pol', 'SG', 'SOP', 'SOK', 'Inn'  // Współdziałanie
+                'RAZ', 'Pol', 'SG', 'SOP', 'SOK', 'Inn', 'Prew.', 'RD'  // Współdziałanie + typy
             ],
-            fields: ['month', 'date', 'razem_rodzaj', 'interven', 'pieszych', 'wodnych', 'zmot', 'wkrd',
+            fields: ['month', 'date', 'razem_rodzaj', 'interwen', 'pieszych', 'wodnych', 'zmot', 'wkrd',
                      'zand', 'wpm', 'motorowek', 'razem_wspolz', 'policja', 'sg', 'sop', 'sok', 'inne',
+                     '_prew_count', '_rd_count',
                      'jwProwadzaca', 'oddzialZW']
         },
 
@@ -384,6 +385,14 @@ const TabularExporter = {
 
             // Data rows
             filteredData.forEach(row => {
+                // Oblicz Prew./RD per wiersz dla modułu patrole
+                if (module === 'patrole') {
+                    const coopFields = ['policja', 'sg', 'sop', 'sok', 'inne'];
+                    row._prew_count = coopFields.reduce((s, f) =>
+                        s + (row[f + '_type'] === 'Prew.' ? (row[f] || 0) : 0), 0);
+                    row._rd_count = coopFields.reduce((s, f) =>
+                        s + (row[f + '_type'] === 'RD' ? (row[f] || 0) : 0), 0);
+                }
                 const dataRow = structure.fields.map(field => {
                     const value = row[field];
                     if (Array.isArray(value)) return value.join(', ');
@@ -399,94 +408,139 @@ const TabularExporter = {
             }
         });
 
-        // Create workbook
+        // ── Tworzenie skoroszytu ──────────────────────────────────────────
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(worksheetData);
 
-        // Auto-size columns
+        // ── Auto-szerokość kolumn ─────────────────────────────────────────
         const colWidths = [];
         worksheetData.forEach(row => {
             row.forEach((cell, colIndex) => {
-                const cellLength = cell ? String(cell).length : 10;
-                colWidths[colIndex] = Math.max(colWidths[colIndex] || 10, cellLength + 2);
+                const cellLength = cell ? String(cell).length : 6;
+                colWidths[colIndex] = Math.max(colWidths[colIndex] || 6, cellLength + 2);
             });
         });
-        ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w, 50) }));
+        ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w, 40) }));
 
-        // Apply styling (same as before but adapted to new structure)
-        const range = XLSX.utils.decode_range(ws['!ref']);
-        const headerRows = new Set();
+        // ── Identyfikacja typów wierszy ───────────────────────────────────
+        // titleRow    = wiersz 0 (tytuł raportu)
+        // metaRows    = wiersze 1-3 (data, zakres)
+        // sectionRows = nagłówki modułu ("Patrole", "Wykroczenia" …)
+        // subRow      = "Liczba rekordów: X"
+        // header1Rows = nagłówki kolumn poziom 1
+        // header2Rows = nagłówki kolumn poziom 2
+        // dataRows    = dane
 
-        // Find header rows
-        worksheetData.forEach((row, rowIndex) => {
-            if (rowIndex === 0) headerRows.add(rowIndex);
-            if (row[0] && typeof row[0] === 'string' &&
-                (row[0].includes('Patrole') || row[0].includes('Wykroczenia') ||
-                 row[0].includes('WKRD') || row[0].includes('Sankcje') ||
-                 row[0].includes('Konwoje') || row[0].includes('ŚPB') ||
-                 row[0].includes('Pilotaże') || row[0].includes('Zdarzenia'))) {
-                headerRows.add(rowIndex);
-                headerRows.add(rowIndex + 3); // Level 1 header
-                headerRows.add(rowIndex + 4); // Level 2 header
+        const moduleNames = Object.values(this.moduleNames); // ['Patrole', 'Wykroczenia', …]
+
+        const rowMeta   = new Set(); // szare info
+        const rowSect   = new Set(); // granatowe – nazwa modułu
+        const rowSub    = new Set(); // ciemnoszare – "Liczba rekordów"
+        const rowHead1  = new Set(); // niebieskie – L1 header
+        const rowHead2  = new Set(); // jasnoniebieskie – L2 header
+
+        worksheetData.forEach((row, i) => {
+            const v = row[0] != null ? String(row[0]) : '';
+            if (i === 0) return; // tytuł – obsłużony osobno
+            if (i <= 3 && v !== '') { rowMeta.add(i); return; }
+            if (moduleNames.some(n => v === n)) {
+                rowSect.add(i);
+                rowSub.add(i + 1);
+                rowHead1.add(i + 3);
+                rowHead2.add(i + 4);
             }
         });
 
-        // Apply styles
+        // Styl pomocniczy
+        const border = (color = '000000', style = 'thin') => ({
+            top: { style, color: { rgb: color } },
+            bottom: { style, color: { rgb: color } },
+            left: { style, color: { rgb: color } },
+            right: { style, color: { rgb: color } }
+        });
+        const fill = rgb => ({ patternType: 'solid', fgColor: { rgb } });
+        const font = (opts = {}) => ({
+            name: 'Calibri', sz: opts.sz || 10,
+            bold: opts.bold || false,
+            color: { rgb: opts.color || '000000' }
+        });
+
+        // ── Aplikowanie styli ─────────────────────────────────────────────
+        const range = XLSX.utils.decode_range(ws['!ref']);
         for (let R = range.s.r; R <= range.e.r; ++R) {
             for (let C = range.s.c; C <= range.e.c; ++C) {
-                const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-                if (!ws[cellAddress]) continue;
-                const cell = ws[cellAddress];
-                if (!cell.s) cell.s = {};
+                const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+                const cell = ws[addr];
 
                 if (R === 0) {
+                    // Tytuł
                     cell.s = {
-                        font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
-                        fill: { fgColor: { rgb: "4B5563" } },
-                        alignment: { horizontal: "center", vertical: "center" },
-                        border: {
-                            top: { style: "thin", color: { rgb: "000000" } },
-                            bottom: { style: "thin", color: { rgb: "000000" } },
-                            left: { style: "thin", color: { rgb: "000000" } },
-                            right: { style: "thin", color: { rgb: "000000" } }
-                        }
+                        font: font({ bold: true, sz: 14, color: 'FFFFFF' }),
+                        fill: fill('1E3A5F'),
+                        alignment: { horizontal: 'center', vertical: 'center' },
+                        border: border('1E3A5F')
                     };
-                } else if (headerRows.has(R)) {
+                } else if (rowMeta.has(R)) {
+                    // Meta (data wygenerowania, zakres)
                     cell.s = {
-                        font: { bold: true, sz: 10, color: { rgb: "FFFFFF" } },
-                        fill: { fgColor: { rgb: "6B7280" } },
-                        alignment: { horizontal: "center", vertical: "center", wrapText: true },
-                        border: {
-                            top: { style: "thin", color: { rgb: "000000" } },
-                            bottom: { style: "thin", color: { rgb: "000000" } },
-                            left: { style: "thin", color: { rgb: "000000" } },
-                            right: { style: "thin", color: { rgb: "000000" } }
-                        }
+                        font: font({ sz: 9, color: '6B7280' }),
+                        fill: fill('F9FAFB'),
+                        alignment: { horizontal: 'left', vertical: 'center' },
+                        border: border('E5E7EB')
                     };
-                } else {
-                    const isEvenRow = R % 2 === 0;
+                } else if (rowSect.has(R)) {
+                    // Nazwa modułu
                     cell.s = {
-                        font: { sz: 9 },
-                        fill: { fgColor: { rgb: isEvenRow ? "FFFFFF" : "F3F4F6" } },
-                        alignment: { horizontal: "left", vertical: "center", wrapText: true },
-                        border: {
-                            top: { style: "thin", color: { rgb: "E5E7EB" } },
-                            bottom: { style: "thin", color: { rgb: "E5E7EB" } },
-                            left: { style: "thin", color: { rgb: "E5E7EB" } },
-                            right: { style: "thin", color: { rgb: "E5E7EB" } }
-                        }
+                        font: font({ bold: true, sz: 11, color: 'FFFFFF' }),
+                        fill: fill('1D4ED8'),
+                        alignment: { horizontal: 'left', vertical: 'center' },
+                        border: border('1E40AF')
+                    };
+                } else if (rowSub.has(R)) {
+                    // "Liczba rekordów"
+                    cell.s = {
+                        font: font({ sz: 9, color: 'FFFFFF' }),
+                        fill: fill('3B82F6'),
+                        alignment: { horizontal: 'left', vertical: 'center' },
+                        border: border('2563EB')
+                    };
+                } else if (rowHead1.has(R)) {
+                    // Nagłówek L1
+                    cell.s = {
+                        font: font({ bold: true, sz: 9, color: 'FFFFFF' }),
+                        fill: fill('374151'),
+                        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                        border: border('4B5563')
+                    };
+                } else if (rowHead2.has(R)) {
+                    // Nagłówek L2
+                    cell.s = {
+                        font: font({ bold: true, sz: 9, color: 'FFFFFF' }),
+                        fill: fill('4B5563'),
+                        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                        border: border('6B7280')
+                    };
+                } else if (String(ws[addr].v).trim() !== '') {
+                    // Dane – alternacja wierszy
+                    const isEven = R % 2 === 0;
+                    cell.s = {
+                        font: font({ sz: 9 }),
+                        fill: fill(isEven ? 'FFFFFF' : 'EFF6FF'),
+                        alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
+                        border: border('D1D5DB')
                     };
                 }
             }
         }
 
+        // Zamrożenie nagłówków
         ws['!freeze'] = { xSplit: 0, ySplit: 4, topLeftCell: 'A5', activePane: 'bottomLeft' };
-        XLSX.utils.book_append_sheet(wb, ws, 'Raport');
 
+        XLSX.utils.book_append_sheet(wb, ws, 'Raport');
         const dateStr = dateTo || new Date().toISOString().split('T')[0];
         const filename = `AEP_Raport_Tabelaryczny_${dateStr}.xlsx`;
         XLSX.writeFile(wb, filename);
-
         console.log(`✅ XLSX downloaded: ${filename}`);
     },
 
@@ -639,6 +693,14 @@ const TabularExporter = {
 
             // Body data
             const body = filteredData.map(row => {
+                // Oblicz Prew./RD per wiersz dla modułu patrole
+                if (module === 'patrole') {
+                    const coopFields = ['policja', 'sg', 'sop', 'sok', 'inne'];
+                    row._prew_count = coopFields.reduce((s, f) =>
+                        s + (row[f + '_type'] === 'Prew.' ? (row[f] || 0) : 0), 0);
+                    row._rd_count = coopFields.reduce((s, f) =>
+                        s + (row[f + '_type'] === 'RD' ? (row[f] || 0) : 0), 0);
+                }
                 return structure.fields.map(field => {
                     const value = row[field];
                     if (Array.isArray(value)) return value.join(', ');
