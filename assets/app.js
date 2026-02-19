@@ -6900,9 +6900,15 @@ const SankcjeManager = {
             // RAZEM - suma dla całej grupy (główny + podwiersze)
             const rodzajRazem = groupRows.reduce((sum, r) =>
                 sum + (parseInt(r.wpm) || 0) + (parseInt(r.ppm) || 0) + (parseInt(r.pieszy) || 0) + (parseInt(r.pasazer) || 0), 0);
-            const sankcjaRazem = groupRows.reduce((sum, r) => 
-                sum + (parseInt(r.zatrzymanie_dr) || 0) + (parseInt(r.zatrzymanie_pj) || 0) + 
+            const sankcjaRazem = groupRows.reduce((sum, r) =>
+                sum + (parseInt(r.zatrzymanie_dr) || 0) + (parseInt(r.zatrzymanie_pj) || 0) +
                 (r.mandat_bool ? 1 : 0) + (parseInt(r.pouczenie) || 0) + (parseInt(r.inne_sankcja) || 0), 0);
+
+            // Dla podwierszy: Rodzaj pojazdu RAZEM = 0 (zablokowane), Sankcja RAZEM = 0 lub 1 (czy cokolwiek wybrano)
+            const displayRodzajRazem = isChildRow ? 0 : rodzajRazem;
+            const rowSankcjaSum = (parseInt(row.zatrzymanie_dr) || 0) + (parseInt(row.zatrzymanie_pj) || 0) +
+                (row.mandat_bool ? 1 : 0) + (parseInt(row.pouczenie) || 0) + (parseInt(row.inne_sankcja) || 0);
+            const displaySankcjaRazem = isChildRow ? (rowSankcjaSum > 0 ? 1 : 0) : sankcjaRazem;
             
             const month = this.getMonthFromDate(row.data);
 
@@ -6999,7 +7005,7 @@ const SankcjeManager = {
                                    title="Dziedziczone z wiersza głównego">
                         `}
                     </td>
-                    <td class="col-razem">${rodzajRazem}</td>
+                    <td class="col-razem${isChildRow ? ' col-razem-locked' : ''}">${displayRodzajRazem}</td>
                     <td>
                         <input type="number"
                                value="${row.wpm || 0}"
@@ -7037,7 +7043,7 @@ const SankcjeManager = {
                             <i class="fas fa-edit"></i> ${przyczynyTags || 'Wybierz'}
                         </button>
                     </td>
-                    <td class="col-razem">${sankcjaRazem}</td>
+                    <td class="col-razem${isChildRow ? ' col-razem-locked' : ''}">${displaySankcjaRazem}</td>
                     <td>
                         <input type="number"
                                value="${row.zatrzymanie_dr || 0}"
