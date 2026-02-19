@@ -1586,6 +1586,91 @@ body {
     color: rgba(156, 163, 175, 0.6);
 }
 
+/* Współdziałanie - wrapper komórki z badge */
+.coop-cell-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.coop-type-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+}
+
+.coop-type-badge:hover {
+    opacity: 0.75;
+}
+
+.coop-prew {
+    background: rgba(59, 130, 246, 0.25);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.coop-rd {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.coop-empty {
+    background: rgba(156, 163, 175, 0.15);
+    color: rgba(156, 163, 175, 0.7);
+    border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+/* Modal współdziałania - mały */
+.modal-content-small {
+    max-width: 300px;
+    width: 90%;
+}
+
+.btn-coop-type {
+    flex: 1;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    justify-content: center;
+}
+
+.btn-coop-prew {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.btn-coop-prew:hover {
+    background: rgba(59, 130, 246, 0.35);
+}
+
+.btn-coop-rd {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.btn-coop-rd:hover {
+    background: rgba(239, 68, 68, 0.35);
+}
+
+
 /* Disabled styles for all input types across all modules */
 .cell-input-number:disabled,
 .cell-input:disabled,
