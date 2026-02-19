@@ -189,12 +189,8 @@
         </div>
     </div>
 
-    <!-- SheetJS bazowy (zawsze działa, bez styli) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- xlsx-js-style: fork z obsługą cell.s - nadpisuje XLSX jeśli załaduje się poprawnie -->
-    <script src="https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx-js-style.min.js"
-            onerror="console.warn('xlsx-js-style CDN failed, using base xlsx (no styles)')"></script>
-    <script>if (typeof XLSXStyle !== 'undefined') { window.XLSX = XLSXStyle; }</script>
+    <!-- xlsx-js-style 1.2.0: fork SheetJS z pełną obsługą cell.s (style Excel) - lokalny plik -->
+    <script src="assets/xlsx-js-style.bundle.js"></script>
 
     <!-- Chart.js dla wykresów (legacy support) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
