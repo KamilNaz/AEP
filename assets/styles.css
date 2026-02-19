@@ -2983,6 +2983,13 @@ canvas {
     color: var(--focus);
 }
 
+.sankcje-table .col-razem-locked {
+    background: rgba(75, 85, 99, 0.2);
+    opacity: 0.4;
+    color: rgba(156, 163, 175, 0.6);
+    cursor: not-allowed;
+}
+
 .sankcje-table .col-lp {
     font-weight: 600;
     color: var(--accent);
