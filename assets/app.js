@@ -3713,14 +3713,13 @@ const WykroczeniaManager = {
                                  (row.nar_bron || 0) + (row.nar_ochr_zdr || 0) + (row.nar_zakwat || 0) + (row.pozostale || 0);
             
             const stanRazem = (row.pod_wplywem_alk || 0) + (row.nietrzezwy || 0) + (row.pod_wplywem_srod || 0);
-            
+
             const rodzajRazem = (row.zatrzymanie || 0) + (row.doprowadzenie || 0) + (row.wylegitymowanie || 0) +
                                (row.pouczenie || 0) + (row.mandat_bool ? 1 : 0);
 
-            // Walidacja: Podstawa → Rodzaj
-            const validation = this.validatePodstawaRodzaj(row);
-            const hasValidationError = !validation.valid;
-            const errorClass = hasValidationError ? 'wykroczenia-validation-error' : '';
+            // Dla podwierszy: Stan RAZEM = 0 (zablokowane), Rodzaj interwencji RAZEM = 0 lub 1
+            const displayStanRazem = isChildRow ? 0 : stanRazem;
+            const displayRodzajRazem = isChildRow ? (rodzajRazem > 0 ? 1 : 0) : rodzajRazem;
 
             // Wzajemne blokowanie pól
             const stanDisabled = this.getStanDisabledStates(row);
@@ -3733,7 +3732,6 @@ const WykroczeniaManager = {
                         ${!isChildRow && isGrouped && !isFirstInGroup ? '<i class="fas fa-link group-icon" title="Część tej samej interwencji"></i>' : ''}
                         ${!isChildRow && isGrouped && isFirstInGroup ? `<span class="group-counter" title="Grupa ${groupSize} wierszy">${lp}</span>` : ''}
                         ${!isChildRow && !isGrouped ? lp : ''}
-                        ${hasValidationError ? ' <i class="fas fa-exclamation-triangle" style="color: #ff4444;"></i>' : ''}
                     </td>
                     <td>
                         <input type="checkbox" class="row-checkbox" ${isSelected ? 'checked' : ''} 
@@ -3805,32 +3803,32 @@ const WykroczeniaManager = {
                     </td>
 
                     <!-- Stan -->
-                    <td class="col-razem-value">${stanRazem}</td>
-                    <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pod_wplywem_alk || 0}"
-                           ${stanDisabled.pod_wplywem_alk ? 'disabled' : ''}
+                    <td class="col-razem-value${isChildRow ? ' col-razem-locked' : ''}">${displayStanRazem}</td>
+                    <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${isChildRow ? 0 : (row.pod_wplywem_alk || 0)}"
+                           ${isChildRow || stanDisabled.pod_wplywem_alk ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pod_wplywem_alk', parseInt(this.value) || 0)"></td>
-                    <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.nietrzezwy || 0}"
-                           ${stanDisabled.nietrzezwy ? 'disabled' : ''}
+                    <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${isChildRow ? 0 : (row.nietrzezwy || 0)}"
+                           ${isChildRow || stanDisabled.nietrzezwy ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'nietrzezwy', parseInt(this.value) || 0)"></td>
-                    <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pod_wplywem_srod || 0}"
-                           ${stanDisabled.pod_wplywem_srod ? 'disabled' : ''}
+                    <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${isChildRow ? 0 : (row.pod_wplywem_srod || 0)}"
+                           ${isChildRow || stanDisabled.pod_wplywem_srod ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pod_wplywem_srod', parseInt(this.value) || 0)"></td>
 
                     <!-- Rodzaj interwencji -->
-                    <td class="col-razem-value ${errorClass}">${rodzajRazem}</td>
-                    <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.zatrzymanie || 0}"
+                    <td class="col-razem-value${isChildRow ? ' col-razem-locked' : ''}">${displayRodzajRazem}</td>
+                    <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.zatrzymanie || 0}"
                            ${rodzajDisabled.zatrzymanie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'zatrzymanie', parseInt(this.value) || 0)"></td>
-                    <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.doprowadzenie || 0}"
+                    <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.doprowadzenie || 0}"
                            ${rodzajDisabled.doprowadzenie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'doprowadzenie', parseInt(this.value) || 0)"></td>
-                    <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.wylegitymowanie || 0}"
+                    <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.wylegitymowanie || 0}"
                            ${rodzajDisabled.wylegitymowanie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'wylegitymowanie', parseInt(this.value) || 0)"></td>
-                    <td class="${errorClass}"><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pouczenie || 0}"
+                    <td><input type="number" min="0" max="1" class="wykroczenia-input-number" value="${row.pouczenie || 0}"
                            ${rodzajDisabled.pouczenie ? 'disabled' : ''}
                            onchange="WykroczeniaManager.updateField(${row.id}, 'pouczenie', parseInt(this.value) || 0)"></td>
-                    <td class="checkbox-cell ${errorClass}">
+                    <td class="checkbox-cell">
                         <input type="checkbox" ${row.mandat_bool ? 'checked' : ''}
                                ${rodzajDisabled.mandat_bool ? 'disabled' : ''}
                                onchange="WykroczeniaManager.updateField(${row.id}, 'mandat_bool', this.checked)">
@@ -4013,26 +4011,6 @@ const WykroczeniaManager = {
                         r.legitymowanyLocked = true;
                     }
                 });
-            }
-
-            // REAL-TIME WALIDACJA przy zmianie pól Podstawa lub Rodzaj
-            const isPodstawaField = ['nar_ubiorcz', 'inne_nar', 'nar_kk', 'wykr_porzadek',
-                                     'wykr_bezp', 'nar_dyscyplina', 'nar_bron', 'nar_ochr_zdr',
-                                     'nar_zakwat', 'pozostale'].includes(field);
-            const isRodzajField = ['zatrzymanie', 'doprowadzenie', 'wylegitymowanie',
-                                   'pouczenie', 'mandat_bool'].includes(field);
-
-            if (isPodstawaField || isRodzajField) {
-                const validation = ValidationEngine.validateRow('wykroczenia', row);
-                if (!validation.valid) {
-                    const rowIndex = AppState.wykroczeniaData.findIndex(r => r.id === id);
-                    const dependencyError = validation.errors.find(e => e.type === 'dependency');
-                    if (dependencyError) {
-                        setTimeout(() => {
-                            alert(`BŁĄD W WIERSZU ${rowIndex + 1}\n\n${dependencyError.message}!\n\nWybierz przynajmniej jedno działanie:\n• Zatrzymanie\n• Doprowadzenie\n• Wylegitymowanie\n• Pouczenie\n• Mandat`);
-                        }, 100);
-                    }
-                }
             }
 
             // Auto-oblicz pola RAZEM używając CalculationEngine
