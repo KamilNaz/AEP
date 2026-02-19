@@ -3718,8 +3718,16 @@ const WykroczeniaManager = {
                                (row.pouczenie || 0) + (row.mandat_bool ? 1 : 0);
 
             // Dla podwierszy: Stan RAZEM = 0 (zablokowane), Rodzaj interwencji RAZEM = 0 lub 1
+            // Dla wiersza głównego: RAZEM = własne pola + wkład z każdego podwiersza (1 za podwiersz z wybraną interwencją)
             const displayStanRazem = isChildRow ? 0 : stanRazem;
-            const displayRodzajRazem = isChildRow ? (rodzajRazem > 0 ? 1 : 0) : rodzajRazem;
+            const subrowsRodzajSum = groupRows
+                .filter(r => r.isMainRow === false)
+                .reduce((sum, r) => {
+                    const subSum = (r.zatrzymanie || 0) + (r.doprowadzenie || 0) + (r.wylegitymowanie || 0) +
+                                   (r.pouczenie || 0) + (r.mandat_bool ? 1 : 0);
+                    return sum + (subSum > 0 ? 1 : 0);
+                }, 0);
+            const displayRodzajRazem = isChildRow ? (rodzajRazem > 0 ? 1 : 0) : (rodzajRazem + subrowsRodzajSum);
 
             // Wzajemne blokowanie pól
             const stanDisabled = this.getStanDisabledStates(row);
