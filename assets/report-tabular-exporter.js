@@ -55,14 +55,16 @@ const TabularExporter = {
                 {label: 'Data', rowspan: 2},
                 {label: 'Rodzaj Patrolu', colspan: 6},
                 {label: 'Ilość', colspan: 3},
-                {label: 'Współdziałanie', colspan: 8},
+                {label: 'Współdziałanie z:', colspan: 6},
+                {label: 'Rodzaj Współ.', colspan: 2},
                 {label: 'JW Prow.', rowspan: 2},
                 {label: 'Oddz. ŻW', rowspan: 2}
             ],
             subheaders: [
                 'RAZ', 'Int.', 'Pie.', 'Wod.', 'Zmo.', 'WKR',  // Rodzaj Patrolu
                 'Żand', 'WPM', 'Mot.',  // Ilość
-                'RAZ', 'Pol', 'SG', 'SOP', 'SOK', 'Inn', 'Prew.', 'RD'  // Współdziałanie + typy
+                'RAZ', 'Pol', 'SG', 'SOP', 'SOK', 'Inn',  // Współdziałanie z:
+                'Prew.', 'RD'  // Rodzaj Współ.
             ],
             fields: ['month', 'date', 'razem_rodzaj', 'interwen', 'pieszych', 'wodnych', 'zmot', 'wkrd',
                      'zand', 'wpm', 'motorowek', 'razem_wspolz', 'policja', 'sg', 'sop', 'sok', 'inne',
