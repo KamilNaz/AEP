@@ -1971,6 +1971,13 @@ input[type="checkbox"]:disabled {
     color: var(--focus);
 }
 
+.wykroczenia-table .col-razem-locked {
+    background: rgba(75, 85, 99, 0.2);
+    opacity: 0.4;
+    color: rgba(156, 163, 175, 0.6);
+    cursor: not-allowed;
+}
+
 .wykroczenia-table .col-lp-value {
     font-weight: 600;
     color: var(--accent);
@@ -2065,20 +2072,7 @@ input[type="checkbox"]:disabled {
 }
 
 /* Walidacja - wizualne ostrzeżenie */
-.wykroczenia-validation-error {
-    background: rgba(255, 68, 68, 0.15) !important;
-    border: 2px solid #ff4444 !important;
-    position: relative;
-}
 
-.wykroczenia-validation-error::after {
-    content: '⚠️';
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    font-size: 0.7rem;
-    opacity: 0.7;
-}
 
 /* ============================================
    MODAL PODSTAWA INTERWENCJI
