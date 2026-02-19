@@ -2259,6 +2259,24 @@ const PatroleManager = {
                         </table>
                     </div>
                 </div>
+
+                <!-- Modal wyboru typu współdziałania -->
+                <div id="patroleCoopTypeModal" class="modal-overlay hidden">
+                    <div class="modal-content modal-content-small">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-handshake"></i> Rodzaj współdziałania</h3>
+                            <button class="modal-close" onclick="PatroleManager.closeCoopTypeModal()">&times;</button>
+                        </div>
+                        <div class="modal-body" style="display:flex; gap:1rem; justify-content:center; padding:1.5rem;">
+                            <button class="btn-coop-type btn-coop-prew" onclick="PatroleManager.saveCoopType('Prew.')">
+                                <i class="fas fa-shield-alt"></i> Prew.
+                            </button>
+                            <button class="btn-coop-type btn-coop-rd" onclick="PatroleManager.saveCoopType('RD')">
+                                <i class="fas fa-car-crash"></i> RD
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -2766,21 +2784,21 @@ const PatroleManager = {
                                onchange="PatroleManager.updateField(${row.id}, 'date', this.value)">
                     </td>
                     <td class="col-razem-value">${rodzajRazem}</td>
-                    <td><input type="number" class="patrole-input-number" value="${row.interwen || ''}" placeholder="0"
-                           min="0" max="1"
+                    <td><input type="number" class="patrole-input-number" value="${row.interwen ?? 1}" placeholder="0"
+                           min="0"
                            ${patrolDisabled.interwen ? 'disabled' : ''}
                            onchange="PatroleManager.updateField(${row.id}, 'interwen', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.pieszych || ''}" placeholder="0"
-                           ${patrolDisabled.pieszych ? 'disabled' : ''}
+                           min="0"
                            onchange="PatroleManager.updateField(${row.id}, 'pieszych', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.wodnych || ''}" placeholder="0"
-                           ${patrolDisabled.wodnych ? 'disabled' : ''}
+                           min="0"
                            onchange="PatroleManager.updateField(${row.id}, 'wodnych', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.zmot || ''}" placeholder="0"
-                           ${patrolDisabled.zmot ? 'disabled' : ''}
+                           min="0"
                            onchange="PatroleManager.updateField(${row.id}, 'zmot', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.wkrd || ''}" placeholder="0"
-                           ${patrolDisabled.wkrd ? 'disabled' : ''}
+                           min="0"
                            onchange="PatroleManager.updateField(${row.id}, 'wkrd', parseInt(this.value) || 0)"></td>
                     <td><input type="number" class="patrole-input-number" value="${row.zand || ''}" placeholder="0"
                            onchange="PatroleManager.updateField(${row.id}, 'zand', parseInt(this.value) || 0)"></td>
@@ -2789,21 +2807,13 @@ const PatroleManager = {
                     <td><input type="number" class="patrole-input-number" value="${row.motorowek || ''}" placeholder="0"
                            onchange="PatroleManager.updateField(${row.id}, 'motorowek', parseInt(this.value) || 0)"></td>
                     <td class="col-razem-value">${wspoldzRazem}</td>
-                    <td><input type="number" class="patrole-input-number" value="${row.policja || ''}" placeholder="0"
-                           ${coopDisabled.policja ? 'disabled' : ''}
-                           onchange="PatroleManager.updateField(${row.id}, 'policja', parseInt(this.value) || 0)"></td>
-                    <td><input type="number" class="patrole-input-number" value="${row.sg || ''}" placeholder="0"
-                           ${coopDisabled.sg ? 'disabled' : ''}
-                           onchange="PatroleManager.updateField(${row.id}, 'sg', parseInt(this.value) || 0)"></td>
-                    <td><input type="number" class="patrole-input-number" value="${row.sop || ''}" placeholder="0"
-                           ${coopDisabled.sop ? 'disabled' : ''}
-                           onchange="PatroleManager.updateField(${row.id}, 'sop', parseInt(this.value) || 0)"></td>
-                    <td><input type="number" class="patrole-input-number" value="${row.sok || ''}" placeholder="0"
-                           ${coopDisabled.sok ? 'disabled' : ''}
-                           onchange="PatroleManager.updateField(${row.id}, 'sok', parseInt(this.value) || 0)"></td>
-                    <td><input type="number" class="patrole-input-number" value="${row.inne || ''}" placeholder="0"
-                           ${coopDisabled.inne ? 'disabled' : ''}
-                           onchange="PatroleManager.updateField(${row.id}, 'inne', parseInt(this.value) || 0)"></td>
+                    ${['policja','sg','sop','sok','inne'].map(f => {
+                        const val = row[f] || 0;
+                        const typ = row[f + '_type'];
+                        const dis = coopDisabled[f];
+                        const badge = val > 0 ? `<span class="coop-type-badge${typ ? (typ === 'Prew.' ? ' coop-prew' : ' coop-rd') : ' coop-empty'}" onclick="PatroleManager.openCoopTypeModal(${row.id}, '${f}')">${typ || '?'}</span>` : '';
+                        return `<td><div class="coop-cell-wrapper"><input type="number" class="patrole-input-number" value="${val || ''}" placeholder="0" min="0" ${dis ? 'disabled' : ''} onchange="PatroleManager.updateField(${row.id}, '${f}', parseInt(this.value) || 0)">${badge}</div></td>`;
+                    }).join('')}
                     <td>
                         <select class="patrole-select" onchange="PatroleManager.updateField(${row.id}, 'jwProwadzaca', this.value)">
                             ${jwOptions.map(opt => `<option value="${opt}" ${row.jwProwadzaca === opt ? 'selected' : ''}>${opt}</option>`).join('')}
@@ -2845,54 +2855,16 @@ const PatroleManager = {
      * @returns {Object} - Obiekt z disabled states dla każdego pola
      */
     getPatrolTypeDisabledStates(row) {
-        const disabled = {
-            interwen: false,
+        // Interw. jest zablokowane (zawsze=1) jeśli JW Prowadząca NIE zaczyna się od 'PŻW'
+        // Pozostałe pola są zawsze aktywne - dowolna liczba
+        const isPzw = (row.jwProwadzaca || '').startsWith('PŻW');
+        return {
+            interwen: !isPzw,
             pieszych: false,
             wodnych: false,
             zmot: false,
             wkrd: false
         };
-
-        // REGUŁA NOWA: Sprawdź czy na tę samą datę istnieje INNY wiersz z Interw. > 0
-        const hasInterwOnThisDate = AppState.patroleData.some(r =>
-            r.id !== row.id &&                    // Inny wiersz (nie bieżący)
-            r.date === row.date &&                // Ta sama data
-            (r.interwen || 0) > 0                 // Ma patrol interwencyjny
-        );
-
-        // Jeśli jest już Interw. na tę datę, zablokuj pole "Interw."
-        if (hasInterwOnThisDate) {
-            disabled.interwen = true;
-        }
-
-        // Policz ile rodzajów patroli jest wybranych (wartość > 0)
-        const selectedTypes = [];
-        const patrolTypes = ['interwen', 'pieszych', 'wodnych', 'zmot', 'wkrd'];
-
-        patrolTypes.forEach(type => {
-            if ((row[type] || 0) > 0) {
-                selectedTypes.push(type);
-            }
-        });
-
-        // REGUŁA: Limit rodzajów patroli
-        let maxAllowedTypes = 2; // Domyślnie: max 2 rodzaje (Interw. + 1 inny)
-
-        // Jeśli pole "Interw." jest zablokowane (bo jest już na tę datę), MAX 1 rodzaj
-        if (hasInterwOnThisDate) {
-            maxAllowedTypes = 1;
-        }
-
-        // Jeśli wybrano już maksymalną liczbę rodzajów, zablokuj pozostałe
-        if (selectedTypes.length >= maxAllowedTypes) {
-            patrolTypes.forEach(type => {
-                if (!selectedTypes.includes(type)) {
-                    disabled[type] = true;
-                }
-            });
-        }
-
-        return disabled;
     },
 
     /**
@@ -2956,10 +2928,16 @@ const PatroleManager = {
                 const date = new Date(value);
                 const polishDate = date.toLocaleDateString('pl-PL');
                 row.date = polishDate;
-                // Auto-generuj miesiąc z daty
                 row.month = this.getMonthFromDate(polishDate);
             } else {
                 row[field] = value;
+            }
+
+            // Gdy zmieniono JW Prowadząca: jeśli nowa JW nie jest PŻW, zresetuj interwen=1
+            if (field === 'jwProwadzaca') {
+                if (!(value || '').startsWith('PŻW')) {
+                    row.interwen = 1;
+                }
             }
 
             // Jeśli zmieniono rodzaj patrolu, sprawdź czy trzeba wyczyścić współdziałanie
@@ -2969,15 +2947,19 @@ const PatroleManager = {
                                              (row.wodnych || 0) > 0 ||
                                              (row.zmot || 0) > 0 ||
                                              (row.wkrd || 0) > 0;
-
-                // Jeśli nie ma już żadnego nie-interwencyjnego patrolu, wyczyść współdziałanie
                 if (!hasNonInterwPatrol) {
-                    row.policja = 0;
-                    row.sg = 0;
-                    row.sop = 0;
-                    row.sok = 0;
-                    row.inne = 0;
+                    row.policja = 0; row.policja_type = null;
+                    row.sg = 0; row.sg_type = null;
+                    row.sop = 0; row.sop_type = null;
+                    row.sok = 0; row.sok_type = null;
+                    row.inne = 0; row.inne_type = null;
                 }
+            }
+
+            // Jeśli pole współdziałania zmienione na 0, wyczyść jego typ
+            const coopFields = ['policja', 'sg', 'sop', 'sok', 'inne'];
+            if (coopFields.includes(field) && (value === 0 || value === '0')) {
+                row[field + '_type'] = null;
             }
 
             // Auto-oblicz pola RAZEM używając CalculationEngine
@@ -2985,7 +2967,38 @@ const PatroleManager = {
 
             this.renderRows();
             this.autoSave();
+
+            // Jeśli pole współdziałania zmienione na >0, otwórz modal wyboru Prew./RD
+            if (coopFields.includes(field) && parseInt(value) > 0) {
+                this.openCoopTypeModal(id, field);
+            }
         }
+    },
+
+    // Stan tymczasowy dla modala wyboru typu współdziałania
+    _pendingCoopModal: { id: null, field: null },
+
+    openCoopTypeModal(id, field) {
+        this._pendingCoopModal = { id, field };
+        const modal = document.getElementById('patroleCoopTypeModal');
+        if (modal) modal.classList.remove('hidden');
+    },
+
+    saveCoopType(type) {
+        const { id, field } = this._pendingCoopModal;
+        const row = AppState.patroleData.find(r => r.id === id);
+        if (row && field) {
+            row[field + '_type'] = type;
+            this.closeCoopTypeModal();
+            this.renderRows();
+            this.autoSave();
+        }
+    },
+
+    closeCoopTypeModal() {
+        const modal = document.getElementById('patroleCoopTypeModal');
+        if (modal) modal.classList.add('hidden');
+        this._pendingCoopModal = { id: null, field: null };
     },
 
     addRow() {
@@ -2997,10 +3010,10 @@ const PatroleManager = {
         
         const newRow = {
             id: newId,
-            month: this.getMonthFromDate(todayPolish), // Auto ze skrótem
+            month: this.getMonthFromDate(todayPolish),
             date: todayPolish,
-            razem_rodzaj: 0,  // DODANE
-            interwen: 0,
+            razem_rodzaj: 0,
+            interwen: 1,   // Domyślnie 1; zmiana dozwolona tylko gdy JW=PŻW
             pieszych: 0,
             wodnych: 0,
             zmot: 0,
@@ -3008,12 +3021,17 @@ const PatroleManager = {
             zand: 0,
             wpm: 0,
             motorowek: 0,
-            razem_wspolz: 0,  // DODANE
+            razem_wspolz: 0,
             policja: 0,
             sg: 0,
             sop: 0,
             sok: 0,
             inne: 0,
+            policja_type: null,
+            sg_type: null,
+            sop_type: null,
+            sok_type: null,
+            inne_type: null,
             jwProwadzaca: 'OŻW Elbląg',
             oddzialZW: 'OŻW Elbląg'
         };
